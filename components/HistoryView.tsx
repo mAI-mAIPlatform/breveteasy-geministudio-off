@@ -15,6 +15,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ sessions, onSelectChat
     <div className="w-full max-w-4xl mx-auto h-full flex flex-col">
       <header className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 mb-6">
         <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Historique des chats</h2>
+        <button onClick={onBack} title="Fermer" className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
       </header>
       <main className="flex-grow overflow-y-auto pr-2">
         {sortedSessions.length > 0 ? (

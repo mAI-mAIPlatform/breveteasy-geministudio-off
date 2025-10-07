@@ -1,8 +1,10 @@
 import type React from 'react';
 
+export type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login';
+
 export interface Subject {
   name: string;
-  icon: React.ReactElement;
+  icon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
   color: string;
   bgColor: string;
 }
@@ -30,4 +32,10 @@ export interface ChatSession {
     title: string;
     messages: ChatMessage[];
     createdAt: number;
+}
+
+export interface UserProfile {
+    email: string;
+    level: number;
+    xp: number;
 }

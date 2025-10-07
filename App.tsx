@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { HomeView } from './components/HomeView';
 import { LoadingView } from './components/LoadingView';
@@ -8,38 +7,60 @@ import { ChatView } from './components/ChatView';
 import { HistoryView } from './components/HistoryView';
 import { SettingsView } from './components/SettingsView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
+import { LoginView } from './components/LoginView';
 import { generateQuiz } from './services/geminiService';
-import type { Subject, Quiz, ChatSession, ChatMessage } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, View, UserProfile } from './types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings';
-
-const SESSIONS_KEY = 'brevet-easy-sessions';
+const ACTIVE_USER_EMAIL_KEY = 'brevet-easy-active-user-email';
+const PROFILES_KEY = 'brevet-easy-profiles';
+const SESSIONS_KEY_PREFIX = 'brevet-easy-sessions';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [userAnswers, setUserAnswers] = useState<(string | null)[]>([]);
   const [score, setScore] = useState(0);
+  const [xpGained, setXpGained] = useState(0);
+  const [leveledUp, setLeveledUp] = useState(false);
 
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
-    try {
-      const savedSessions = localStorage.getItem(SESSIONS_KEY);
-      return savedSessions ? JSON.parse(savedSessions) : [];
-    } catch (error) {
-      console.error("Failed to load sessions from localStorage", error);
-      return [];
-    }
-  });
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentChatSessionId, setCurrentChatSessionId] = useState<string | null>(null);
+
+  // Load active user profile on startup
+  useEffect(() => {
+    const activeUserEmail = localStorage.getItem(ACTIVE_USER_EMAIL_KEY);
+    if (activeUserEmail) {
+      const allProfiles: { [email: string]: UserProfile } = JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}');
+      if (allProfiles[activeUserEmail]) {
+        setCurrentUser(allProfiles[activeUserEmail]);
+      }
+    }
+  }, []);
+
+  const getSessionsKey = useCallback(() => {
+    return `${SESSIONS_KEY_PREFIX}-${currentUser?.email || 'guest'}`;
+  }, [currentUser]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(SESSIONS_KEY, JSON.stringify(chatSessions));
+      const savedSessions = localStorage.getItem(getSessionsKey());
+      setChatSessions(savedSessions ? JSON.parse(savedSessions) : []);
+    } catch (error) {
+      console.error("Failed to load sessions from localStorage", error);
+      setChatSessions([]);
+    }
+  }, [currentUser, getSessionsKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(getSessionsKey(), JSON.stringify(chatSessions));
     } catch (error) {
       console.error("Failed to save sessions to localStorage", error);
     }
-  }, [chatSessions]);
+  }, [chatSessions, getSessionsKey]);
 
   const handleSubjectSelect = useCallback((subject: Subject) => {
     setSelectedSubject(subject);
@@ -47,20 +68,19 @@ const App: React.FC = () => {
   }, []);
 
   const handleStartQuiz = useCallback(async (subjectName: string) => {
-    if (selectedSubject) {
-        setView('loading');
-        const quiz = await generateQuiz(subjectName);
-        if (quiz) {
-          setCurrentQuiz(quiz);
-          setUserAnswers(Array(quiz.questions.length).fill(null));
-          setView('quiz');
-        } else {
-          alert("Désolé, une erreur est survenue lors de la création du quiz. Veuillez réessayer.");
-          setView('home');
-        }
+    setView('loading');
+    const quiz = await generateQuiz(subjectName);
+    if (quiz) {
+      setCurrentQuiz(quiz);
+      setUserAnswers(Array(quiz.questions.length).fill(null));
+      setXpGained(0);
+      setLeveledUp(false);
+      setView('quiz');
+    } else {
+      alert("Désolé, une erreur est survenue lors de la création du quiz. Veuillez réessayer.");
+      setView('home');
     }
-  }, [selectedSubject]);
-
+  }, []);
 
   const handleQuizSubmit = (answers: (string | null)[]) => {
     if (!currentQuiz) return;
@@ -72,6 +92,31 @@ const App: React.FC = () => {
     });
     setScore(newScore);
     setUserAnswers(answers);
+
+    if (currentUser) {
+      const scoreOutOf20 = (newScore / currentQuiz.questions.length) * 20;
+      const xpToAdd = Math.round(scoreOutOf20);
+      setXpGained(xpToAdd);
+
+      const updatedUser = { ...currentUser };
+      updatedUser.xp += xpToAdd;
+
+      let didLevelUp = false;
+      let xpForNextLevel = updatedUser.level * 100;
+      while (updatedUser.xp >= xpForNextLevel) {
+        updatedUser.level += 1;
+        updatedUser.xp -= xpForNextLevel;
+        didLevelUp = true;
+        xpForNextLevel = updatedUser.level * 100;
+      }
+      setLeveledUp(didLevelUp);
+      
+      setCurrentUser(updatedUser);
+      const allProfiles: { [email: string]: UserProfile } = JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}');
+      allProfiles[updatedUser.email] = updatedUser;
+      localStorage.setItem(PROFILES_KEY, JSON.stringify(allProfiles));
+    }
+
     setView('results');
   };
 
@@ -81,6 +126,8 @@ const App: React.FC = () => {
     setCurrentQuiz(null);
     setUserAnswers([]);
     setScore(0);
+    setXpGained(0);
+    setLeveledUp(false);
   };
   
   const handleStartNewChat = () => {
@@ -118,8 +165,26 @@ const App: React.FC = () => {
                   return updatedSession;
               }
               return session;
-          });
+          }).sort((a, b) => b.createdAt - a.createdAt);
       });
+  };
+
+  const handleLogin = (email: string) => {
+    const allProfiles: { [email: string]: UserProfile } = JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}');
+    let userProfile = allProfiles[email];
+    if (!userProfile) {
+        userProfile = { email, level: 1, xp: 0 };
+        allProfiles[email] = userProfile;
+        localStorage.setItem(PROFILES_KEY, JSON.stringify(allProfiles));
+    }
+    localStorage.setItem(ACTIVE_USER_EMAIL_KEY, email);
+    setCurrentUser(userProfile);
+    setView('home');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(ACTIVE_USER_EMAIL_KEY);
+    setCurrentUser(null);
   };
 
   const renderView = () => {
@@ -131,7 +196,7 @@ const App: React.FC = () => {
       case 'quiz':
         return currentQuiz ? <QuizView quiz={currentQuiz} onSubmit={handleQuizSubmit} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
       case 'results':
-        return <ResultsView score={score} totalQuestions={currentQuiz?.questions.length || 0} onRestart={handleRestart} quiz={currentQuiz} userAnswers={userAnswers} />;
+        return <ResultsView score={score} totalQuestions={currentQuiz?.questions.length || 0} onRestart={handleRestart} quiz={currentQuiz} userAnswers={userAnswers} xpGained={xpGained} leveledUp={leveledUp} />;
       case 'chat': {
         const currentSession = chatSessions.find(s => s.id === currentChatSessionId);
         return currentSession ? <ChatView session={currentSession} onUpdateSession={updateChatSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
@@ -139,14 +204,16 @@ const App: React.FC = () => {
       case 'history':
         return <HistoryView sessions={chatSessions} onSelectChat={handleSelectChat} onDeleteChat={handleDeleteChat} onBack={() => setView('home')} />;
       case 'settings':
-          return <SettingsView onBack={() => setView('home')} />;
+          return <SettingsView onBack={() => setView('home')} currentUser={currentUser} onNavigateToLogin={() => setView('login')} onLogout={handleLogout} />;
+      case 'login':
+          return <LoginView onLogin={handleLogin} onBack={() => currentUser ? setView('settings') : setView('home')} />;
       case 'home':
       default:
         return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
     }
   };
 
-  const showHeaderNav = view === 'home' || view === 'history' || view === 'settings';
+  const showHeaderNav = !['quiz', 'loading', 'login', 'subjectOptions', 'chat'].includes(view);
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">
@@ -154,6 +221,16 @@ const App: React.FC = () => {
          <nav className="w-full max-w-4xl flex justify-between items-center mb-8">
             <button onClick={() => setView('home')} className="text-2xl font-bold text-gray-800 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Brevet' Easy</button>
             <div className="flex items-center gap-4">
+                {currentUser ? (
+                    <div className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700/50 px-3 py-1.5 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2a.75.75 0 01.686.445l1.833 3.718 4.1.596a.75.75 0 01.416 1.28l-2.966 2.89.7 4.084a.75.75 0 01-1.088.79L10 13.43l-3.65 1.918a.75.75 0 01-1.088-.79l.7-4.084-2.966-2.89a.75.75 0 01.416-1.28l4.1-.596L9.314 2.445A.75.75 0 0110 2z" clipRule="evenodd" /></svg>
+                        <span className="font-bold text-sm text-gray-700 dark:text-gray-200">Niv. {currentUser.level}</span>
+                    </div>
+                ) : (
+                   <button onClick={() => setView('login')} className="px-4 py-1.5 bg-blue-600 text-white font-semibold rounded-full text-sm hover:bg-blue-700 transition-colors">
+                        Compte
+                    </button>
+                )}
                <button onClick={() => setView('history')} title="Historique" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                </button>
