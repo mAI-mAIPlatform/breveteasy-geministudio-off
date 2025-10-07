@@ -37,16 +37,16 @@ const ThemeSelector: React.FC = () => {
 
   return (
     <div>
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Thème</h3>
-        <div className="flex bg-gray-200 dark:bg-gray-700/50 rounded-lg p-1">
+        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Thème</h3>
+        <div className="flex bg-gray-100 dark:bg-gray-700/50 rounded-xl p-1 space-x-1">
             {themes.map(({ value, label }) => (
                 <button
                     key={value}
                     onClick={() => setTheme(value)}
-                    className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    className={`w-full py-2 px-4 rounded-lg text-sm font-semibold transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
                         theme === value
-                            ? 'bg-white dark:bg-gray-900/50 text-blue-600 dark:text-blue-400 shadow'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600/50'
+                            ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-800/50'
                     }`}
                 >
                     {label}

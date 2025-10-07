@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 interface LoadingViewProps {
@@ -45,8 +44,8 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject }) => {
   return (
     <div className="flex flex-col items-center justify-center text-center h-full space-y-8">
       <LoadingSpinner />
-      <h2 className="text-2xl font-bold text-gray-800">Génération du quiz de <span className="text-blue-600">{subject}</span></h2>
-      <p className="text-lg text-gray-600 animate-pulse">{message}</p>
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Génération du quiz de <span className="text-blue-600 dark:text-blue-400">{subject}</span></h2>
+      <p className="text-lg text-gray-600 dark:text-gray-300 animate-pulse">{message}</p>
     </div>
   );
 };

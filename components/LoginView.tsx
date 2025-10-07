@@ -59,7 +59,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
           </div>
           
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            Ceci est une démonstration. N'importe quel e-mail fonctionnera.
+            Connectez-vous pour retrouver vos niveaux et conversations avec BrevetAI
           </p>
 
           <div className="flex flex-col gap-4 pt-2">

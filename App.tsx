@@ -154,11 +154,15 @@ const App: React.FC = () => {
       }
   };
 
-  const updateChatSession = (sessionId: string, messages: ChatMessage[], newTitle?: string) => {
+  // FIX: Allow `messagesUpdater` to be a function to enable safe state updates from child components.
+  const updateChatSession = (sessionId: string, messagesUpdater: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]), newTitle?: string) => {
       setChatSessions(prevSessions => {
           return prevSessions.map(session => {
               if (session.id === sessionId) {
-                  const updatedSession = { ...session, messages: messages };
+                  const newMessages = typeof messagesUpdater === 'function'
+                      ? messagesUpdater(session.messages)
+                      : messagesUpdater;
+                  const updatedSession = { ...session, messages: newMessages };
                   if (newTitle && session.title === "Nouvelle discussion") {
                       updatedSession.title = newTitle;
                   }
