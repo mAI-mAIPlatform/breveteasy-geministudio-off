@@ -21,9 +21,17 @@ export interface Quiz {
   questions: Question[];
 }
 
+export interface ChatPart {
+    text?: string;
+    image?: {
+        data: string; // base64 encoded string
+        mimeType: string;
+    }
+}
+
 export interface ChatMessage {
   role: 'user' | 'model';
-  content: string;
+  parts: ChatPart[];
   isGenerating?: boolean;
 }
 
