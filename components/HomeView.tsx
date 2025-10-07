@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SUBJECTS } from '../constants';
 import type { Subject } from '../types';
@@ -15,7 +14,7 @@ const Header: React.FC = () => (
 const SubjectCard: React.FC<{ subject: Subject; onSelect: () => void }> = ({ subject, onSelect }) => (
   <button
     onClick={onSelect}
-    className="group flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out w-full space-y-4"
+    className="group flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out w-full space-y-3"
   >
     <div className={`p-4 rounded-full ${subject.bgColor} ${subject.color} transition-colors duration-300`}>
       {subject.icon}
@@ -23,7 +22,6 @@ const SubjectCard: React.FC<{ subject: Subject; onSelect: () => void }> = ({ sub
     <h3 className="text-2xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300">
       {subject.name}
     </h3>
-    <p className="text-gray-500">Générer un quiz</p>
   </button>
 );
 
