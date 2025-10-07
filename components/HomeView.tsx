@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SUBJECTS } from '../constants';
 import type { Subject } from '../types';
@@ -32,13 +33,11 @@ const BrevetAICard: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     >
         <div className="flex items-center">
             <div className="bg-white/90 p-3 rounded-full mr-5">
-                <svg className="w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                <svg className="w-8 h-8 text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
             </div>
             <div>
                 <h2 className="text-3xl font-bold flex items-center">
-                    <svg className="w-8 h-8 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.5,12,6.3,21.8a1,1,0,0,1-1.5-.8V3a1,1,0,0,1,1.5-.8L17.5,12Z" fill="currentColor"/></svg>
+                    <svg className="w-8 h-8 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                     BrevetAI
                 </h2>
                 <p className="text-lg text-indigo-100 mt-1">

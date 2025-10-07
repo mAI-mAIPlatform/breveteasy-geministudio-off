@@ -16,6 +16,8 @@ const InfoIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" classNa
 
 export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions, onRestart, quiz, userAnswers }) => {
   const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+  const scoreOutOf20 = totalQuestions > 0 ? ((score / totalQuestions) * 20).toFixed(1) : "0.0";
+
 
   const getFeedback = () => {
     if (percentage >= 80) {
@@ -59,13 +61,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
                   />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-5xl font-bold text-gray-800">{score}</span>
-                  <span className="text-xl text-gray-500">/ {totalQuestions}</span>
+                  <span className="text-5xl font-bold text-gray-800">{scoreOutOf20}</span>
+                  <span className="text-xl text-gray-500">/ 20</span>
               </div>
           </div>
 
           <p className={`text-2xl font-semibold ${feedback.color}`}>{feedback.message}</p>
-          <p className="text-lg text-gray-600 mt-2 mb-8">Vous avez obtenu {percentage}% de bonnes réponses.</p>
+          <p className="text-lg text-gray-600 mt-2 mb-8">Cela correspond à {percentage}% de bonnes réponses.</p>
           
           <button
               onClick={onRestart}
@@ -75,8 +77,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
           </button>
       </div>
 
-      <div className="w-full">
-            <h3 className="text-3xl font-bold text-gray-800 mb-6 text-center">Correction détaillée</h3>
+      <div className="w-full mt-12 bg-gray-50 p-6 sm:p-8 rounded-3xl shadow-inner border border-gray-200">
+            <h3 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">Correction détaillée</h3>
             <div className="space-y-6">
                 {quiz?.questions.map((question, index) => {
                     const userAnswer = userAnswers[index];

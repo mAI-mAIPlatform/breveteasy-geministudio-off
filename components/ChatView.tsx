@@ -27,7 +27,7 @@ const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> =
 const WelcomeBanner: React.FC = () => (
     <div className="m-auto flex flex-col items-center justify-center text-center p-8">
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 rounded-full mb-6 shadow-lg">
-             <svg className="w-16 h-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.5,12,6.3,21.8a1,1,0,0,1-1.5-.8V3a1,1,0,0,1,1.5-.8L17.5,12Z" fill="currentColor"/></svg>
+             <svg className="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
         </div>
         <h2 className="text-4xl font-bold text-gray-800">BrevetAI</h2>
         <p className="text-xl text-gray-500 mt-2">
@@ -225,7 +225,7 @@ export const ChatView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
       <header className="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Discussion avec Brevet AI</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Brevet AI</h2>
         <button onClick={onBack} className="text-gray-500 hover:text-gray-800 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
