@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useRef } from 'react';
 import type { Quiz } from '../types';
 
 interface ResultsViewProps {
@@ -15,6 +14,7 @@ const CrossIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" classN
 const InfoIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>;
 
 export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions, onRestart, quiz, userAnswers }) => {
+  const correctionRef = useRef<HTMLDivElement>(null);
   const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
   const scoreOutOf20 = totalQuestions > 0 ? ((score / totalQuestions) * 20).toFixed(1) : "0.0";
 
@@ -30,6 +30,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
   };
 
   const feedback = getFeedback();
+
+  const scrollToCorrection = () => {
+    correctionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -69,15 +73,23 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
           <p className={`text-2xl font-semibold ${feedback.color}`}>{feedback.message}</p>
           <p className="text-lg text-gray-600 mt-2 mb-8">Cela correspond à {percentage}% de bonnes réponses.</p>
           
-          <button
-              onClick={onRestart}
-              className="px-8 py-4 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 transform hover:scale-105 transition-all"
-          >
-              Faire un autre quiz
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <button
+                onClick={onRestart}
+                className="px-8 py-4 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 transform hover:scale-105 transition-all w-full sm:w-auto"
+            >
+                Accueil
+            </button>
+            <button
+                onClick={scrollToCorrection}
+                className="px-8 py-4 bg-white text-blue-600 border-2 border-blue-600 font-bold rounded-lg shadow-lg hover:bg-blue-50 transform hover:scale-105 transition-all w-full sm:w-auto"
+            >
+                Voir la correction
+            </button>
+          </div>
       </div>
 
-      <div className="w-full mt-12 bg-gray-50 p-6 sm:p-8 rounded-3xl shadow-inner border border-gray-200">
+      <div ref={correctionRef} className="w-full mt-12 bg-gray-50 p-6 sm:p-8 rounded-3xl shadow-inner border border-gray-200">
             <h3 className="text-4xl font-extrabold text-gray-800 mb-8 text-center">Correction détaillée</h3>
             <div className="space-y-6">
                 {quiz?.questions.map((question, index) => {
