@@ -29,9 +29,13 @@ const quizSchema = {
                     correctAnswer: {
                         type: Type.STRING,
                         description: "Le texte exact de la bonne réponse parmi les options."
+                    },
+                    explanation: {
+                        type: Type.STRING,
+                        description: "Une explication brève et pédagogique de la raison pour laquelle la réponse correcte est la bonne."
                     }
                 },
-                required: ["questionText", "options", "correctAnswer"]
+                required: ["questionText", "options", "correctAnswer", "explanation"]
             }
         }
     },
@@ -40,7 +44,7 @@ const quizSchema = {
 
 export const generateQuiz = async (subject: string): Promise<Quiz | null> => {
     try {
-        const prompt = `Génère un quiz de 15 questions à choix multiples pour le niveau Brevet des collèges en France sur le sujet : ${subject}. Pour chaque question, fournis 4 options de réponse distinctes et le texte exact de la bonne réponse. Les questions doivent être pertinentes, variées et couvrir des points clés du programme officiel.`;
+        const prompt = `Génère un quiz de 15 questions à choix multiples pour le niveau Brevet des collèges en France sur le sujet : ${subject}. Pour chaque question, fournis 4 options de réponse distinctes, le texte exact de la bonne réponse, et une explication brève et pédagogique de la bonne réponse. Les questions doivent être pertinentes, variées et couvrir des points clés du programme officiel.`;
 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -61,7 +65,8 @@ export const generateQuiz = async (subject: string): Promise<Quiz | null> => {
                 questions: parsedJson.questions.map((q: any) => ({
                     questionText: q.questionText,
                     options: q.options,
-                    correctAnswer: q.correctAnswer
+                    correctAnswer: q.correctAnswer,
+                    explanation: q.explanation
                 }))
              };
              return validatedQuiz;

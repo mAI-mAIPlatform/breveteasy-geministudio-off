@@ -62,7 +62,7 @@ const App: React.FC = () => {
       case 'quiz':
         return currentQuiz ? <QuizView quiz={currentQuiz} onSubmit={handleQuizSubmit} /> : <p>Erreur: Quiz non trouvé.</p>;
       case 'results':
-        return <ResultsView score={score} totalQuestions={currentQuiz?.questions.length ?? 0} onRestart={handleRestart} />;
+        return <ResultsView score={score} totalQuestions={currentQuiz?.questions.length ?? 0} onRestart={handleRestart} quiz={currentQuiz} userAnswers={userAnswers} />;
       case 'chat':
         return <ChatView onBack={handleRestart} />;
       case 'home':
