@@ -21,18 +21,19 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject }) => {
   const [message, setMessage] = useState(LOADING_MESSAGES[0]);
 
   useEffect(() => {
+    const intervalDuration = 2000;
     const intervalId = setInterval(() => {
       setMessage(prevMessage => {
         const currentIndex = LOADING_MESSAGES.indexOf(prevMessage);
         const nextIndex = (currentIndex + 1) % (LOADING_MESSAGES.length -1) ; // Don't cycle to the last one which is a generic wait message
         return LOADING_MESSAGES[nextIndex];
       });
-    }, 3000);
+    }, intervalDuration);
 
     const timeoutId = setTimeout(() => {
       clearInterval(intervalId);
       setMessage(LOADING_MESSAGES[LOADING_MESSAGES.length-1]);
-    }, (LOADING_MESSAGES.length - 1) * 3000);
+    }, (LOADING_MESSAGES.length - 1) * intervalDuration);
 
 
     return () => {

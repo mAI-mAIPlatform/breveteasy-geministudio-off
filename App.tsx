@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import type { AppState, Quiz, Subject } from './types';
 import { generateQuiz } from './services/geminiService';
@@ -76,6 +77,9 @@ const App: React.FC = () => {
         <div className="flex-grow p-4 sm:p-6 md:p-8 overflow-y-auto">
             {renderContent()}
         </div>
+        <footer className="text-center p-4 text-xs text-gray-500 border-t border-gray-100 flex-shrink-0">
+          26-1 © All rights reserved | Brevet' Easy et BrevetAI | Official AI and Website
+        </footer>
       </div>
     </div>
   );

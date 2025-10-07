@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // FIX: Correct import path for GoogleGenAI SDK
 import { GoogleGenAI, Chat } from "@google/genai";
@@ -35,6 +36,8 @@ const WelcomeBanner: React.FC = () => (
     </div>
 );
 
+const CHAT_HISTORY_KEY = 'brevet-ai-chat-history';
+
 export const ChatView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -50,18 +53,51 @@ export const ChatView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   useEffect(() => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    let initialMessages: ChatMessage[] = [];
+    let historyForGemini: any[] = [];
+    
+    try {
+        const savedMessagesJSON = localStorage.getItem(CHAT_HISTORY_KEY);
+        if (savedMessagesJSON) {
+            const savedMessages = JSON.parse(savedMessagesJSON);
+            if (Array.isArray(savedMessages) && savedMessages.length > 0) {
+                initialMessages = savedMessages;
+                historyForGemini = savedMessages.slice(1).map((msg: ChatMessage) => ({
+                    role: msg.sender,
+                    parts: msg.parts.map(part => {
+                        if (part.text) return { text: part.text };
+                        if (part.file) return { inlineData: { data: part.file.data, mimeType: part.file.mimeType } };
+                        return null;
+                    }).filter(p => p !== null)
+                }));
+            }
+        }
+    } catch (error) {
+        console.error("Failed to load chat history:", error);
+        localStorage.removeItem(CHAT_HISTORY_KEY);
+    }
+
+
     const newChat = ai.chats.create({
       model: 'gemini-2.5-flash',
+      history: historyForGemini,
       config: {
         systemInstruction: "Tu es Brevet AI, un tuteur IA amical et expert. Ton but est d'aider les élèves de 3ème à réviser pour le Brevet des collèges en France. Réponds à leurs questions, explique des concepts complexes simplement, et aide-les avec leurs exercices, y compris ceux envoyés en photo. Sois encourageant, patient et pédagogique.",
       },
     });
     setChat(newChat);
-    setMessages([{
-        id: Date.now(),
-        sender: 'model',
-        parts: [{ text: "Bonjour ! Je suis Brevet AI. Comment puis-je t'aider à réviser aujourd'hui ? Pose-moi une question ou envoie-moi un exercice en photo."}]
-    }]);
+
+    if (initialMessages.length === 0) {
+        setMessages([{
+            id: Date.now(),
+            sender: 'model',
+            parts: [{ text: "Bonjour ! Je suis Brevet AI. Comment puis-je t'aider à réviser aujourd'hui ? Pose-moi une question ou envoie-moi un exercice en photo."}]
+        }]);
+    } else {
+        setMessages(initialMessages);
+    }
+
 
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -88,6 +124,17 @@ export const ChatView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         recognitionRef.current = recognition;
     }
   }, []);
+
+  useEffect(() => {
+    // Save messages to localStorage, but not just the initial greeting.
+    if (messages.length > 1) {
+        try {
+            localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+        } catch (error) {
+            console.error("Failed to save chat history:", error);
+        }
+    }
+  }, [messages]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

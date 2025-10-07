@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SUBJECTS } from '../constants';
 import type { Subject } from '../types';
@@ -43,7 +44,7 @@ const BrevetAICard: React.FC<{ onClick: () => void }> = ({ onClick }) => (
                     BrevetAI
                 </h2>
                 <p className="text-lg text-indigo-100 mt-1">
-                    L'IA spécialisée pour les révisions du Brevet. Je suis là pour t'aider.
+                    L'IA spécialisée pour les révisions du Brevet.
                 </p>
             </div>
         </div>
@@ -60,14 +61,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartChat
   <div className="w-full">
     <Header />
     <main>
+       <div className="mb-12">
+         <BrevetAICard onClick={onStartChat} />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {SUBJECTS.map((subject) => (
           <SubjectCard key={subject.name} subject={subject} onSelect={() => onSubjectSelect(subject)} />
         ))}
-      </div>
-
-      <div className="mt-16 border-t-2 border-gray-100 pt-10">
-         <BrevetAICard onClick={onStartChat} />
       </div>
     </main>
   </div>
