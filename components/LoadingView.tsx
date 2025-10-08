@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 interface LoadingViewProps {
@@ -12,54 +11,57 @@ const LoadingSpinner: React.FC = () => (
 
 const QUIZ_LOADING_MESSAGES = [
   "Brevet AI prépare vos questions...",
-  "Recherche des notions clés dans les annales...",
+  "Recherche des notions clés...",
   "Formulation des options de réponse...",
-  "Presque prêt ! Finalisation du quiz...",
-  "Le quiz est en cours de préparation, merci de patienter."
+  "Finalisation du quiz...",
+  "Le quiz est prêt !"
 ];
 
 const EXERCISES_LOADING_MESSAGES = [
     "Brevet AI conçoit vos exercices...",
     "Sélection des thèmes pertinents...",
-    "Rédaction des énoncés et des corrigés...",
-    "Mise en page du document PDF...",
+    "Rédaction des énoncés et corrigés...",
+    "Mise en page du document...",
     "Le document est presque prêt..."
 ];
 
 
 export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
   const MESSAGES = task === 'quiz' ? QUIZ_LOADING_MESSAGES : EXERCISES_LOADING_MESSAGES;
-  const [message, setMessage] = useState(MESSAGES[0]);
-
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
   useEffect(() => {
-    const intervalDuration = 2000;
+    // Stop the interval once we've reached the last message
+    if (currentIndex >= MESSAGES.length - 1) {
+      return;
+    }
+
     const intervalId = setInterval(() => {
-      setMessage(prevMessage => {
-        const currentIndex = MESSAGES.indexOf(prevMessage);
-        const nextIndex = (currentIndex + 1) % (MESSAGES.length -1) ; // Don't cycle to the last one which is a generic wait message
-        return MESSAGES[nextIndex];
-      });
-    }, intervalDuration);
+      setCurrentIndex(prevIndex => prevIndex + 1);
+    }, 1500); // Speed up the interval slightly for a better feel
 
-    const timeoutId = setTimeout(() => {
-      clearInterval(intervalId);
-      setMessage(MESSAGES[MESSAGES.length-1]);
-    }, (MESSAGES.length - 1) * intervalDuration);
+    return () => clearInterval(intervalId);
+  }, [currentIndex, MESSAGES.length]);
 
-
-    return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
-    };
-  }, [MESSAGES]);
-
+  const progressPoints = [10, 30, 55, 80, 98];
+  const progress = progressPoints[currentIndex] || 0;
+  const message = MESSAGES[currentIndex] || '...';
   const titleText = task === 'quiz' ? 'du quiz' : 'des exercices';
 
   return (
-    <div className="flex flex-col items-center justify-center text-center h-full space-y-8">
+    <div className="flex flex-col items-center justify-center text-center h-full space-y-8 w-full">
       <LoadingSpinner />
       <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Génération {titleText} de <span className="text-blue-600 dark:text-blue-400">{subject}</span></h2>
-      <p className="text-lg text-gray-600 dark:text-gray-300 animate-pulse">{message}</p>
+      
+      <div className="w-full max-w-md px-4">
+          <div className="flex justify-between mb-1">
+              <span className="text-base font-medium text-blue-700 dark:text-blue-400 animate-pulse">{message}</span>
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">{progress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+              <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-1000 ease-out" style={{width: `${progress}%`}}></div>
+          </div>
+      </div>
     </div>
   );
 };
