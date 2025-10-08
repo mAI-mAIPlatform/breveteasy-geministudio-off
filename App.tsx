@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { HomeView } from './components/HomeView';
 import { LoadingView } from './components/LoadingView';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const [score, setScore] = useState(0);
   const [xpGained, setXpGained] = useState(0);
   const [leveledUp, setLeveledUp] = useState(false);
+  const [loadingTask, setLoadingTask] = useState<'quiz' | 'exercises'>('quiz');
 
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentChatSessionId, setCurrentChatSessionId] = useState<string | null>(null);
@@ -69,6 +71,7 @@ const App: React.FC = () => {
 
   const handleStartQuiz = useCallback(async (subjectName: string) => {
     setView('loading');
+    setLoadingTask('quiz');
     const quiz = await generateQuiz(subjectName);
     if (quiz) {
       setCurrentQuiz(quiz);
@@ -82,25 +85,27 @@ const App: React.FC = () => {
     }
   }, []);
   
-  const downloadTextFile = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const printHtmlAsPdf = (htmlContent: string) => {
+    const printWindow = window.open('', '_blank', 'height=800,width=600');
+    if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    } else {
+        alert("Veuillez autoriser les fenêtres pop-up pour pouvoir télécharger le PDF.");
+    }
   };
   
   const handleGenerateExercises = useCallback(async (subjectName: string) => {
     setView('loading');
+    setLoadingTask('exercises');
     const exercises = await generateExercises(subjectName);
     if (exercises) {
-      const filename = `exercices-brevet-${subjectName.toLowerCase().replace(/\s/g, '-')}.md`;
-      downloadTextFile(exercises, filename);
+      printHtmlAsPdf(exercises);
       setView('home');
     } else {
       alert("Désolé, une erreur est survenue lors de la création des exercices. Veuillez réessayer.");
@@ -222,7 +227,7 @@ const App: React.FC = () => {
       case 'subjectOptions':
         return selectedSubject ? <SubjectOptionsView subject={selectedSubject} onStartQuiz={handleStartQuiz} onBack={handleRestart} onGenerateExercises={handleGenerateExercises} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
       case 'loading':
-        return <LoadingView subject={selectedSubject?.name || ''} />;
+        return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} />;
       case 'quiz':
         return currentQuiz ? <QuizView quiz={currentQuiz} onSubmit={handleQuizSubmit} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
       case 'results':

@@ -85,12 +85,13 @@ export const generateExercises = async (subject: string): Promise<string | null>
     try {
         const prompt = `Génère 5 exercices variés de type Brevet des collèges en France sur le sujet : ${subject}.
 Pour chaque exercice, fournis un énoncé clair, des questions précises, et un corrigé détaillé.
-Le format de la réponse doit être en Markdown, bien structuré, avec des titres pour chaque exercice et pour les sections "Énoncé" et "Corrigé".
-Les exercices doivent couvrir des aspects importants du programme. Par exemple:
-- Pour le Français : analyse de texte, questions de grammaire, réécriture.
-- Pour les Mathématiques : résolution de problèmes, exercices d'algèbre, géométrie.
-- Pour l'Histoire-Géo-EMC : étude de document, question de connaissance, développement construit.
-- Pour les Sciences : analyse d'expérience, restitution de connaissances, application de formules.`;
+Le format de la réponse doit être un document HTML complet et autonome (pas de liens externes pour les styles ou scripts).
+Inclus une balise <style> dans le <head> pour une mise en page claire et professionnelle, adaptée à l'impression (format A4, police de 12pt, marges raisonnables).
+Le style doit être sobre : texte noir sur fond blanc. Utilise des polices standards comme 'Times New Roman' ou 'Arial'.
+Utilise des balises sémantiques HTML (<h1>, <h2>, <p>, <ul>, <li>, <strong>, etc.).
+Le contenu doit être bien structuré, avec un titre principal (<h1>), des titres pour chaque exercice (<h2>Exercice X</h2>) et pour les sections "Énoncé" et "Corrigé" (<h3>).
+Les exercices doivent couvrir des aspects importants du programme.
+Réponds uniquement avec le code HTML complet, en commençant par <!DOCTYPE html>.`;
 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
