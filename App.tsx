@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
+import jsPDF from 'jspdf';
 import { HomeView } from './components/HomeView';
 import { LoadingView } from './components/LoadingView';
 import { QuizView } from './components/QuizView';
@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [leveledUp, setLeveledUp] = useState(false);
   const [loadingTask, setLoadingTask] = useState<'quiz' | 'exercises'>('quiz');
   const [generatedExercisesHtml, setGeneratedExercisesHtml] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentChatSessionId, setCurrentChatSessionId] = useState<string | null>(null);
@@ -87,18 +88,50 @@ const App: React.FC = () => {
     }
   }, []);
   
-  const printHtmlAsPdf = (htmlContent: string) => {
-    const printWindow = window.open('', '_blank', 'height=800,width=600');
-    if (printWindow) {
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 500);
-    } else {
-        alert("Veuillez autoriser les fenêtres pop-up pour pouvoir télécharger le PDF.");
+  const handleDownloadPdf = async () => {
+    if (!generatedExercisesHtml || isGeneratingPdf) return;
+    setIsGeneratingPdf(true);
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+
+    try {
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow?.document;
+        if (!doc) throw new Error("Could not access iframe document.");
+
+        doc.open();
+        doc.write(generatedExercisesHtml);
+        doc.close();
+        
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        
+        await pdf.html(doc.documentElement, {
+            html2canvas: {
+                scale: 0.7,
+                logging: false,
+            },
+            margin: [40, 40, 40, 40],
+            autoPaging: 'text',
+            width: 515,
+            windowWidth: doc.documentElement.scrollWidth,
+        });
+        
+        pdf.save('exercices-brevet.pdf');
+
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+        alert("Une erreur est survenue lors de la création du PDF. Veuillez réessayer.");
+    } finally {
+        if (iframe.parentNode) {
+            document.body.removeChild(iframe);
+        }
+        setIsGeneratingPdf(false);
     }
   };
   
@@ -235,7 +268,7 @@ const App: React.FC = () => {
       case 'results':
         return <ResultsView score={score} totalQuestions={currentQuiz?.questions.length || 0} onRestart={handleRestart} quiz={currentQuiz} userAnswers={userAnswers} xpGained={xpGained} leveledUp={leveledUp} />;
       case 'exercisesView':
-        return generatedExercisesHtml ? <ExercisesView onDownloadPdf={() => printHtmlAsPdf(generatedExercisesHtml)} onBack={handleRestart} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
+        return generatedExercisesHtml ? <ExercisesView onDownloadPdf={handleDownloadPdf} onBack={handleRestart} isGeneratingPdf={isGeneratingPdf} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
       case 'chat': {
         const currentSession = chatSessions.find(s => s.id === currentChatSessionId);
         return currentSession ? <ChatView session={currentSession} onUpdateSession={updateChatSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
