@@ -1,10 +1,9 @@
-import type React from 'react';
-
-export type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login' | 'exercisesView';
+import React from 'react';
 
 export interface Subject {
   name: string;
-  icon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
+  // Fix: Specify that the icon can accept a className prop for styling via React.cloneElement.
+  icon: React.ReactElement<{ className?: string }>;
   color: string;
   bgColor: string;
 }
@@ -24,26 +23,20 @@ export interface Quiz {
 export interface ChatPart {
     text?: string;
     image?: {
-        data: string; // base64 encoded string
+        data: string; // base64
         mimeType: string;
     }
 }
 
 export interface ChatMessage {
-  role: 'user' | 'model';
-  parts: ChatPart[];
-  isGenerating?: boolean;
+    role: 'user' | 'model';
+    parts: ChatPart[];
+    isGenerating?: boolean;
 }
 
 export interface ChatSession {
     id: string;
     title: string;
-    messages: ChatMessage[];
     createdAt: number;
-}
-
-export interface UserProfile {
-    email: string;
-    level: number;
-    xp: number;
+    messages: ChatMessage[];
 }
