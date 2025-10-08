@@ -302,8 +302,13 @@ const App: React.FC = () => {
       if (['login'].includes(view)) return null;
       
       return (
-          <div className="absolute top-4 right-4 z-10">
-               <button onClick={() => setView('settings')} className="p-3 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-md backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 transition-colors">
+          <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+               <button onClick={() => currentUser ? setView('settings') : setView('login')} className="p-3 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-md backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 transition-colors" title="Compte">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+             </button>
+               <button onClick={() => setView('settings')} className="p-3 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-md backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 transition-colors" title="Paramètres">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                </button>
           </div>
@@ -311,12 +316,12 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-50 min-h-screen font-sans flex items-center justify-center p-4 sm:p-6 lg:p-8 relative">
-        <div className="w-full h-full max-h-[95vh] flex items-center justify-center">
-            <TopNav />
+    <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-50 min-h-screen font-sans flex flex-col p-4 sm:p-6 lg:p-8 relative">
+        <TopNav />
+        <main className="w-full flex-grow flex items-center justify-center">
             {renderView()}
-        </div>
-        <footer className="absolute bottom-4 left-0 right-0 text-center text-xs text-gray-500 dark:text-gray-400 z-0">
+        </main>
+        <footer className="w-full text-center text-xs text-gray-500 dark:text-gray-400 pt-8 shrink-0">
           26-1.1 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
         </footer>
     </div>
