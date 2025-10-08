@@ -292,9 +292,16 @@ const App: React.FC = () => {
         }
     };
 
+    const mainContainerClasses = `bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 w-full ${view === 'home' ? 'pb-12' : ''}`;
+
     return (
-        <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 w-full">
+        <div className={mainContainerClasses}>
            {renderView()}
+           {view === 'home' && (
+                <footer className="fixed bottom-0 left-0 w-full bg-gray-100 dark:bg-gray-900 p-2 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400">
+                    26-1.2 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+                </footer>
+           )}
         </div>
     );
 };
