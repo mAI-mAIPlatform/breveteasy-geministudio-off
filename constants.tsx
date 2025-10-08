@@ -36,11 +36,11 @@ export const SUBJECTS: Subject[] = [
     name: "SVT",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 14a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" />
-        <path d="M12 14v6" />
-        <path d="M9 17h6" />
-        <path d="M15.53 5.53l5-5" />
-        <path d="M20.5 0.5v5h-5" />
+        <circle cx="12" cy="9" r="5" />
+        <path d="M12 14v8" />
+        <path d="M9 19h6" />
+        <path d="M15.5 5.5L20 1" />
+        <path d="M20 5V1h-4" />
       </svg>
     ),
     color: "text-green-600",

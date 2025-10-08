@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { SUBJECTS } from '../constants';
 import type { Subject } from '../types';
@@ -7,7 +8,8 @@ const Header: React.FC = () => (
   <header className="text-center mb-12">
     <h1 className="text-5xl font-bold text-gray-800 dark:text-gray-100">Brevet' Easy</h1>
     <p className="text-xl text-gray-600 dark:text-gray-300 mt-2">
-      Révisez intelligemment avec <span className="font-semibold text-blue-600 dark:text-blue-400">Brevet AI</span>
+      {/* Fix: Removed stray closing span tag which was causing a JSX syntax error. */}
+      Révisez intelligemment avec Brevet AI
     </p>
   </header>
 );
