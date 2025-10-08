@@ -1,4 +1,7 @@
+// Fix: Provide the implementation for the main App component.
 import React, { useState, useEffect, useCallback } from 'react';
+import { jsPDF } from 'jspdf';
+import { marked } from 'marked';
 import { HomeView } from './components/HomeView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
 import { LoadingView } from './components/LoadingView';
@@ -9,299 +12,289 @@ import { ChatView } from './components/ChatView';
 import { HistoryView } from './components/HistoryView';
 import { SettingsView } from './components/SettingsView';
 import { LoginView } from './components/LoginView';
-import { generateQuiz, generateExercises } from './services/geminiService';
+import { ai, Type } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage } from './types';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 
-type View = 'home' | 'subjectOptions' | 'loadingQuiz' | 'loadingExercises' | 'quiz' | 'results' | 'exercises' | 'chat' | 'history' | 'settings' | 'login';
-type Theme = 'light' | 'dark' | 'system';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'exercises' | 'chat' | 'history' | 'settings' | 'login';
 
 const App: React.FC = () => {
-    // View and navigation state
+    // App State
     const [view, setView] = useState<View>('home');
-    const [historyStack, setHistoryStack] = useState<View[]>(['home']);
-    const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+    const [loadingTask, setLoadingTask] = useState<'quiz' | 'exercises'>('quiz');
+    const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+        const savedTheme = localStorage.getItem('theme');
+        return (savedTheme as any) || 'system';
+    });
 
-    // Quiz state
+    // User/Profile State
+    const [user, setUser] = useState<{email: string} | null>(null);
+    const [level, setLevel] = useState(1);
+    const [xp, setXp] = useState(0);
+    const [lastXpGained, setLastXpGained] = useState(0);
+    const [leveledUp, setLeveledUp] = useState(false);
+    
+    // Quiz State
+    const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
     const [quiz, setQuiz] = useState<Quiz | null>(null);
-    const [userAnswers, setUserAnswers] = useState<(string | null)[]>([]);
+    const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
     const [score, setScore] = useState(0);
 
-    // Exercises state
-    const [exercisesHtml, setExercisesHtml] = useState<string | null>(null);
+    // Exercises State
+    const [exercisesContent, setExercisesContent] = useState('');
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-    // Chat state
+    // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
-        try {
-            const savedSessions = localStorage.getItem('chatSessions');
-            return savedSessions ? JSON.parse(savedSessions) : [];
-        } catch (error) {
-            return [];
-        }
+        const savedSessions = localStorage.getItem('chatSessions');
+        return savedSessions ? JSON.parse(savedSessions) : [];
     });
-    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+    const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
 
-    // User profile state
-    const [user, setUser] = useState<{ email: string; xp: number; level: number } | null>(() => {
-        try {
-            const savedUser = localStorage.getItem('userProfile');
-            return savedUser ? JSON.parse(savedUser) : null;
-        } catch (error) {
-            return null;
-        }
-    });
-    const [xpGained, setXpGained] = useState(0);
-    const [leveledUp, setLeveledUp] = useState(false);
-
-    // Theme state
-    const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'system');
-
-    // Persist chat sessions and user profile to localStorage
+    // Theme Management Effect
     useEffect(() => {
+        localStorage.setItem('theme', theme);
+        if (theme === 'system') {
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.classList.toggle('dark', systemPrefersDark);
+        } else {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+        }
+    }, [theme]);
+
+    // Chat Session Persistence Effect
+     useEffect(() => {
         localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
     }, [chatSessions]);
 
-    useEffect(() => {
-        if (user) {
-            localStorage.setItem('userProfile', JSON.stringify(user));
+    // XP & Leveling Logic
+    const addXp = (amount: number) => {
+        const newXp = xp + amount;
+        const xpToNextLevel = level * 100;
+        setLastXpGained(amount);
+        if (newXp >= xpToNextLevel) {
+            setLevel(level + 1);
+            setXp(newXp - xpToNextLevel);
+            setLeveledUp(true);
         } else {
-            localStorage.removeItem('userProfile');
+            setXp(newXp);
+            setLeveledUp(false);
         }
-    }, [user]);
-
-    // Apply theme changes
-    useEffect(() => {
-        localStorage.setItem('theme', theme);
-        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [theme]);
-    
-    const navigate = (newView: View) => {
-        setView(newView);
-        setHistoryStack(prev => [...prev, newView]);
-    }
-
-    const goBack = () => {
-        const newStack = [...historyStack];
-        newStack.pop();
-        if (newStack.length > 0) {
-            setView(newStack[newStack.length - 1]);
-            setHistoryStack(newStack);
-        } else {
-            setView('home');
-            setHistoryStack(['home']);
-        }
-    }
-
-    const goHome = () => {
-        setView('home');
-        setHistoryStack(['home']);
-        setSelectedSubject(null);
-        setQuiz(null);
-        setExercisesHtml(null);
-        setUserAnswers([]);
-        setScore(0);
     };
 
-    const handleLogin = (email: string) => {
-        setUser({ email, xp: 0, level: 1 });
-        goBack(); // go back to wherever user was before login
-    }
-
+    // Navigation Handlers
     const handleSubjectSelect = (subject: Subject) => {
         setSelectedSubject(subject);
-        navigate('subjectOptions');
+        setView('subjectOptions');
     };
 
-    const handleStartQuiz = async (subjectName: string) => {
-        navigate('loadingQuiz');
-        const generatedQuiz = await generateQuiz(subjectName);
-        if (generatedQuiz) {
-            setQuiz(generatedQuiz);
-            setUserAnswers(Array(generatedQuiz.questions.length).fill(null));
-            navigate('quiz');
-        } else {
-            alert("Impossible de générer le quiz. Veuillez réessayer.");
-            goBack();
-        }
+    const handleBackToHome = () => {
+        setSelectedSubject(null);
+        setQuiz(null);
+        setQuizAnswers([]);
+        setScore(0);
+        setView('home');
     };
 
-    const handleGenerateExercises = async (subjectName: string) => {
-        navigate('loadingExercises');
-        const generatedHtml = await generateExercises(subjectName);
-        if (generatedHtml) {
-            setExercisesHtml(generatedHtml);
-            navigate('exercises');
-        } else {
-            alert("Impossible de générer les exercices. Veuillez réessayer.");
-            goBack();
+    // Quiz Flow Handlers
+    const handleGenerateQuiz = useCallback(async (customPrompt: string) => {
+        if (!selectedSubject) return;
+        setView('loading');
+        setLoadingTask('quiz');
+        
+        const quizSchema = {
+            type: Type.OBJECT,
+            properties: {
+                subject: { type: Type.STRING },
+                questions: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            questionText: { type: Type.STRING },
+                            options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            correctAnswer: { type: Type.STRING },
+                            explanation: { type: Type.STRING }
+                        },
+                        required: ['questionText', 'options', 'correctAnswer', 'explanation']
+                    }
+                }
+            },
+            required: ['subject', 'questions']
+        };
+
+        try {
+            let prompt = `Génère un quiz de 5 questions à choix multiples sur le sujet "${selectedSubject.name}" pour un élève de 3ème en France se préparant pour le Brevet. Chaque question doit avoir 4 options de réponse. Fournis une explication pour chaque bonne réponse. Assure-toi que la correctAnswer est l'une des chaînes de caractères dans options.`;
+            
+            if (customPrompt.trim()) {
+                prompt += `\n\nInstructions supplémentaires de l'utilisateur : focalise le quiz sur les points suivants : "${customPrompt.trim()}".`;
+            }
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: quizSchema,
+                },
+            });
+            
+            const quizData = JSON.parse(response.text);
+            setQuiz(quizData);
+            setView('quiz');
+        } catch (error) {
+            console.error("Failed to generate quiz:", error);
+            // TODO: Add user-facing error message
+            handleBackToHome();
         }
-    };
+    }, [selectedSubject]);
     
-    const handleSubmitQuiz = (answers: (string | null)[]) => {
+    const handleQuizSubmit = (answers: (string | null)[]) => {
         if (!quiz) return;
-        let correctAnswers = 0;
+        let newScore = 0;
         quiz.questions.forEach((q, index) => {
-            if (q.correctAnswer === answers[index]) {
-                correctAnswers++;
+            if (answers[index] === q.correctAnswer) {
+                newScore++;
             }
         });
-        const newScore = correctAnswers;
         setScore(newScore);
-        setUserAnswers(answers);
-        
-        // XP calculation
-        if (user) {
-            const gained = newScore * 10;
-            const newXp = user.xp + gained;
-            const xpForNextLevel = user.level * 100;
-            let newLevel = user.level;
-            let didLevelUp = false;
-            if (newXp >= xpForNextLevel) {
-                newLevel += 1;
-                didLevelUp = true;
-            }
-            setUser({ ...user, xp: newXp, level: newLevel });
-            setXpGained(gained);
-            setLeveledUp(didLevelUp);
-        }
-
-        navigate('results');
+        setQuizAnswers(answers);
+        addXp(newScore * 10);
+        setView('results');
     };
 
-    const handleDownloadPdf = () => {
-        if (!exercisesHtml) return;
-        setIsGeneratingPdf(true);
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        // Use a standard A4 ratio for sizing the content within the temp container
-        tempContainer.style.width = '210mm';
-        tempContainer.innerHTML = exercisesHtml;
-        document.body.appendChild(tempContainer);
+    // Exercises Flow Handlers
+    const handleGenerateExercises = useCallback(async (customPrompt: string) => {
+        if (!selectedSubject) return;
+        setView('loading');
+        setLoadingTask('exercises');
+        try {
+            let prompt = `Crée une fiche d'exercices sur le thème "${selectedSubject.name}" pour un élève de 3ème se préparant pour le Brevet. Inclus 3 à 5 exercices variés avec des énoncés clairs. Fournis un corrigé détaillé à la fin. Formate ta réponse en Markdown.`;
 
-        html2canvas(tempContainer, { scale: 2, useCORS: true }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
+            if (customPrompt.trim()) {
+                prompt += `\n\nInstructions supplémentaires de l'utilisateur : base les exercices sur les points suivants : "${customPrompt.trim()}".`;
+            }
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+            });
+            setExercisesContent(response.text);
+            setView('exercises');
+        } catch (error) {
+            console.error("Failed to generate exercises:", error);
+            handleBackToHome();
+        }
+    }, [selectedSubject]);
+
+    const handleDownloadPdf = async () => {
+        if (!exercisesContent || !selectedSubject) return;
+        setIsGeneratingPdf(true);
+        try {
             const pdf = new jsPDF({
-                orientation: 'portrait',
                 unit: 'pt',
                 format: 'a4'
             });
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const ratio = canvasHeight / canvasWidth;
-            let heightLeft = canvasHeight;
-            let position = 0;
             
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfWidth * ratio);
-            heightLeft -= pdfHeight * (canvasWidth / pdfWidth);
-
-            while (heightLeft > 0) {
-                position -= pdfHeight * (canvasWidth / pdfWidth);
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfWidth * ratio);
-                heightLeft -= pdfHeight * (canvasWidth / pdfWidth);
-            }
+            const htmlContent = await marked.parse(exercisesContent.replace(/```/g, ''));
             
-            pdf.save(`exercices-${selectedSubject?.name.toLowerCase().replace(/\s/g, '_')}.pdf`);
-            document.body.removeChild(tempContainer);
-            setIsGeneratingPdf(false);
-        }).catch(err => {
-            console.error("Error generating PDF", err);
-            document.body.removeChild(tempContainer);
-            setIsGeneratingPdf(false);
-            alert("Une erreur est survenue lors de la création du PDF.");
-        });
-    };
+            const margin = 20;
+            
+            // This is a simplified HTML to PDF conversion. More complex styling may require a different approach.
+            await pdf.html(
+                `<div style="font-family: Helvetica, sans-serif; font-size: 12px; line-height: 1.5; padding: 20px;">${htmlContent}</div>`,
+                {
+                    callback: function(doc) {
+                        doc.save(`exercices_${selectedSubject.name.toLowerCase().replace(/\s/g, '_')}.pdf`);
+                        setIsGeneratingPdf(false);
+                    },
+                    x: margin,
+                    y: margin,
+                    width: pdf.internal.pageSize.getWidth() - (margin * 2),
+                    windowWidth: 600,
+                }
+            );
 
-    const handleStartChat = () => {
-        const newSession: ChatSession = {
-            id: `session-${Date.now()}`,
-            title: "Nouvelle discussion",
-            createdAt: Date.now(),
-            messages: [],
-        };
-        setChatSessions(prev => [newSession, ...prev]);
-        setCurrentSessionId(newSession.id);
-        navigate('chat');
+        } catch(error) {
+            console.error("Error generating PDF", error);
+            setIsGeneratingPdf(false);
+        }
     };
     
-    const handleUpdateSession = useCallback((sessionId: string, messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[]), newTitle?: string) => {
+    // Chat Flow Handlers
+    const handleStartChat = () => {
+        const newSession: ChatSession = {
+            id: `chat_${Date.now()}`,
+            title: 'Nouvelle Discussion',
+            createdAt: Date.now(),
+            messages: []
+        };
+        setChatSessions(prev => [newSession, ...prev]);
+        setActiveChatSessionId(newSession.id);
+        setView('chat');
+    };
+    
+    const handleUpdateSession = useCallback((sessionId: string, messages: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]), newTitle?: string) => {
         setChatSessions(prevSessions =>
             prevSessions.map(session => {
                 if (session.id === sessionId) {
-                    const newMessages = typeof messages === 'function' ? messages(session.messages) : messages;
+                    const updatedMessages = typeof messages === 'function' ? messages(session.messages) : messages;
                     return {
                         ...session,
-                        title: newTitle || session.title,
-                        messages: newMessages,
+                        title: newTitle ?? session.title,
+                        messages: updatedMessages,
                     };
                 }
                 return session;
             })
         );
     }, []);
-
+    
     const handleDeleteChat = (sessionId: string) => {
         setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-        if (currentSessionId === sessionId) {
-            setCurrentSessionId(null);
-            navigate('home');
+        if (activeChatSessionId === sessionId) {
+            setActiveChatSessionId(null);
+            setView('home'); // or go to history view if it's open
         }
     };
     
     const handleSelectChat = (sessionId: string) => {
-        setCurrentSessionId(sessionId);
-        navigate('chat');
+        setActiveChatSessionId(sessionId);
+        setView('chat');
     };
 
+    // Render Logic
     const renderView = () => {
-        const currentSession = chatSessions.find(s => s.id === currentSessionId);
-
+        const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
+        
         switch (view) {
-            case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onStartQuiz={handleStartQuiz} onGenerateExercises={handleGenerateExercises} onBack={goBack} />;
-            case 'loadingQuiz':
-                return <LoadingView subject={selectedSubject?.name || ''} task="quiz" />;
-            case 'loadingExercises':
-                return <LoadingView subject={selectedSubject?.name || ''} task="exercises" />;
-            case 'quiz':
-                return quiz && <QuizView quiz={quiz} onSubmit={handleSubmitQuiz} />;
-            case 'results':
-                return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={goHome} quiz={quiz} userAnswers={userAnswers} xpGained={xpGained} leveledUp={leveledUp} />;
-            case 'exercises':
-                return <ExercisesView onDownloadPdf={handleDownloadPdf} onBack={goHome} isGeneratingPdf={isGeneratingPdf} />;
-            case 'chat':
-                return currentSession ? <ChatView session={currentSession} onUpdateSession={handleUpdateSession} onBack={goHome} onNavigateHistory={() => navigate('history')} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
-            case 'history':
-                return <HistoryView sessions={chatSessions} onSelectChat={handleSelectChat} onDeleteChat={handleDeleteChat} onBack={() => currentSessionId ? navigate('chat') : goHome()} />;
-            case 'settings':
-                return <SettingsView onBack={goBack} theme={theme} onThemeChange={setTheme} />;
-            case 'login':
-                return <LoginView onLogin={handleLogin} onBack={goBack} />;
             case 'home':
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
+            case 'subjectOptions':
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onBack={handleBackToHome} />;
+            case 'loading':
+                return selectedSubject && <LoadingView subject={selectedSubject.name} task={loadingTask} />;
+            case 'quiz':
+                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} />;
+            case 'results':
+                return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} xpGained={lastXpGained} leveledUp={leveledUp} />;
+            case 'exercises':
+                 return <ExercisesView onDownloadPdf={handleDownloadPdf} onBack={handleBackToHome} isGeneratingPdf={isGeneratingPdf} />;
+            case 'chat':
+                return activeSession ? <ChatView session={activeSession} onUpdateSession={handleUpdateSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
+            case 'history':
+                 return <HistoryView sessions={chatSessions} onSelectChat={handleSelectChat} onDeleteChat={handleDeleteChat} onBack={() => activeChatSessionId ? setView('chat') : setView('home')} />;
+            case 'settings':
+                return <SettingsView onBack={() => setView('home')} theme={theme} onThemeChange={setTheme} />;
+            case 'login':
+                return <LoginView onLogin={(email) => { setUser({email}); setView('home'); }} onBack={() => setView('home')} />;
             default:
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
         }
     };
 
     return (
-        <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans flex flex-col">
-            <main className="container mx-auto p-4 sm:p-6 lg:p-8 flex-grow flex items-center justify-center">
-                {renderView()}
-            </main>
-            {view === 'home' && (
-                <footer className="w-full text-center p-4 text-xs text-gray-500 dark:text-gray-400 shrink-0">
-                    26-1.1 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
-                </footer>
-            )}
+        <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 w-full">
+           {renderView()}
         </div>
     );
 };
