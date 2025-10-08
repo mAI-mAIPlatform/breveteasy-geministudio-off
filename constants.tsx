@@ -22,7 +22,24 @@ export const SUBJECTS: Subject[] = [
   },
    {
     name: "Anglais",
-    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="M2 12h20"/><path d="m3 3 18 18"/><path d="m21 3-18 18"/></svg>,
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 2.05a10 10 0 0 0-8.95 8.95" />
+            <path d="M21.95 11a10 10 0 0 0-8.95-8.95" />
+            <path d="M2.05 13a10 10 0 0 0 8.95 8.95" />
+            <path d="M13 21.95a10 10 0 0 0 8.95-8.95" />
+            <path d="m2.92 8.5 5.58-5.58" />
+            <path d="m4.34 11 6.66-6.66" />
+            <path d="m6.5 11 4.5-4.5" />
+            <path d="m15.5 2.92 5.58 5.58" />
+            <path d="m13 4.34 6.66 6.66" />
+            <path d="m13 6.5 4.5 4.5" />
+            <path d="m2.92 15.5 5.58 5.58" />
+            <path d="m4.34 13 6.66 6.66" />
+            <path d="m6.5 13 4.5 4.5" />
+            <path d="m15.5 21.08 5.58-5.58" />
+            <path d="m13 19.66 6.66-6.66" />
+            <path d="m13 17.5 4.5-4.5" />
+        </svg>,
     color: "text-purple-600",
     bgColor: "bg-purple-100",
   },
@@ -34,7 +51,7 @@ export const SUBJECTS: Subject[] = [
   },
   {
     name: "SVT",
-    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20h10"/><path d="M10 20v-6h4v6"/><path d="M12 14V9"/><path d="M12 9a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v0"/><path d="M12 9a2 2 0 0 0-2-2h0a2 2 0 0 0-2 2v0"/></svg>,
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20h10"/><path d="M12 20V4"/><path d="M12 4c-2.25 2.25-2.25 5-4 5"/><path d="M12 4c2.25 2.25 2.25 5 4 5"/></svg>,
     color: "text-green-600",
     bgColor: "bg-green-100",
   },
@@ -46,7 +63,7 @@ export const SUBJECTS: Subject[] = [
   },
   {
     name: "Technologie",
-    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>,
     color: "text-slate-600",
     bgColor: "bg-slate-100",
   },
