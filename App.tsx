@@ -89,7 +89,7 @@ const App: React.FC = () => {
     };
 
     // Quiz Flow Handlers
-    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number) => {
+    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask('quiz');
@@ -116,7 +116,7 @@ const App: React.FC = () => {
         };
 
         try {
-            let prompt = `Génère un quiz de ${count} questions à choix multiples sur le sujet "${selectedSubject.name}" pour un élève de 3ème en France se préparant pour le Brevet. Chaque question doit avoir 4 options de réponse. Fournis une explication pour chaque bonne réponse. Assure-toi que la correctAnswer est l'une des chaînes de caractères dans options.`;
+            let prompt = `Génère un quiz de ${count} questions à choix multiples sur le sujet "${selectedSubject.name}" avec un niveau de difficulté "${difficulty}" pour un élève de 3ème en France se préparant pour le Brevet. Chaque question doit avoir 4 options de réponse. Fournis une explication pour chaque bonne réponse. Assure-toi que la correctAnswer est l'une des chaînes de caractères dans options.`;
             
             if (customPrompt.trim()) {
                 prompt += `\n\nInstructions supplémentaires de l'utilisateur : focalise le quiz sur les points suivants : "${customPrompt.trim()}".`;
@@ -156,12 +156,12 @@ const App: React.FC = () => {
     };
 
     // Exercises Flow Handlers
-    const handleGenerateExercises = useCallback(async (customPrompt: string, count: number) => {
+    const handleGenerateExercises = useCallback(async (customPrompt: string, count: number, difficulty: string) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask('exercises');
         try {
-            let prompt = `Crée une fiche d'exercices complète et bien structurée sur le thème "${selectedSubject.name}" pour un élève de 3ème se préparant pour le Brevet. La réponse DOIT être un document HTML complet et autonome (self-contained).
+            let prompt = `Crée une fiche d'exercices complète et bien structurée sur le thème "${selectedSubject.name}" avec un niveau de difficulté "${difficulty}" pour un élève de 3ème se préparant pour le Brevet. La réponse DOIT être un document HTML complet et autonome (self-contained).
 - Inclus une balise <!DOCTYPE html>, <html>, <head>, et <body>.
 - Dans le <head>, inclus un <title> pertinent et un lien vers la police "Poppins" de Google Fonts.
 - Inclus aussi une balise <style> avec du CSS pour une présentation claire, professionnelle et lisible. Utilise la police 'Poppins', sans-serif. Style les titres (h1, h2, h3), les paragraphes, et crée des classes pour les sections d'exercices et les sections de corrigés. Le corrigé doit être clairement séparé et facile à identifier. Ajoute un style sobre pour le mode sombre (dark mode).

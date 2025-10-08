@@ -4,8 +4,8 @@ import type { Subject } from '../types';
 
 interface SubjectOptionsViewProps {
   subject: Subject;
-  onGenerateQuiz: (customPrompt: string, count: number) => void;
-  onGenerateExercises: (customPrompt: string, count: number) => void;
+  onGenerateQuiz: (customPrompt: string, count: number, difficulty: string) => void;
+  onGenerateExercises: (customPrompt: string, count: number, difficulty: string) => void;
   onBack: () => void;
 }
 
@@ -30,6 +30,7 @@ const OptionCard: React.FC<{ title: string; description: string; icon: React.Rea
 export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onBack }) => {
   const [customPrompt, setCustomPrompt] = useState('');
   const [itemCount, setItemCount] = useState<number>(5);
+  const [difficulty, setDifficulty] = useState<'Facile' | 'Moyen' | 'Difficile'>('Moyen');
   
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -58,7 +59,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Laissez vide pour un contenu général sur le sujet.</p>
         </div>
         
-        <div className="mb-8 px-4 sm:px-0">
+        <div className="mb-6 px-4 sm:px-0">
             <h3 className="block text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Nombre de questions / exercices</h3>
             <div className="flex space-x-2 rounded-lg bg-gray-100 dark:bg-gray-900 p-1">
                 {[5, 10, 15].map((count) => (
@@ -77,18 +78,37 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
             </div>
         </div>
 
+        <div className="mb-8 px-4 sm:px-0">
+            <h3 className="block text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Difficulté</h3>
+            <div className="flex space-x-2 rounded-lg bg-gray-100 dark:bg-gray-900 p-1">
+                {(['Facile', 'Moyen', 'Difficile'] as const).map((level) => (
+                    <button
+                        key={level}
+                        onClick={() => setDifficulty(level)}
+                        className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            difficulty === level
+                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow'
+                                : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
+                        }`}
+                    >
+                        {level}
+                    </button>
+                ))}
+            </div>
+        </div>
+
         <main className="space-y-6">
             <OptionCard
                 title="Générer un Quiz"
                 description={`Testez vos connaissances avec un quiz de ${itemCount} questions.`}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-                onClick={() => onGenerateQuiz(customPrompt, itemCount)}
+                onClick={() => onGenerateQuiz(customPrompt, itemCount, difficulty)}
             />
              <OptionCard
                 title="Générer des Exercices"
                 description={`Recevez une fiche de ${itemCount} exercices avec corrigés.`}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
-                onClick={() => onGenerateExercises(customPrompt, itemCount)}
+                onClick={() => onGenerateExercises(customPrompt, itemCount, difficulty)}
             />
         </main>
     </div>
