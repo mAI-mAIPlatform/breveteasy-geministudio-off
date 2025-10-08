@@ -80,3 +80,29 @@ export const generateQuiz = async (subject: string): Promise<Quiz | null> => {
         return null;
     }
 };
+
+export const generateExercises = async (subject: string): Promise<string | null> => {
+    try {
+        const prompt = `Génère 5 exercices variés de type Brevet des collèges en France sur le sujet : ${subject}.
+Pour chaque exercice, fournis un énoncé clair, des questions précises, et un corrigé détaillé.
+Le format de la réponse doit être en Markdown, bien structuré, avec des titres pour chaque exercice et pour les sections "Énoncé" et "Corrigé".
+Les exercices doivent couvrir des aspects importants du programme. Par exemple:
+- Pour le Français : analyse de texte, questions de grammaire, réécriture.
+- Pour les Mathématiques : résolution de problèmes, exercices d'algèbre, géométrie.
+- Pour l'Histoire-Géo-EMC : étude de document, question de connaissance, développement construit.
+- Pour les Sciences : analyse d'expérience, restitution de connaissances, application de formules.`;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                temperature: 0.6,
+            }
+        });
+
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error generating exercises for subject " + subject + ":", error);
+        return null;
+    }
+};

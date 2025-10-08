@@ -8,7 +8,7 @@ import { HistoryView } from './components/HistoryView';
 import { SettingsView } from './components/SettingsView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
 import { LoginView } from './components/LoginView';
-import { generateQuiz } from './services/geminiService';
+import { generateQuiz, generateExercises } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage, View, UserProfile } from './types';
 
 const ACTIVE_USER_EMAIL_KEY = 'brevet-easy-active-user-email';
@@ -78,6 +78,32 @@ const App: React.FC = () => {
       setView('quiz');
     } else {
       alert("Désolé, une erreur est survenue lors de la création du quiz. Veuillez réessayer.");
+      setView('home');
+    }
+  }, []);
+  
+  const downloadTextFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+  
+  const handleGenerateExercises = useCallback(async (subjectName: string) => {
+    setView('loading');
+    const exercises = await generateExercises(subjectName);
+    if (exercises) {
+      const filename = `exercices-brevet-${subjectName.toLowerCase().replace(/\s/g, '-')}.md`;
+      downloadTextFile(exercises, filename);
+      setView('home');
+    } else {
+      alert("Désolé, une erreur est survenue lors de la création des exercices. Veuillez réessayer.");
       setView('home');
     }
   }, []);
@@ -194,7 +220,7 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (view) {
       case 'subjectOptions':
-        return selectedSubject ? <SubjectOptionsView subject={selectedSubject} onStartQuiz={handleStartQuiz} onBack={handleRestart} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
+        return selectedSubject ? <SubjectOptionsView subject={selectedSubject} onStartQuiz={handleStartQuiz} onBack={handleRestart} onGenerateExercises={handleGenerateExercises} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
       case 'loading':
         return <LoadingView subject={selectedSubject?.name || ''} />;
       case 'quiz':
@@ -220,7 +246,7 @@ const App: React.FC = () => {
   const showHeaderNav = !['quiz', 'loading', 'login', 'subjectOptions', 'chat'].includes(view);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">
+    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen text-gray-900 dark:text-gray-100 font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">
       {showHeaderNav && (
          <nav className="w-full max-w-4xl flex justify-between items-center mb-8">
             <button onClick={() => setView('home')} className="text-2xl font-bold text-gray-800 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Brevet' Easy</button>
