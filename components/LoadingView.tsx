@@ -10,7 +10,7 @@ const LoadingSpinner: React.FC = () => (
 );
 
 const QUIZ_LOADING_MESSAGES = [
-  "Brevet AI prépare vos questions...",
+  "BrevetAI prépare vos questions...",
   "Recherche des notions clés...",
   "Formulation des options de réponse...",
   "Finalisation du quiz...",
@@ -18,7 +18,7 @@ const QUIZ_LOADING_MESSAGES = [
 ];
 
 const EXERCISES_LOADING_MESSAGES = [
-    "Brevet AI conçoit vos exercices...",
+    "BrevetAI conçoit vos exercices...",
     "Sélection des thèmes pertinents...",
     "Rédaction des énoncés et corrigés...",
     "Mise en page du document...",
@@ -29,8 +29,12 @@ const EXERCISES_LOADING_MESSAGES = [
 export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
   const MESSAGES = task === 'quiz' ? QUIZ_LOADING_MESSAGES : EXERCISES_LOADING_MESSAGES;
   const [messageIndex, setMessageIndex] = useState(0);
+  const [displayedMessage, setDisplayedMessage] = useState('');
   const [progress, setProgress] = useState(0);
   
+  const MESSAGE_CHANGE_INTERVAL = 2500; // ms between each full message
+  const WORD_APPEAR_INTERVAL = 200; // ms between each word
+
   // Effect for cycling through messages
   useEffect(() => {
     if (messageIndex >= MESSAGES.length - 1) {
@@ -38,14 +42,34 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
     }
     const messageInterval = setInterval(() => {
       setMessageIndex(prevIndex => prevIndex + 1);
-    }, 1500); 
+    }, MESSAGE_CHANGE_INTERVAL); 
 
     return () => clearInterval(messageInterval);
   }, [messageIndex, MESSAGES.length]);
 
+  // Effect for progressive word-by-word display
+  useEffect(() => {
+    const currentMessage = MESSAGES[messageIndex];
+    const words = currentMessage.split(' ');
+    let currentWordIndex = 0;
+    setDisplayedMessage(''); // Reset for the new message
+
+    const wordInterval = setInterval(() => {
+      if (currentWordIndex < words.length) {
+        setDisplayedMessage(prev => prev ? `${prev} ${words[currentWordIndex]}` : words[currentWordIndex]);
+        currentWordIndex++;
+      } else {
+        clearInterval(wordInterval);
+      }
+    }, WORD_APPEAR_INTERVAL);
+
+    return () => clearInterval(wordInterval);
+  }, [messageIndex, MESSAGES]);
+
+
   // Effect for smooth progress bar animation
   useEffect(() => {
-    const totalDuration = (MESSAGES.length - 1) * 1500; // Total time should align with messages
+    const totalDuration = (MESSAGES.length - 1) * MESSAGE_CHANGE_INTERVAL;
     const startTime = Date.now();
     
     const progressInterval = setInterval(() => {
@@ -56,13 +80,12 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
       if (calculatedProgress >= 99) {
         clearInterval(progressInterval);
       }
-    }, 50); // Update every 50ms for smoothness
+    }, 50);
 
     return () => clearInterval(progressInterval);
   }, [MESSAGES.length]);
 
 
-  const message = MESSAGES[messageIndex] || '...';
   const titleText = task === 'quiz' ? 'du quiz' : 'des exercices';
 
   return (
@@ -72,7 +95,7 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
       
       <div className="w-full max-w-md px-4">
           <div className="flex justify-between mb-1">
-              <span className="text-base font-medium text-blue-700 dark:text-blue-400 animate-pulse">{message}</span>
+              <span className="text-base font-medium text-blue-700 dark:text-blue-400 min-h-[24px]">{displayedMessage}</span>
               <span className="text-sm font-medium text-blue-700 dark:text-blue-400">{progress}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
