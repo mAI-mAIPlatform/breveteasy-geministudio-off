@@ -180,7 +180,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
         
         try {
             const chat = createChatInstance(session.messages);
-            // FIX: The `sendMessageStream` method expects a `message` property, not `parts`.
             const result = await chat.sendMessageStream({ message: userParts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' }) });
             
             let fullResponse = '';
@@ -240,7 +239,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
         const chat = createChatInstance(historyForRegen.slice(0, -1));
 
         try {
-            // FIX: The `sendMessageStream` method expects a `message` property, not `parts`.
             const result = await chat.sendMessageStream({ message: userPromptMessage.parts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' }) });
             let fullResponse = '';
             for await (const chunk of result) {

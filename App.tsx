@@ -9,6 +9,7 @@ import { HistoryView } from './components/HistoryView';
 import { SettingsView } from './components/SettingsView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
 import { LoginView } from './components/LoginView';
+import { ExercisesView } from './components/ExercisesView';
 import { generateQuiz, generateExercises } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage, View, UserProfile } from './types';
 
@@ -27,6 +28,7 @@ const App: React.FC = () => {
   const [xpGained, setXpGained] = useState(0);
   const [leveledUp, setLeveledUp] = useState(false);
   const [loadingTask, setLoadingTask] = useState<'quiz' | 'exercises'>('quiz');
+  const [generatedExercisesHtml, setGeneratedExercisesHtml] = useState<string | null>(null);
 
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentChatSessionId, setCurrentChatSessionId] = useState<string | null>(null);
@@ -105,8 +107,8 @@ const App: React.FC = () => {
     setLoadingTask('exercises');
     const exercises = await generateExercises(subjectName);
     if (exercises) {
-      printHtmlAsPdf(exercises);
-      setView('home');
+      setGeneratedExercisesHtml(exercises);
+      setView('exercisesView');
     } else {
       alert("Désolé, une erreur est survenue lors de la création des exercices. Veuillez réessayer.");
       setView('home');
@@ -159,6 +161,7 @@ const App: React.FC = () => {
     setScore(0);
     setXpGained(0);
     setLeveledUp(false);
+    setGeneratedExercisesHtml(null);
   };
   
   const handleStartNewChat = () => {
@@ -185,7 +188,6 @@ const App: React.FC = () => {
       }
   };
 
-  // FIX: Allow `messagesUpdater` to be a function to enable safe state updates from child components.
   const updateChatSession = (sessionId: string, messagesUpdater: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]), newTitle?: string) => {
       setChatSessions(prevSessions => {
           return prevSessions.map(session => {
@@ -232,6 +234,8 @@ const App: React.FC = () => {
         return currentQuiz ? <QuizView quiz={currentQuiz} onSubmit={handleQuizSubmit} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
       case 'results':
         return <ResultsView score={score} totalQuestions={currentQuiz?.questions.length || 0} onRestart={handleRestart} quiz={currentQuiz} userAnswers={userAnswers} xpGained={xpGained} leveledUp={leveledUp} />;
+      case 'exercisesView':
+        return generatedExercisesHtml ? <ExercisesView onDownloadPdf={() => printHtmlAsPdf(generatedExercisesHtml)} onBack={handleRestart} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
       case 'chat': {
         const currentSession = chatSessions.find(s => s.id === currentChatSessionId);
         return currentSession ? <ChatView session={currentSession} onUpdateSession={updateChatSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartNewChat} />;
@@ -248,7 +252,7 @@ const App: React.FC = () => {
     }
   };
 
-  const showHeaderNav = !['quiz', 'loading', 'login', 'subjectOptions', 'chat'].includes(view);
+  const showHeaderNav = !['quiz', 'loading', 'login', 'subjectOptions', 'chat', 'exercisesView'].includes(view);
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen text-gray-900 dark:text-gray-100 font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">

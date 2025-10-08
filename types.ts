@@ -1,6 +1,6 @@
 import type React from 'react';
 
-export type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login';
+export type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login' | 'exercisesView';
 
 export interface Subject {
   name: string;
