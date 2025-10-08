@@ -274,7 +274,7 @@ const App: React.FC = () => {
            {renderView()}
            {view === 'home' && (
                 <footer className="fixed bottom-0 left-0 w-full bg-gray-100 dark:bg-gray-900 p-2 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400">
-                    26-1.4 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+                    26-1.5 (Bêta) © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
                 </footer>
            )}
         </div>
