@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { Subject } from '../types';
 
@@ -16,7 +17,7 @@ const QuizIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" classNa
 export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onStartQuiz, onGenerateExercises, onBack }) => {
   return (
     <div className="w-full max-w-lg mx-auto text-center">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl">
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl dark:border dark:border-gray-700">
         <div className="flex flex-col items-center mb-6">
           <div className={`p-5 rounded-full ${subject.bgColor} ${subject.color} mb-4`}>
             {React.cloneElement(subject.icon, { className: "h-16 w-16" })}

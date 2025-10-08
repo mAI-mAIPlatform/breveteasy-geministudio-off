@@ -261,7 +261,7 @@ const App: React.FC = () => {
             <button onClick={() => setView('home')} className="text-2xl font-bold text-gray-800 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Brevet' Easy</button>
             <div className="flex items-center gap-4">
                 {currentUser ? (
-                    <div className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700/50 px-3 py-1.5 rounded-full">
+                    <div className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 px-3 py-1.5 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2a.75.75 0 01.686.445l1.833 3.718 4.1.596a.75.75 0 01.416 1.28l-2.966 2.89.7 4.084a.75.75 0 01-1.088.79L10 13.43l-3.65 1.918a.75.75 0 01-1.088-.79l.7-4.084-2.966-2.89a.75.75 0 01.416-1.28l4.1-.596L9.314 2.445A.75.75 0 0110 2z" clipRule="evenodd" /></svg>
                         <span className="font-bold text-sm text-gray-700 dark:text-gray-200">Niv. {currentUser.level}</span>
                     </div>

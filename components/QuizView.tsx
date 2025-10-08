@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { Quiz, Question } from '../types';
 
@@ -81,7 +82,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
         </div>
       </div>
 
-      <div className="bg-gray-50 dark:bg-gray-800/50 p-8 rounded-2xl shadow-inner flex-grow flex items-center justify-center">
+      <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-2xl shadow-inner flex-grow flex items-center justify-center">
         <QuestionDisplay
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}

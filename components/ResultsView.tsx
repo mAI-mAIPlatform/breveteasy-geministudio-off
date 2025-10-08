@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import type { Quiz } from '../types';
 
@@ -38,7 +39,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <div className="flex flex-col items-center justify-center text-center bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl mb-8">
+      <div className="flex flex-col items-center justify-center text-center bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl mb-8 dark:border dark:border-gray-700">
           <h2 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4">Résultats du Quiz</h2>
           
           <div className="relative my-6">
@@ -72,7 +73,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
           </div>
       </div>
 
-      <div ref={correctionRef} className="w-full mt-12 bg-gray-50 dark:bg-gray-900/70 p-6 sm:p-8 rounded-3xl shadow-inner border border-gray-200 dark:border-gray-700">
+      <div ref={correctionRef} className="w-full mt-12 bg-gray-50 dark:bg-gray-900 p-6 sm:p-8 rounded-3xl shadow-inner border border-gray-200 dark:border-gray-700">
             <h3 className="text-4xl font-extrabold text-gray-800 dark:text-gray-100 mb-8 text-center">Correction détaillée</h3>
             <div className="space-y-6">
                 {quiz?.questions.map((question, index) => {

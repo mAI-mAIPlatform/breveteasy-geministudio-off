@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { UserProfile } from '../types';
 
@@ -83,7 +84,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser,
             </section>
             <section>
                 <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Compte</h3>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md dark:border dark:border-gray-700">
                     {currentUser ? (
                         <div>
                             <div className="flex items-center justify-between mb-4">

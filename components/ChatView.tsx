@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatSession, ChatMessage, ChatPart } from '../types';
 import { ai } from '../services/geminiService';
@@ -54,7 +55,7 @@ const Message: React.FC<{
                 </div>
             )}
             
-            <div className={`max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl ${isModel ? 'bg-white dark:bg-gray-700' : 'bg-blue-600 text-white'}`}>
+            <div className={`max-w-xl lg:max-w-2xl px-5 py-3 rounded-2xl ${isModel ? 'bg-white dark:bg-gray-800' : 'bg-blue-600 text-white'}`}>
                 {message.isGenerating ? (
                     <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
@@ -263,7 +264,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto h-full flex flex-col bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-lg">
+        <div className="w-full max-w-4xl mx-auto h-full flex flex-col bg-gray-50 dark:bg-gray-900 rounded-2xl shadow-lg">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
             <div className="p-4 sm:p-6">
                 <ChatHeader title={session.title} onBack={onBack} onNavigateHistory={onNavigateHistory} />

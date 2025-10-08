@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface ExercisesViewProps {
@@ -11,7 +12,7 @@ const HomeIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" classNa
 export const ExercisesView: React.FC<ExercisesViewProps> = ({ onDownloadPdf, onBack }) => {
   return (
     <div className="w-full max-w-lg mx-auto text-center">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl">
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl dark:border dark:border-gray-700">
         <div className="flex flex-col items-center mb-8">
             <div className="p-5 rounded-full bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

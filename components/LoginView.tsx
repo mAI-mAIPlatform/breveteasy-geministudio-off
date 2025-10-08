@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 interface LoginViewProps {
@@ -18,7 +19,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl">
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl dark:border dark:border-gray-700">
         <button onClick={onBack} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
             {/* This is a placeholder, positioning might need adjustment in the main layout */}
         </button>

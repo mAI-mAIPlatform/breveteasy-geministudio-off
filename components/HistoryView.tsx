@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { ChatSession } from '../types';
 
@@ -23,7 +24,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ sessions, onSelectChat
         {sortedSessions.length > 0 ? (
             <ul className="space-y-4">
               {sortedSessions.map((session) => (
-                <li key={session.id} className="group flex items-center justify-between bg-white dark:bg-gray-700/50 p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+                <li key={session.id} className="group flex items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow dark:border dark:border-gray-700">
                   <button onClick={() => onSelectChat(session.id)} className="flex-grow text-left mr-4">
                     <p className="font-semibold text-gray-800 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">{session.title}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{new Date(session.createdAt).toLocaleString('fr-FR')}</p>
