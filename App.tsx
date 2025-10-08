@@ -89,7 +89,7 @@ const App: React.FC = () => {
     };
 
     // Quiz Flow Handlers
-    const handleGenerateQuiz = useCallback(async (customPrompt: string) => {
+    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask('quiz');
@@ -116,7 +116,7 @@ const App: React.FC = () => {
         };
 
         try {
-            let prompt = `Génère un quiz de 5 questions à choix multiples sur le sujet "${selectedSubject.name}" pour un élève de 3ème en France se préparant pour le Brevet. Chaque question doit avoir 4 options de réponse. Fournis une explication pour chaque bonne réponse. Assure-toi que la correctAnswer est l'une des chaînes de caractères dans options.`;
+            let prompt = `Génère un quiz de ${count} questions à choix multiples sur le sujet "${selectedSubject.name}" pour un élève de 3ème en France se préparant pour le Brevet. Chaque question doit avoir 4 options de réponse. Fournis une explication pour chaque bonne réponse. Assure-toi que la correctAnswer est l'une des chaînes de caractères dans options.`;
             
             if (customPrompt.trim()) {
                 prompt += `\n\nInstructions supplémentaires de l'utilisateur : focalise le quiz sur les points suivants : "${customPrompt.trim()}".`;
@@ -156,7 +156,7 @@ const App: React.FC = () => {
     };
 
     // Exercises Flow Handlers
-    const handleGenerateExercises = useCallback(async (customPrompt: string) => {
+    const handleGenerateExercises = useCallback(async (customPrompt: string, count: number) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask('exercises');
@@ -165,7 +165,7 @@ const App: React.FC = () => {
 - Inclus une balise <!DOCTYPE html>, <html>, <head>, et <body>.
 - Dans le <head>, inclus un <title> pertinent et un lien vers la police "Poppins" de Google Fonts.
 - Inclus aussi une balise <style> avec du CSS pour une présentation claire, professionnelle et lisible. Utilise la police 'Poppins', sans-serif. Style les titres (h1, h2, h3), les paragraphes, et crée des classes pour les sections d'exercices et les sections de corrigés. Le corrigé doit être clairement séparé et facile à identifier. Ajoute un style sobre pour le mode sombre (dark mode).
-- Le <body> doit contenir un titre principal (h1) et 3 à 5 exercices variés avec des énoncés clairs (utilise des h2 pour chaque exercice).
+- Le <body> doit contenir un titre principal (h1) et ${count} exercices variés avec des énoncés clairs (utilise des h2 pour chaque exercice).
 - Fournis un corrigé détaillé pour chaque exercice dans une section séparée à la fin du document (commençant par un h1 "Corrigé").
 - La structure doit être sémantique (utilise des balises comme <section>, <article>, etc.).`;
 

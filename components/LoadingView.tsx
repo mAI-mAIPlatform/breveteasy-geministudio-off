@@ -50,8 +50,9 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
   // Effect for progressive word-by-word display
   useEffect(() => {
     const currentMessage = MESSAGES[messageIndex];
-    // Prevent error if index is out of bounds or message is not a string
-    if (typeof currentMessage !== 'string') {
+    // Prevent error if index is out of bounds or message is falsy (undefined, '')
+    if (!currentMessage) {
+        setDisplayedMessage('');
         return;
     }
 
