@@ -28,24 +28,41 @@ const EXERCISES_LOADING_MESSAGES = [
 
 export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
   const MESSAGES = task === 'quiz' ? QUIZ_LOADING_MESSAGES : EXERCISES_LOADING_MESSAGES;
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [messageIndex, setMessageIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
   
+  // Effect for cycling through messages
   useEffect(() => {
-    // Stop the interval once we've reached the last message
-    if (currentIndex >= MESSAGES.length - 1) {
+    if (messageIndex >= MESSAGES.length - 1) {
       return;
     }
+    const messageInterval = setInterval(() => {
+      setMessageIndex(prevIndex => prevIndex + 1);
+    }, 1500); 
 
-    const intervalId = setInterval(() => {
-      setCurrentIndex(prevIndex => prevIndex + 1);
-    }, 1500); // Speed up the interval slightly for a better feel
+    return () => clearInterval(messageInterval);
+  }, [messageIndex, MESSAGES.length]);
 
-    return () => clearInterval(intervalId);
-  }, [currentIndex, MESSAGES.length]);
+  // Effect for smooth progress bar animation
+  useEffect(() => {
+    const totalDuration = (MESSAGES.length - 1) * 1500; // Total time should align with messages
+    const startTime = Date.now();
+    
+    const progressInterval = setInterval(() => {
+      const elapsedTime = Date.now() - startTime;
+      const calculatedProgress = Math.min(Math.round((elapsedTime / totalDuration) * 100), 99);
+      setProgress(calculatedProgress);
 
-  const progressPoints = [10, 30, 55, 80, 98];
-  const progress = progressPoints[currentIndex] || 0;
-  const message = MESSAGES[currentIndex] || '...';
+      if (calculatedProgress >= 99) {
+        clearInterval(progressInterval);
+      }
+    }, 50); // Update every 50ms for smoothness
+
+    return () => clearInterval(progressInterval);
+  }, [MESSAGES.length]);
+
+
+  const message = MESSAGES[messageIndex] || '...';
   const titleText = task === 'quiz' ? 'du quiz' : 'des exercices';
 
   return (
@@ -59,7 +76,7 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
               <span className="text-sm font-medium text-blue-700 dark:text-blue-400">{progress}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-              <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-1000 ease-out" style={{width: `${progress}%`}}></div>
+              <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-150 ease-linear" style={{width: `${progress}%`}}></div>
           </div>
       </div>
     </div>

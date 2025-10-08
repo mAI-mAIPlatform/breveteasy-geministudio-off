@@ -1,4 +1,5 @@
 
+
 import React, { useRef } from 'react';
 import type { Quiz } from '../types';
 
@@ -56,14 +57,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
           <p className={`text-2xl font-semibold ${feedback.color}`}>{feedback.message}</p>
           <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">Cela correspond à {percentage}% de bonnes réponses.</p>
           
-          {xpGained > 0 && (
-            <div className="my-6 p-4 bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700/50 rounded-lg text-yellow-800 dark:text-yellow-300 animate-fade-in-up">
-              <p className="font-bold text-lg">+{xpGained} XP</p>
-              {leveledUp && <p className="font-bold text-green-600 dark:text-green-400 text-xl mt-1">Niveau Supérieur !</p>}
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4 mt-8">
             <button onClick={onRestart} className="px-8 py-4 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 transform hover:scale-105 transition-all w-full sm:w-auto">
                 Accueil
             </button>

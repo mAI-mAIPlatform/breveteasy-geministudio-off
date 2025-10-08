@@ -22,24 +22,7 @@ export const SUBJECTS: Subject[] = [
   },
    {
     name: "Anglais",
-    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 2.05a10 10 0 0 0-8.95 8.95" />
-            <path d="M21.95 11a10 10 0 0 0-8.95-8.95" />
-            <path d="M2.05 13a10 10 0 0 0 8.95 8.95" />
-            <path d="M13 21.95a10 10 0 0 0 8.95-8.95" />
-            <path d="m2.92 8.5 5.58-5.58" />
-            <path d="m4.34 11 6.66-6.66" />
-            <path d="m6.5 11 4.5-4.5" />
-            <path d="m15.5 2.92 5.58 5.58" />
-            <path d="m13 4.34 6.66 6.66" />
-            <path d="m13 6.5 4.5 4.5" />
-            <path d="m2.92 15.5 5.58 5.58" />
-            <path d="m4.34 13 6.66 6.66" />
-            <path d="m6.5 13 4.5 4.5" />
-            <path d="m15.5 21.08 5.58-5.58" />
-            <path d="m13 19.66 6.66-6.66" />
-            <path d="m13 17.5 4.5-4.5" />
-        </svg>,
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>,
     color: "text-purple-600",
     bgColor: "bg-purple-100",
   },
@@ -51,7 +34,15 @@ export const SUBJECTS: Subject[] = [
   },
   {
     name: "SVT",
-    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20h10"/><path d="M12 20V4"/><path d="M12 4c-2.25 2.25-2.25 5-4 5"/><path d="M12 4c2.25 2.25 2.25 5 4 5"/></svg>,
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 14a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" />
+        <path d="M12 14v6" />
+        <path d="M9 17h6" />
+        <path d="M15.53 5.53l5-5" />
+        <path d="M20.5 0.5v5h-5" />
+      </svg>
+    ),
     color: "text-green-600",
     bgColor: "bg-green-100",
   },

@@ -1,13 +1,10 @@
 // Fix: Provide the implementation for the main App component.
 import React, { useState, useEffect, useCallback } from 'react';
-import { jsPDF } from 'jspdf';
-import { marked } from 'marked';
 import { HomeView } from './components/HomeView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
 import { LoadingView } from './components/LoadingView';
 import { QuizView } from './components/QuizView';
 import { ResultsView } from './components/ResultsView';
-import { ExercisesView } from './components/ExercisesView';
 import { ChatView } from './components/ChatView';
 import { HistoryView } from './components/HistoryView';
 import { SettingsView } from './components/SettingsView';
@@ -15,7 +12,7 @@ import { LoginView } from './components/LoginView';
 import { ai, Type } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage } from './types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'exercises' | 'chat' | 'history' | 'settings' | 'login';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login';
 
 const App: React.FC = () => {
     // App State
@@ -38,10 +35,6 @@ const App: React.FC = () => {
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
     const [score, setScore] = useState(0);
-
-    // Exercises State
-    const [exercisesContent, setExercisesContent] = useState('');
-    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
     // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
@@ -143,7 +136,7 @@ const App: React.FC = () => {
             setView('quiz');
         } catch (error) {
             console.error("Failed to generate quiz:", error);
-            // TODO: Add user-facing error message
+            alert("Désolé, une erreur est survenue lors de la génération du quiz. Veuillez réessayer.");
             handleBackToHome();
         }
     }, [selectedSubject]);
@@ -168,7 +161,13 @@ const App: React.FC = () => {
         setView('loading');
         setLoadingTask('exercises');
         try {
-            let prompt = `Crée une fiche d'exercices sur le thème "${selectedSubject.name}" pour un élève de 3ème se préparant pour le Brevet. Inclus 3 à 5 exercices variés avec des énoncés clairs. Fournis un corrigé détaillé à la fin. Formate ta réponse en Markdown.`;
+            let prompt = `Crée une fiche d'exercices complète et bien structurée sur le thème "${selectedSubject.name}" pour un élève de 3ème se préparant pour le Brevet. La réponse DOIT être un document HTML complet et autonome (self-contained).
+- Inclus une balise <!DOCTYPE html>, <html>, <head>, et <body>.
+- Dans le <head>, inclus un <title> pertinent et un lien vers la police "Poppins" de Google Fonts.
+- Inclus aussi une balise <style> avec du CSS pour une présentation claire, professionnelle et lisible. Utilise la police 'Poppins', sans-serif. Style les titres (h1, h2, h3), les paragraphes, et crée des classes pour les sections d'exercices et les sections de corrigés. Le corrigé doit être clairement séparé et facile à identifier. Ajoute un style sobre pour le mode sombre (dark mode).
+- Le <body> doit contenir un titre principal (h1) et 3 à 5 exercices variés avec des énoncés clairs (utilise des h2 pour chaque exercice).
+- Fournis un corrigé détaillé pour chaque exercice dans une section séparée à la fin du document (commençant par un h1 "Corrigé").
+- La structure doit être sémantique (utilise des balises comme <section>, <article>, etc.).`;
 
             if (customPrompt.trim()) {
                 prompt += `\n\nInstructions supplémentaires de l'utilisateur : base les exercices sur les points suivants : "${customPrompt.trim()}".`;
@@ -178,48 +177,26 @@ const App: React.FC = () => {
                 model: 'gemini-2.5-flash',
                 contents: prompt,
             });
-            setExercisesContent(response.text);
-            setView('exercises');
+
+            const generatedHtml = response.text;
+            if (!generatedHtml || !generatedHtml.toLowerCase().includes('</html>')) {
+                throw new Error("Le contenu généré n'est pas un document HTML valide.");
+            }
+            
+            const blob = new Blob([generatedHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            URL.revokeObjectURL(url); 
+
+            handleBackToHome();
+
         } catch (error) {
             console.error("Failed to generate exercises:", error);
+            alert("Désolé, une erreur est survenue lors de la génération des exercices. Veuillez réessayer.");
             handleBackToHome();
         }
     }, [selectedSubject]);
 
-    const handleDownloadPdf = async () => {
-        if (!exercisesContent || !selectedSubject) return;
-        setIsGeneratingPdf(true);
-        try {
-            const pdf = new jsPDF({
-                unit: 'pt',
-                format: 'a4'
-            });
-            
-            const htmlContent = await marked.parse(exercisesContent.replace(/```/g, ''));
-            
-            const margin = 20;
-            
-            // This is a simplified HTML to PDF conversion. More complex styling may require a different approach.
-            await pdf.html(
-                `<div style="font-family: Helvetica, sans-serif; font-size: 12px; line-height: 1.5; padding: 20px;">${htmlContent}</div>`,
-                {
-                    callback: function(doc) {
-                        doc.save(`exercices_${selectedSubject.name.toLowerCase().replace(/\s/g, '_')}.pdf`);
-                        setIsGeneratingPdf(false);
-                    },
-                    x: margin,
-                    y: margin,
-                    width: pdf.internal.pageSize.getWidth() - (margin * 2),
-                    windowWidth: 600,
-                }
-            );
-
-        } catch(error) {
-            console.error("Error generating PDF", error);
-            setIsGeneratingPdf(false);
-        }
-    };
-    
     // Chat Flow Handlers
     const handleStartChat = () => {
         const newSession: ChatSession = {
@@ -277,8 +254,6 @@ const App: React.FC = () => {
                 return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} />;
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} xpGained={lastXpGained} leveledUp={leveledUp} />;
-            case 'exercises':
-                 return <ExercisesView onDownloadPdf={handleDownloadPdf} onBack={handleBackToHome} isGeneratingPdf={isGeneratingPdf} />;
             case 'chat':
                 return activeSession ? <ChatView session={activeSession} onUpdateSession={handleUpdateSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
             case 'history':

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatSession, ChatMessage, ChatPart } from '../types';
 import { ai } from '../services/geminiService';
@@ -45,7 +46,7 @@ const Message: React.FC<{
     return (
         <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'justify-end'}`}>
             {!isModel && (
-                <div className={`flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isLastMessage ? 'opacity-100' : ''}`}>
+                <div className="flex items-center self-center">
                     <button onClick={() => onEdit(index)} title="Modifier" className={actionButtonClass}>
                         <EditIcon className="h-4 w-4" />
                     </button>
@@ -78,7 +79,7 @@ const Message: React.FC<{
             </div>
 
             {isModel && !message.isGenerating && (
-                 <div className={`flex items-center self-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isLastMessage ? 'opacity-100' : ''}`}>
+                 <div className="flex items-center self-center">
                     <button onClick={() => onCopy(message.parts, index)} title="Copier" className={actionButtonClass}>
                         {copiedIndex === index ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
                     </button>
