@@ -1,5 +1,5 @@
 // Fix: Provide the implementation for the SubjectOptionsView component.
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Subject } from '../types';
 
 interface SubjectOptionsViewProps {
@@ -26,6 +26,85 @@ const OptionCard: React.FC<{ title: string; description: string; icon: React.Rea
     </button>
 );
 
+// New StyledDropdown component
+interface StyledDropdownProps<T extends string | number> {
+    label: string;
+    options: readonly T[];
+    value: T;
+    onChange: (value: T) => void;
+    renderOption?: (option: T) => React.ReactNode;
+}
+
+const StyledDropdown = <T extends string | number>({ label, options, value, onChange, renderOption }: StyledDropdownProps<T>) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const handleToggle = () => setIsOpen(!isOpen);
+
+    const handleSelect = (option: T) => {
+        onChange(option);
+        setIsOpen(false);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div>
+            <label className="block text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">{label}</label>
+            <div className="relative" ref={dropdownRef}>
+                <button
+                    type="button"
+                    onClick={handleToggle}
+                    className="relative w-full cursor-pointer rounded-lg bg-white dark:bg-gray-700 py-3 pl-4 pr-10 text-left shadow-sm border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    aria-haspopup="listbox"
+                    aria-expanded={isOpen}
+                >
+                    <span className="block truncate">{renderOption ? renderOption(value) : value}</span>
+                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                        <svg className={`h-5 w-5 text-gray-400 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                    </span>
+                </button>
+                {isOpen && (
+                    <ul
+                        className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none"
+                        tabIndex={-1}
+                        role="listbox"
+                    >
+                        {options.map((option) => (
+                            <li
+                                key={String(option)}
+                                onClick={() => handleSelect(option)}
+                                className={`cursor-pointer select-none relative py-2 pl-4 pr-10 text-gray-900 dark:text-gray-100 hover:bg-blue-50 dark:hover:bg-gray-700`}
+                                role="option"
+                                aria-selected={value === option}
+                            >
+                                <span className={`block truncate ${value === option ? 'font-semibold' : 'font-normal'}`}>{renderOption ? renderOption(option) : option}</span>
+                                {value === option && (
+                                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-blue-600 dark:text-blue-400">
+                                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </span>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onBack }) => {
   const [customPrompt, setCustomPrompt] = useState('');
@@ -34,6 +113,8 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   const [level, setLevel] = useState<string>('Brevet');
 
   const LEVELS = ['CM2', '6ème', '5ème', '4ème', '3ème', 'Brevet'];
+  const ITEM_COUNTS = [5, 10, 15];
+  const DIFFICULTIES = ['Facile', 'Moyen', 'Difficile'] as const;
   
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -62,61 +143,26 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Laissez vide pour un contenu général sur le sujet.</p>
         </div>
         
-        <div className="mb-6 px-4 sm:px-0">
-            <h3 className="block text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Nombre de questions / exercices</h3>
-            <div className="flex space-x-2 rounded-lg bg-gray-100 dark:bg-gray-900 p-1">
-                {[5, 10, 15].map((count) => (
-                    <button
-                        key={count}
-                        onClick={() => setItemCount(count)}
-                        className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            itemCount === count
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow'
-                                : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
-                        }`}
-                    >
-                        {count}
-                    </button>
-                ))}
-            </div>
-        </div>
-
-        <div className="mb-6 px-4 sm:px-0">
-            <h3 className="block text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Niveau</h3>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 rounded-lg bg-gray-100 dark:bg-gray-900 p-1">
-                {LEVELS.map((lvl) => (
-                    <button
-                        key={lvl}
-                        onClick={() => setLevel(lvl)}
-                        className={`w-full px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                            level === lvl
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow'
-                                : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
-                        }`}
-                    >
-                        {lvl}
-                    </button>
-                ))}
-            </div>
-        </div>
-
-        <div className="mb-8 px-4 sm:px-0">
-            <h3 className="block text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Difficulté</h3>
-            <div className="flex space-x-2 rounded-lg bg-gray-100 dark:bg-gray-900 p-1">
-                {(['Facile', 'Moyen', 'Difficile'] as const).map((level) => (
-                    <button
-                        key={level}
-                        onClick={() => setDifficulty(level)}
-                        className={`w-full px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                            difficulty === level
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow'
-                                : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
-                        }`}
-                    >
-                        {level}
-                    </button>
-                ))}
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 px-4 sm:px-0">
+            <StyledDropdown<number>
+                label="Nombre"
+                options={ITEM_COUNTS}
+                value={itemCount}
+                onChange={setItemCount}
+                renderOption={(option) => `${option} questions`}
+            />
+            <StyledDropdown<string>
+                label="Niveau"
+                options={LEVELS}
+                value={level}
+                onChange={setLevel}
+            />
+            <StyledDropdown<'Facile' | 'Moyen' | 'Difficile'>
+                label="Difficulté"
+                options={DIFFICULTIES}
+                value={difficulty}
+                onChange={setDifficulty}
+            />
         </div>
 
         <main className="space-y-6">
