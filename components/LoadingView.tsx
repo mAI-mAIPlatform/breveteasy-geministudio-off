@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 interface LoadingViewProps {
   subject: string;
@@ -9,31 +9,47 @@ const LoadingSpinner: React.FC = () => (
   <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin border-t-transparent"></div>
 );
 
-const QUIZ_LOADING_MESSAGES = [
-  "BrevetAI prépare vos questions...",
-  "Recherche des notions clés...",
-  "Formulation des options de réponse...",
-  "Finalisation du quiz...",
-  "Le quiz est prêt !"
-];
+// This function now expects a valid subject string and capitalizes the messages.
+const generateLoadingMessages = (subject: string, task: 'quiz' | 'exercises'): string[] => {
+    // Helper to capitalize the first letter of a string.
+    const capitalize = (s: string): string => {
+        if (!s) return '';
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    };
 
-const EXERCISES_LOADING_MESSAGES = [
-    "BrevetAI conçoit vos exercices...",
-    "Sélection des thèmes pertinents...",
-    "Rédaction des énoncés et corrigés...",
-    "Mise en page du document...",
-    "Le document est presque prêt..."
-];
+    const quizMessages = [
+        `Analyse du programme de ${subject} pour le Brevet...`,
+        `Identification des concepts clés en ${subject}...`,
+        `Création de questions pertinentes sur le sujet...`
+    ];
+    
+    const exerciseMessages = [
+        `Recherche de thèmes d'exercices pour ${subject}...`,
+        `Rédaction d'énoncés clairs et précis en ${subject}...`,
+        `Préparation des corrigés détaillés pour chaque exercice...`,
+        `Mise en page de votre fiche d'exercices...`,
+        `Votre document de ${subject} est presque prêt !`
+    ];
+    
+    const messages = task === 'quiz' ? quizMessages : exerciseMessages;
+    
+    return messages.map(capitalize);
+};
 
 
 export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
-  const MESSAGES = task === 'quiz' ? QUIZ_LOADING_MESSAGES : EXERCISES_LOADING_MESSAGES;
+  // Define a safe subject name to prevent 'undefined' from appearing anywhere.
+  const safeSubject = subject || 'ce sujet';
+  
+  // Use useMemo to generate messages only when subject or task change
+  const MESSAGES = useMemo(() => generateLoadingMessages(safeSubject, task), [safeSubject, task]);
+  
   const [messageIndex, setMessageIndex] = useState(0);
   const [displayedMessage, setDisplayedMessage] = useState('');
   const [progress, setProgress] = useState(0);
   
   const MESSAGE_CHANGE_INTERVAL = 2500; // ms between each full message
-  const WORD_APPEAR_INTERVAL = 200; // ms between each word
+  const WORD_APPEAR_INTERVAL = 100; // ms between each word
 
   // Effect for cycling through messages
   useEffect(() => {
@@ -41,7 +57,7 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
       return;
     }
     const messageInterval = setInterval(() => {
-      setMessageIndex(prevIndex => prevIndex + 1);
+      setMessageIndex(prevIndex => Math.min(prevIndex + 1, MESSAGES.length - 1));
     }, MESSAGE_CHANGE_INTERVAL); 
 
     return () => clearInterval(messageInterval);
@@ -50,7 +66,6 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
   // Effect for progressive word-by-word display
   useEffect(() => {
     const currentMessage = MESSAGES[messageIndex];
-    // Prevent error if index is out of bounds or message is falsy (undefined, '')
     if (!currentMessage) {
         setDisplayedMessage('');
         return;
@@ -75,7 +90,7 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
 
   // Effect for smooth progress bar animation
   useEffect(() => {
-    const totalDuration = (MESSAGES.length - 1) * MESSAGE_CHANGE_INTERVAL;
+    const totalDuration = (MESSAGES.length) * MESSAGE_CHANGE_INTERVAL;
     const startTime = Date.now();
     
     const progressInterval = setInterval(() => {
@@ -86,10 +101,10 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
       if (calculatedProgress >= 99) {
         clearInterval(progressInterval);
       }
-    }, 50);
+    }, 100);
 
     return () => clearInterval(progressInterval);
-  }, [MESSAGES.length]);
+  }, [MESSAGES.length, MESSAGE_CHANGE_INTERVAL]);
 
 
   const titleText = task === 'quiz' ? 'du quiz' : 'des exercices';
@@ -97,11 +112,11 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
   return (
     <div className="flex flex-col items-center justify-center text-center h-full space-y-8 w-full">
       <LoadingSpinner />
-      <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Génération {titleText} de <span className="text-blue-600 dark:text-blue-400">{subject}</span></h2>
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Génération {titleText} de <span className="text-blue-600 dark:text-blue-400">{safeSubject}</span></h2>
       
       <div className="w-full max-w-md px-4">
-          <div className="flex justify-between mb-1">
-              <span className="text-base font-medium text-blue-700 dark:text-blue-400 min-h-[24px]">{displayedMessage}</span>
+          <div className="flex justify-between items-end mb-1">
+              <span className="text-base font-medium text-blue-700 dark:text-blue-400 text-left min-h-[48px] sm:min-h-[24px] flex items-center">{displayedMessage}</span>
               <span className="text-sm font-medium text-blue-700 dark:text-blue-400">{progress}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
