@@ -21,13 +21,13 @@
     <style>
       body {
         font-family: 'Poppins', sans-serif;
-        background-color: #f0f2f5; /* light mode fallback */
-        color: #1a1a2e;
+        background-color: #f0f2f5; /* light mode */
+        color: #1e293b; /* slate-800 */
         overflow: hidden; /* Hide scrollbars from the animation */
       }
       .dark body {
-        background-color: #0c0a09; /* almost black */
-        color: #e5e7eb; /* gray-200 */
+        background-color: #020617; /* slate-950 */
+        color: #e2e8f0; /* slate-200 */
       }
       .background-container {
         position: fixed;
@@ -63,7 +63,7 @@
       }
       html.dark .background-container::before, html.dark .background-container::after {
         mix-blend-mode: screen;
-        opacity: 0.2;
+        opacity: 0.15;
       }
       @keyframes move {
         from {
@@ -89,13 +89,13 @@
         background: transparent;
       }
       #root::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 255, 255, 0.2);
+        background-color: rgba(0, 0, 0, 0.2);
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.3);
       }
       .dark #root::-webkit-scrollbar-thumb {
-        background-color: rgba(0, 0, 0, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
       }
     </style>
   <script type="importmap">

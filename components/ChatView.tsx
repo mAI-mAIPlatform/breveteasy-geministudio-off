@@ -18,12 +18,12 @@ const EditIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns
 const RegenerateIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M6.166 9.348L3 12.529m0 0l3.181-3.182m0 0-3.181 3.182" /></svg>;
 
 const ChatHeader: React.FC<{ title: string; onBack: () => void; onNavigateHistory: () => void; }> = ({ title, onBack, onNavigateHistory }) => (
-    <header className="flex items-center justify-between pb-4 border-b border-white/20">
-        <button onClick={onBack} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+    <header className="flex items-center justify-between pb-4 border-b border-white/20 dark:border-slate-800">
+        <button onClick={onBack} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
         </button>
         <h2 className="text-xl font-bold text-center truncate px-4">{title}</h2>
-        <button onClick={onNavigateHistory} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+        <button onClick={onNavigateHistory} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
         </button>
     </header>
@@ -40,7 +40,7 @@ const Message: React.FC<{
 }> = ({ message, index, isLastMessage, copiedIndex, onCopy, onRegenerate, onEdit }) => {
     const isModel = message.role === 'model';
 
-    const actionButtonClass = "p-1.5 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-600/50 transition-colors opacity-0 group-hover:opacity-100";
+    const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors opacity-0 group-hover:opacity-100";
 
     return (
         <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'justify-end'}`}>
@@ -55,12 +55,12 @@ const Message: React.FC<{
                 </div>
             )}
             
-            <div className={`max-w-xl lg:max-w-2xl px-5 py-3 shadow-md ${isModel ? 'bg-white/30 dark:bg-black/30 backdrop-blur-lg border border-white/20 dark:border-white/10 rounded-t-2xl rounded-br-2xl' : 'bg-indigo-500/80 backdrop-blur-md text-white rounded-t-2xl rounded-bl-2xl'}`}>
+            <div className={`max-w-xl lg:max-w-2xl px-5 py-3 shadow-md ${isModel ? 'bg-white/30 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-t-2xl rounded-br-2xl' : 'bg-indigo-500/80 backdrop-blur-md text-white rounded-t-2xl rounded-bl-2xl'}`}>
                 {message.isGenerating ? (
                     <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.2s]"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:0.4s]"></div>
                     </div>
                 ) : (
                     <div className="space-y-2">
@@ -103,7 +103,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    const isChatLimitReached = subscriptionPlan === 'free' && session.messages.length >= 10;
+    const messageLimit = subscriptionPlan === 'free' ? 15 : subscriptionPlan === 'pro' ? 100 : Infinity;
+    const isChatLimitReached = session.messages.length >= messageLimit;
 
     useEffect(scrollToBottom, [session.messages]);
 
@@ -273,7 +274,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto h-full flex flex-col bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl shadow-lg">
+        <div className="w-full max-w-4xl mx-auto h-full flex flex-col bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
             <div className="p-4 sm:p-6">
                 <ChatHeader title={session.title} onBack={onBack} onNavigateHistory={onNavigateHistory} />
@@ -282,11 +283,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
             <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">
                 {session.messages.length === 0 && !attachment && (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="bg-white/20 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10 p-5 rounded-full mb-4">
+                        <div className="bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/20 dark:border-slate-700 p-5 rounded-full mb-4">
                             <svg className="w-12 h-12 text-indigo-500 dark:text-sky-300" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-200">BrevetAI</h2>
-                        <p className="text-gray-700 dark:text-gray-400">Comment puis-je vous aider à réviser ?</p>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">BrevetAI</h2>
+                        <p className="text-slate-700 dark:text-slate-400">Comment puis-je vous aider à réviser ?</p>
                     </div>
                 )}
                 {session.messages.map((msg, index) => (
@@ -303,13 +304,13 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                 ))}
                  {isChatLimitReached && (
                     <div className="text-center p-4 bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border border-yellow-500/30 rounded-xl">
-                        Vous avez atteint la limite de messages pour cette conversation. Passez à un forfait supérieur pour continuer.
+                        Vous avez atteint la limite de {messageLimit} messages pour cette conversation. Passez à un forfait supérieur pour continuer.
                     </div>
                 )}
                 <div ref={messagesEndRef} />
             </main>
 
-            <footer className="p-4 sm:p-6 border-t border-white/20 space-y-2">
+            <footer className="p-4 sm:p-6 border-t border-white/20 dark:border-slate-800 space-y-2">
                 {attachment && (
                     <div className="relative w-24 h-24 p-1 border-2 border-indigo-400 rounded-lg bg-black/10">
                         <img src={attachment.previewUrl} alt="Preview" className="w-full h-full object-cover rounded" />
@@ -318,8 +319,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                         </button>
                     </div>
                 )}
-                <div className="flex items-center bg-white/20 dark:bg-black/20 backdrop-blur-lg rounded-full p-1 shadow-inner pr-2 border border-white/20 dark:border-white/10">
-                    <button onClick={() => fileInputRef.current?.click()} disabled={isChatLimitReached} className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <div className="flex items-center bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-full p-1 shadow-inner pr-2 border border-white/20 dark:border-slate-700">
+                    <button onClick={() => fileInputRef.current?.click()} disabled={isChatLimitReached} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                     </button>
                     <textarea
@@ -332,11 +333,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                             }
                         }}
                         placeholder={isChatLimitReached ? "Limite de messages atteinte." : "Poser une question à BrevetAI..."}
-                        className="flex-grow bg-transparent p-2 text-gray-900 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none resize-none leading-tight"
+                        className="flex-grow bg-transparent p-2 text-slate-900 dark:text-slate-100 placeholder-slate-600 dark:placeholder-slate-500 focus:outline-none resize-none leading-tight"
                         rows={1}
                         disabled={isLoading || isChatLimitReached}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-gray-900 dark:bg-gray-50 text-white dark:text-gray-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
                     </button>
                 </div>

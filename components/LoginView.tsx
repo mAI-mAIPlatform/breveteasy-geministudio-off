@@ -18,11 +18,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 p-8 rounded-3xl shadow-xl">
-        <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-gray-100 mb-6">Connexion</h2>
+      <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl">
+        <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-6">Connexion</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-800 dark:text-gray-300">
+            <label htmlFor="email" className="block text-sm font-medium text-slate-800 dark:text-slate-300">
               Adresse e-mail
             </label>
             <input
@@ -33,13 +33,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-4 py-3 bg-white/20 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10 rounded-xl shadow-sm placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 sm:text-sm"
+              className="mt-1 block w-full px-4 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm placeholder-slate-600 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 sm:text-sm"
               placeholder="vous@exemple.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password"className="block text-sm font-medium text-gray-800 dark:text-gray-300">
+            <label htmlFor="password"className="block text-sm font-medium text-slate-800 dark:text-slate-300">
               Mot de passe
             </label>
             <input
@@ -50,12 +50,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-4 py-3 bg-white/20 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10 rounded-xl shadow-sm placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 sm:text-sm"
+              className="mt-1 block w-full px-4 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm placeholder-slate-600 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 sm:text-sm"
               placeholder="********"
             />
           </div>
           
-          <p className="text-xs text-center text-gray-700 dark:text-gray-400">
+          <p className="text-xs text-center text-slate-700 dark:text-slate-400">
             Connectez-vous pour retrouver vos conversations avec BrevetAI
           </p>
 
@@ -69,7 +69,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
             <button
                 type="button"
                 onClick={onBack}
-                className="w-full flex justify-center py-3 px-4 text-sm font-medium text-gray-800 dark:text-gray-200 bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 rounded-xl transition-colors"
+                className="w-full flex justify-center py-3 px-4 text-sm font-medium text-slate-800 dark:text-slate-200 bg-black/10 dark:bg-slate-800 hover:bg-black/20 dark:hover:bg-slate-700 rounded-xl transition-colors"
             >
               Annuler
             </button>

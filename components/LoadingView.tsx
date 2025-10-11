@@ -129,16 +129,16 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
   const titleText = task === 'quiz' ? 'du quiz' : 'des exercices';
 
   return (
-    <div className="flex flex-col items-center justify-center text-center h-full space-y-8 w-full p-4 bg-black/10 dark:bg-black/20 backdrop-filter backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-3xl">
+    <div className="flex flex-col items-center justify-center text-center h-full space-y-8 w-full p-4 bg-black/10 dark:bg-slate-900/60 backdrop-filter backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl">
       <LoadingSpinner />
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Génération {titleText} de <span className="text-indigo-500 dark:text-sky-300">{safeSubject}</span></h2>
+      <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Génération {titleText} de <span className="text-indigo-500 dark:text-sky-300">{safeSubject}</span></h2>
       
       <div className="w-full max-w-md px-4">
           <div className="flex justify-between items-end mb-2">
-              <span className="text-base font-medium text-gray-800 dark:text-gray-300 text-left min-h-[48px] sm:min-h-[24px] flex items-center">{displayedMessage}</span>
+              <span className="text-base font-medium text-slate-800 dark:text-slate-300 text-left min-h-[48px] sm:min-h-[24px] flex items-center">{displayedMessage}</span>
               <span className="text-sm font-medium text-indigo-500 dark:text-sky-300">{progress}%</span>
           </div>
-          <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2.5">
+          <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-2.5">
               <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-150 ease-linear" style={{width: `${progress}%`, boxShadow: '0 0 10px theme(colors.sky.400)'}}></div>
           </div>
       </div>

@@ -14,8 +14,8 @@ const QuestionDisplay: React.FC<{
   onOptionSelect: (option: string) => void;
 }> = ({ question, questionNumber, totalQuestions, selectedOption, onOptionSelect }) => (
   <div className="w-full">
-    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Question {questionNumber} / {totalQuestions}</p>
-    <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{question.questionText}</h3>
+    <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Question {questionNumber} / {totalQuestions}</p>
+    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">{question.questionText}</h3>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {question.options.map((option, index) => {
         const isSelected = selectedOption === option;
@@ -26,7 +26,7 @@ const QuestionDisplay: React.FC<{
             className={`p-4 rounded-2xl text-left text-lg transition-all duration-300 border ${
               isSelected
                 ? 'bg-sky-400/30 dark:bg-sky-400/40 text-white border-sky-300 dark:border-sky-400 shadow-[0_0_20px_theme(colors.sky.400)] scale-105'
-                : 'bg-white/20 dark:bg-black/20 backdrop-blur-lg border-white/30 dark:border-white/20 text-gray-800 dark:text-gray-200 hover:border-sky-300 dark:hover:border-sky-400 hover:bg-white/40 dark:hover:bg-black/30'
+                : 'bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-sky-300 dark:hover:border-sky-400 hover:bg-white/40 dark:hover:bg-slate-700/60'
             }`}
           >
             {option}
@@ -75,12 +75,12 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col h-full">
       <div className="mb-6">
-        <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2.5">
+        <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-2.5">
           <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%`, boxShadow: '0 0 10px theme(colors.sky.400)' }}></div>
         </div>
       </div>
 
-      <div className="bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center">
+      <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center">
         <QuestionDisplay
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}
@@ -94,7 +94,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
         <button
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
-          className="px-6 py-3 bg-white/20 dark:bg-black/20 backdrop-blur-lg border border-white/30 dark:border-white/20 text-gray-800 dark:text-gray-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-black/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Précédent
         </button>

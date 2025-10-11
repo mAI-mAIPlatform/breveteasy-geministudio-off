@@ -20,7 +20,7 @@ const FixedHeader: React.FC<{ onNavigateLogin: () => void; onNavigateSettings: (
     <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-50 flex items-center space-x-3">
        <button 
         onClick={onNavigateSubscription} 
-        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:bg-white/20 dark:hover:bg-black/20 transform hover:scale-110 transition-all duration-300"
+        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-110 transition-all duration-300"
         title="Forfaits"
         aria-label="Voir les forfaits d'abonnement"
       >
@@ -28,22 +28,22 @@ const FixedHeader: React.FC<{ onNavigateLogin: () => void; onNavigateSettings: (
       </button>
        <button 
         onClick={onNavigateSettings} 
-        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:bg-white/20 dark:hover:bg-black/20 transform hover:scale-110 transition-all duration-300"
+        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-110 transition-all duration-300"
         title="Paramètres"
         aria-label="Ouvrir les paramètres"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-800 dark:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-800 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </button>
       <button 
         onClick={onNavigateLogin} 
-        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:bg-white/20 dark:hover:bg-black/20 transform hover:scale-110 transition-all duration-300"
+        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-110 transition-all duration-300"
         title="Profil"
         aria-label="Ouvrir la page de profil"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-800 dark:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-800 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
       </button>
     </div>
 );
@@ -89,6 +89,14 @@ const App: React.FC = () => {
         if (theme === 'system') {
             const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             document.documentElement.classList.toggle('dark', systemPrefersDark);
+            
+            const mql = window.matchMedia('(prefers-color-scheme: dark)');
+            const listener = (e: MediaQueryListEvent) => {
+                 document.documentElement.classList.toggle('dark', e.matches);
+            }
+            mql.addEventListener('change', listener);
+            return () => mql.removeEventListener('change', listener);
+
         } else {
             document.documentElement.classList.toggle('dark', theme === 'dark');
         }
@@ -361,7 +369,7 @@ const App: React.FC = () => {
         <div className={mainContainerClasses}>
            <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} />
            {renderView()}
-           <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-black/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-full text-center text-xs text-gray-800 dark:text-gray-300 shadow-lg z-50">
+           <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-black/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 px-4 py-2 rounded-full text-center text-xs text-slate-700 dark:text-slate-400 shadow-lg z-50">
                 26-1.8 (Bêta) © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
            </footer>
         </div>

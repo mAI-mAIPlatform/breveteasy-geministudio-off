@@ -12,15 +12,15 @@ const HomeIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" classNa
 export const ExercisesView: React.FC<ExercisesViewProps> = ({ onDownload, onBack, isDownloading }) => {
   return (
     <div className="w-full max-w-lg mx-auto text-center">
-      <div className="bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 p-8 rounded-3xl shadow-xl">
+      <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl">
         <div className="flex flex-col items-center mb-8">
             <div className="p-5 rounded-full bg-green-500/20 text-green-500 dark:text-green-300 mb-4 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100">Exercices Générés !</h2>
-          <p className="text-lg text-gray-700 dark:text-gray-400 mt-2">Votre fiche d'exercices est prête à être téléchargée.</p>
+          <h2 className="text-4xl font-bold text-slate-900 dark:text-slate-100">Exercices Générés !</h2>
+          <p className="text-lg text-slate-700 dark:text-slate-400 mt-2">Votre fiche d'exercices est prête à être téléchargée.</p>
         </div>
         
         <div className="flex flex-col gap-4">
@@ -46,7 +46,7 @@ export const ExercisesView: React.FC<ExercisesViewProps> = ({ onDownload, onBack
             </button>
              <button
                 onClick={onBack}
-                className="w-full flex items-center justify-center px-6 py-3 bg-white/20 dark:bg-black/20 backdrop-blur-lg border border-white/30 dark:border-white/20 text-gray-800 dark:text-gray-200 font-semibold rounded-xl hover:bg-white/40 dark:hover:bg-black/30 transition-colors mt-2"
+                className="w-full flex items-center justify-center px-6 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors mt-2"
             >
                 <HomeIcon />
                 Retour à l'accueil
