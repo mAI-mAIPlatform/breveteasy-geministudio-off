@@ -97,6 +97,32 @@
         background-color: rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
       }
+      /* Question transition animations */
+      @keyframes slide-out-left {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(-50px); opacity: 0; }
+      }
+      @keyframes slide-in-right {
+        from { transform: translateX(50px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes slide-out-right {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(50px); opacity: 0; }
+      }
+      @keyframes slide-in-left {
+        from { transform: translateX(-50px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-slide-out-left { animation: slide-out-left 0.3s ease-in-out forwards; }
+      .animate-slide-in-right { animation: slide-in-right 0.3s ease-in-out forwards; }
+      .animate-slide-out-right { animation: slide-out-right 0.3s ease-in-out forwards; }
+      .animate-slide-in-left { animation: slide-in-left 0.3s ease-in-out forwards; }
+      .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
     </style>
   <script type="importmap">
 {

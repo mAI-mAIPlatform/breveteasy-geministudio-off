@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 
 interface LoginViewProps {
   onLogin: (email: string) => void;
-  onBack: () => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -65,13 +64,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-105"
             >
               Se connecter
-            </button>
-            <button
-                type="button"
-                onClick={onBack}
-                className="w-full flex justify-center py-3 px-4 text-sm font-medium text-slate-800 dark:text-slate-200 bg-black/10 dark:bg-slate-800 hover:bg-black/20 dark:hover:bg-slate-700 rounded-xl transition-colors"
-            >
-              Annuler
             </button>
           </div>
         </form>

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import type { ImageModel } from '../types';
 
 interface ImageGenerationViewProps {
-  onGenerate: (prompt: string) => void;
-  onBack: () => void;
+  onGenerate: (prompt: string, model: ImageModel) => void;
   isGenerating: boolean;
   generatedImage: string | null; // base64
   remainingGenerations: number;
+  defaultImageModel: ImageModel;
 }
 
 const LoadingSpinner: React.FC = () => (
@@ -34,12 +35,13 @@ const LoadingSpinner: React.FC = () => (
 
 const DownloadIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>;
 
-export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGenerate, onBack, isGenerating, generatedImage, remainingGenerations }) => {
+export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGenerate, isGenerating, generatedImage, remainingGenerations, defaultImageModel }) => {
     const [prompt, setPrompt] = useState('');
+    const [selectedModel, setSelectedModel] = useState<ImageModel>(defaultImageModel);
 
     const handleGenerateClick = () => {
         if (prompt.trim()) {
-            onGenerate(prompt.trim());
+            onGenerate(prompt.trim(), selectedModel);
         }
     };
 
@@ -58,10 +60,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
     return (
         <div className="w-full max-w-2xl mx-auto h-full flex flex-col">
             <div className="bg-slate-100/60 dark:bg-slate-800/50 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/50 p-6 sm:p-8 rounded-3xl shadow-xl flex-grow flex flex-col">
-                <header className="flex items-center gap-4 pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
-                    <button onClick={onBack} title="Retour" className="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                    </button>
+                <header className="text-center pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Générer une image</h2>
                 </header>
 
@@ -82,7 +81,22 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                         </div>
                     ) : (
                         <div className="w-full space-y-4">
-                             <p className="text-center text-slate-700 dark:text-slate-300">
+                             <div className="flex justify-center rounded-xl bg-black/10 dark:bg-slate-800 p-1">
+                                {(['face', 'face-plus'] as const).map((model) => (
+                                <button
+                                    key={model}
+                                    onClick={() => setSelectedModel(model)}
+                                    className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                    selectedModel === model
+                                        ? 'bg-white dark:bg-slate-950 text-indigo-500 dark:text-sky-300 shadow-md'
+                                        : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                                    }`}
+                                >
+                                    {model === 'face' ? 'Face' : 'Face +'}
+                                </button>
+                                ))}
+                            </div>
+                            <p className="text-center text-slate-700 dark:text-slate-300">
                                 Générations restantes aujourd'hui : <span className="font-bold text-indigo-500 dark:text-sky-300">{isFinite(remainingGenerations) ? remainingGenerations : 'Illimitées'}</span>
                             </p>
                             <textarea

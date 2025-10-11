@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type { SubscriptionPlan } from '../types';
 
 interface SubscriptionViewProps {
-  onBack: () => void;
   currentPlan: SubscriptionPlan;
   onUpgrade: (code: string) => boolean;
 }
@@ -48,7 +47,7 @@ const PlanCard: React.FC<{
 );
 
 
-export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack, currentPlan, onUpgrade }) => {
+export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan, onUpgrade }) => {
     const [code, setCode] = useState('');
     const [planToUpgrade, setPlanToUpgrade] = useState<SubscriptionPlan | null>(null);
 
@@ -103,10 +102,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack, curr
     return (
         <div className="w-full max-w-4xl mx-auto">
             <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl">
-                <header className="flex items-center gap-4 pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
-                    <button onClick={onBack} title="Fermer" className="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
+                <header className="text-center pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-sky-400 to-red-400 bg-clip-text text-transparent">Brevet +</h2>
                 </header>
                 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan } from '../types';
+import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '../types';
 import { ai } from '../services/geminiService';
 import type { Chat, Part } from '@google/genai';
 
@@ -10,7 +10,6 @@ interface ChatViewProps {
         title?: string;
         aiModel?: 'brevetai' | 'brevetai-plus';
     }) => void;
-    onBack: () => void;
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
     userName: string;
@@ -21,22 +20,134 @@ const CheckIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmln
 const EditIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>;
 const RegenerateIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M6.166 9.348L3 12.529m0 0l3.181-3.182m0 0-3.181 3.182" /></svg>;
 
-const ChatHeader: React.FC<{ 
-    title: string; 
-    onBack: () => void; 
-    children: React.ReactNode;
-}> = ({ title, onBack, children }) => (
-    <header className="flex flex-col gap-4 pb-4 border-b border-white/20 dark:border-slate-800">
-        <div className="flex items-center justify-between">
-            <button onClick={onBack} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+const ModelSelectorDropdown: React.FC<{
+    aiModel: AiModel;
+    onAiModelChange: (model: AiModel) => void;
+    isConversationStarted: boolean;
+}> = ({ aiModel, onAiModelChange, isConversationStarted }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const modelDisplayNames = {
+        brevetai: 'BrevetAI',
+        'brevetai-plus': 'BrevetAI +',
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div ref={dropdownRef} className="relative">
+            <button
+                onClick={() => !isConversationStarted && setIsOpen(!isOpen)}
+                disabled={isConversationStarted}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-lg font-bold transition-colors ${
+                    isConversationStarted
+                        ? 'cursor-default text-slate-800 dark:text-slate-200'
+                        : 'bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 hover:bg-white/20 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200'
+                }`}
+                style={{minWidth: '145px'}}
+            >
+                <span className="flex-grow text-left">{modelDisplayNames[aiModel]}</span>
+                {!isConversationStarted && (
+                    <svg
+                        className={`w-5 h-5 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                )}
             </button>
-            <h2 className="text-xl font-bold text-center truncate px-4">{title}</h2>
-            <div className="w-10 h-10 flex-shrink-0"></div> {/* Placeholder to keep title centered */}
+            {isOpen && (
+                <div className="absolute top-full left-0 mt-2 w-full rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-10 p-1">
+                    {(['brevetai', 'brevetai-plus'] as const).map((model) => (
+                        <button
+                            key={model}
+                            onClick={() => {
+                                onAiModelChange(model);
+                                setIsOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm rounded-lg text-slate-800 dark:text-slate-200 hover:bg-indigo-500/80 hover:text-white transition-colors"
+                        >
+                            {modelDisplayNames[model]}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
-        {children}
-    </header>
-);
+    );
+};
+
+const ChatHeader: React.FC<{
+    title: string;
+    onTitleChange: (newTitle: string) => void;
+    aiModel: AiModel;
+    onAiModelChange: (model: AiModel) => void;
+    isConversationStarted: boolean;
+}> = ({ title, onTitleChange, aiModel, onAiModelChange, isConversationStarted }) => {
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [editingTitle, setEditingTitle] = useState(title);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isEditingTitle) {
+            inputRef.current?.focus();
+            inputRef.current?.select();
+        }
+    }, [isEditingTitle]);
+
+    const handleTitleSave = () => {
+        if (editingTitle.trim() && editingTitle.trim() !== title) {
+            onTitleChange(editingTitle.trim());
+        }
+        setIsEditingTitle(false);
+    };
+
+    return (
+        <header className="pb-4 border-b border-white/20 dark:border-slate-800">
+            <div className="relative flex items-center justify-center min-h-[44px]">
+                <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                    <ModelSelectorDropdown
+                        aiModel={aiModel}
+                        onAiModelChange={onAiModelChange}
+                        isConversationStarted={isConversationStarted}
+                    />
+                </div>
+                <div className="flex items-center gap-2 group min-w-0">
+                    {isEditingTitle ? (
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={editingTitle}
+                            onChange={(e) => setEditingTitle(e.target.value)}
+                            onBlur={handleTitleSave}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleTitleSave(); if (e.key === 'Escape') setIsEditingTitle(false); }}
+                            className="text-xl font-bold text-center bg-transparent focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded-md w-full max-w-xs"
+                        />
+                    ) : (
+                        <>
+                            <h2 className="text-xl font-bold text-center truncate">{title}</h2>
+                            <button 
+                                onClick={() => { setIsEditingTitle(true); setEditingTitle(title); }} 
+                                className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700"
+                                title="Renommer la discussion"
+                            >
+                                <EditIcon className="h-4 w-4" />
+                            </button>
+                        </>
+                    )}
+                </div>
+            </div>
+        </header>
+    );
+};
 
 const Message: React.FC<{
     message: ChatMessage;
@@ -100,7 +211,7 @@ const Message: React.FC<{
     );
 };
 
-export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, onBack, systemInstruction, subscriptionPlan, userName }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, systemInstruction, subscriptionPlan, userName }) => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -301,29 +412,22 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
             setAttachment({ file, previewUrl: URL.createObjectURL(file) });
         }
     };
+    
+    const handleTitleChange = (newTitle: string) => {
+        onUpdateSession(session.id, { title: newTitle });
+    };
 
     return (
         <div className="w-full h-full flex flex-col bg-white/10 dark:bg-slate-900/60">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
             <div className="p-4 sm:p-6">
-                <ChatHeader title={session.title} onBack={onBack}>
-                     <div className={`flex justify-center rounded-xl bg-black/10 dark:bg-slate-800 p-1 mt-2 ${isConversationStarted ? 'opacity-70' : ''}`}>
-                        {(['brevetai', 'brevetai-plus'] as const).map((model) => (
-                        <button
-                            key={model}
-                            disabled={isConversationStarted}
-                            onClick={() => onUpdateSession(session.id, { aiModel: model })}
-                            className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                            session.aiModel === model
-                                ? 'bg-white dark:bg-slate-950 text-indigo-500 dark:text-sky-300 shadow-md'
-                                : `text-slate-700 dark:text-slate-300 ${!isConversationStarted ? 'hover:bg-white/50 dark:hover:bg-slate-700/50' : 'cursor-default'}`
-                            }`}
-                        >
-                            {model === 'brevetai' ? 'BrevetAI' : 'BrevetAI +'}
-                        </button>
-                        ))}
-                    </div>
-                </ChatHeader>
+                <ChatHeader
+                    title={session.title}
+                    onTitleChange={handleTitleChange}
+                    aiModel={session.aiModel}
+                    onAiModelChange={(model) => onUpdateSession(session.id, { aiModel: model })}
+                    isConversationStarted={isConversationStarted}
+                />
             </div>
 
             <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">

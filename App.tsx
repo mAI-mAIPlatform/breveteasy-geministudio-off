@@ -77,6 +77,19 @@ const FixedHeader: React.FC<{
     </div>
 );
 
+const FixedExitButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+    <div className="fixed top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-50">
+        <HeaderButton 
+            onClick={onClick} 
+            title="Retour à l'accueil"
+            ariaLabel="Retourner à l'accueil"
+            isIconOnly={true}
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </HeaderButton>
+    </div>
+);
+
 const App: React.FC = () => {
     // App State
     const [view, setView] = useState<View>('home');
@@ -119,6 +132,8 @@ const App: React.FC = () => {
 
     // Exercises State
     const [generatedExercisesHtml, setGeneratedExercisesHtml] = useState<string | null>(null);
+    // Fix: Add state for download status to satisfy ExercisesViewProps.
+    const [isDownloadingExercises, setIsDownloadingExercises] = useState(false);
 
     // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
@@ -374,9 +389,11 @@ const App: React.FC = () => {
         }
     }, [selectedSubject, subscriptionPlan, buildSystemInstruction]);
 
+    // Fix: Implement download state handling for ExercisesView.
     const handleDownloadExercises = () => {
-        if (!generatedExercisesHtml || !selectedSubject) return;
+        if (!generatedExercisesHtml || !selectedSubject || isDownloadingExercises) return;
         
+        setIsDownloadingExercises(true);
         const blob = new Blob([generatedExercisesHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -386,6 +403,9 @@ const App: React.FC = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        
+        // Use a timeout to provide visual feedback, as the download is synchronous.
+        setTimeout(() => setIsDownloadingExercises(false), 1000);
     };
 
     // Image Generation Flow Handlers
@@ -397,7 +417,7 @@ const App: React.FC = () => {
 
     const remainingGenerations = getImageGenerationLimit() - imageUsage.count;
 
-    const handleGenerateImage = async (prompt: string) => {
+    const handleGenerateImage = async (prompt: string, model: ImageModel) => {
         if (remainingGenerations <= 0 && subscriptionPlan !== 'max') {
             alert("Vous avez atteint votre limite de générations d'images pour aujourd'hui.");
             return;
@@ -406,9 +426,13 @@ const App: React.FC = () => {
         setIsGeneratingImage(true);
         setGeneratedImage(null);
         try {
-            const finalPrompt = (subscriptionPlan !== 'free' && imageGenerationInstruction.trim())
+            let finalPrompt = (subscriptionPlan !== 'free' && imageGenerationInstruction.trim())
                 ? `${imageGenerationInstruction.trim()}\n\n---\n\n${prompt}`
                 : prompt;
+
+            if (model === 'face-plus') {
+                finalPrompt = `portrait photographique de haute qualité, ultra détaillé, photoréaliste. ${finalPrompt}`;
+            }
 
             const response = await ai.models.generateImages({
                 model: 'imagen-4.0-generate-001',
@@ -454,11 +478,7 @@ const App: React.FC = () => {
     
     const handleUpdateSession = useCallback((
         sessionId: string,
-        updates: {
-            messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
-            title?: string;
-            aiModel?: AiModel;
-        }
+        updates: Partial<Pick<ChatSession, 'messages' | 'title' | 'aiModel'>> & { messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]) }
     ) => {
         setChatSessions(prevSessions =>
             prevSessions.map(session => {
@@ -469,9 +489,8 @@ const App: React.FC = () => {
 
                     return {
                         ...session,
+                        ...updates,
                         messages: updatedMessages,
-                        title: updates.title ?? session.title,
-                        aiModel: updates.aiModel ?? session.aiModel,
                     };
                 }
                 return session;
@@ -497,7 +516,7 @@ const App: React.FC = () => {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
             case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onBack={handleBackToHome} subscriptionPlan={subscriptionPlan} />;
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} subscriptionPlan={subscriptionPlan} />;
             case 'loading':
                 return selectedSubject && <LoadingView subject={selectedSubject.name} task={loadingTask} />;
             case 'quiz':
@@ -505,16 +524,16 @@ const App: React.FC = () => {
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
             case 'exercises':
-                return <ExercisesView onDownload={handleDownloadExercises} onBack={handleBackToHome} isDownloading={false} />;
+                // Fix: Pass the isDownloading prop to ExercisesView.
+                return <ExercisesView onDownload={handleDownloadExercises} isDownloading={isDownloadingExercises} />;
             case 'imageGeneration':
-                return <ImageGenerationView onGenerate={handleGenerateImage} onBack={handleBackToHome} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingGenerations} />;
+                return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingGenerations} defaultImageModel={defaultImageModel} />;
             case 'chat':
                 const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
                 return activeSession ? (
                     <ChatView 
                         session={activeSession} 
                         onUpdateSession={handleUpdateSession} 
-                        onBack={() => setView('home')} 
                         systemInstruction={aiSystemInstruction} 
                         subscriptionPlan={subscriptionPlan} 
                         userName={userName} 
@@ -530,7 +549,6 @@ const App: React.FC = () => {
                 );
             case 'settings':
                 return <SettingsView 
-                    onBack={() => setView('home')} 
                     theme={theme} onThemeChange={setTheme} 
                     aiSystemInstruction={aiSystemInstruction} onAiSystemInstructionChange={setAiSystemInstruction} 
                     subscriptionPlan={subscriptionPlan} 
@@ -540,9 +558,9 @@ const App: React.FC = () => {
                     imageGenerationInstruction={imageGenerationInstruction} onImageGenerationInstructionChange={setImageGenerationInstruction}
                 />;
             case 'subscription':
-                return <SubscriptionView onBack={() => setView('home')} currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
+                return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'login':
-                return <LoginView onLogin={(email) => { setUser({email}); setView('home'); }} onBack={() => setView('home')} />;
+                return <LoginView onLogin={(email) => { setUser({email}); setView('home'); }} />;
             default:
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
         }
@@ -550,6 +568,7 @@ const App: React.FC = () => {
 
     return (
         <div className="relative min-h-screen font-sans flex flex-col w-full">
+            {view !== 'home' && <FixedExitButton onClick={handleBackToHome} />}
             <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} />
             
             <div className="flex flex-1 w-full pt-20 overflow-hidden" style={{ zIndex: 1 }}>
@@ -560,6 +579,7 @@ const App: React.FC = () => {
                         onSelectChat={handleSelectChat}
                         onDeleteChat={handleDeleteChat}
                         onNewChat={handleStartChat}
+                        onUpdateSession={handleUpdateSession}
                     />
                 )}
 
@@ -571,7 +591,7 @@ const App: React.FC = () => {
             </div>
 
             <footer className="w-full text-center p-4 text-xs text-slate-700 dark:text-slate-400 shrink-0" style={{ zIndex: 1 }}>
-                 26-2.0 (Bêta) © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+                 26-2.0 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
             </footer>
         </div>
     );

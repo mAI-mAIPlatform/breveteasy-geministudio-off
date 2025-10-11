@@ -6,7 +6,6 @@ interface SubjectOptionsViewProps {
   subject: Subject;
   onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string) => void;
-  onBack: () => void;
   subscriptionPlan: SubscriptionPlan;
 }
 
@@ -113,7 +112,7 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
 };
 
 
-export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onBack, subscriptionPlan }) => {
+export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, subscriptionPlan }) => {
   const isFreePlan = subscriptionPlan === 'free';
 
   const [customPrompt, setCustomPrompt] = useState('');
@@ -151,9 +150,6 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   return (
     <div className="w-full max-w-2xl mx-auto">
         <div className="relative text-center mb-10">
-            <button onClick={onBack} className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/5 dark:bg-slate-800/60 hover:bg-slate-900/10 dark:hover:bg-slate-700/60 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            </button>
             <h1 className="text-5xl font-bold text-slate-900 dark:text-slate-100">
                 {subject.name}
             </h1>

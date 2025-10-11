@@ -64,7 +64,7 @@ const ImageGenerationCard: React.FC<{
                 </div>
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-                        Générer une image
+                        Générer avec Face
                     </h2>
                     <p className="text-md text-slate-800 dark:text-slate-300 mt-1">
                        Créez une image à partir d'une description.
