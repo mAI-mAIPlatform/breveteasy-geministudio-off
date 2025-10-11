@@ -132,6 +132,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThe
             </div>
 
             <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Mon Prénom</h3>
+                <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => onUserNameChange(e.target.value)}
+                    className="w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition"
+                    placeholder="Ex: Jean"
+                />
+                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    Indiquez votre prénom pour que BrevetAI puisse s'adresser à vous personnellement.
+                </p>
+            </div>
+
+            <div>
                 <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Modèle IA par défaut</h3>
                 <div className="flex space-x-2 rounded-xl bg-black/10 dark:bg-slate-800 p-1">
                     {(['brevetai', 'brevetai-plus'] as const).map((model) => (
@@ -150,20 +164,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThe
                 </div>
                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                     Choisissez le modèle à utiliser pour démarrer une nouvelle discussion.
-                </p>
-            </div>
-
-             <div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Mon Prénom</h3>
-                <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => onUserNameChange(e.target.value)}
-                    className="w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition"
-                    placeholder="Ex: Jean"
-                />
-                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Indiquez votre prénom pour que BrevetAI puisse s'adresser à vous personnellement.
                 </p>
             </div>
 
