@@ -76,7 +76,6 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col h-full">
       <div className="mb-6">
-        <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2">Quiz: {quiz.subject}</h2>
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
           <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
         </div>

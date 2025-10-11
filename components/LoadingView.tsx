@@ -27,8 +27,7 @@ const generateLoadingMessages = (subject: string, task: 'quiz' | 'exercises'): s
         `Recherche de thèmes d'exercices pour ${subject}...`,
         `Rédaction d'énoncés clairs et précis en ${subject}...`,
         `Préparation des corrigés détaillés pour chaque exercice...`,
-        `Mise en page de votre fiche d'exercices...`,
-        `Votre document de ${subject} est presque prêt !`
+        `Mise en page de votre fiche d'exercices...`
     ];
     
     const messages = task === 'quiz' ? quizMessages : exerciseMessages;

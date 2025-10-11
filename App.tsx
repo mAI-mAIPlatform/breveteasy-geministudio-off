@@ -19,7 +19,7 @@ const App: React.FC = () => {
     const [view, setView] = useState<View>('home');
     const [loadingTask, setLoadingTask] = useState<'quiz' | 'exercises'>('quiz');
     const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
-        const savedTheme = localStorage.getItem('theme');
+        const savedTheme = localStorage.getItem('brevet-easy-theme');
         return (savedTheme as any) || 'system';
     });
 
@@ -45,7 +45,7 @@ const App: React.FC = () => {
 
     // Theme Management Effect
     useEffect(() => {
-        localStorage.setItem('theme', theme);
+        localStorage.setItem('brevet-easy-theme', theme);
         if (theme === 'system') {
             const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             document.documentElement.classList.toggle('dark', systemPrefersDark);
