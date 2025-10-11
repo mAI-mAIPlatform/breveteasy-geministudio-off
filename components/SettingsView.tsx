@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { SubscriptionPlan } from '../types';
+import type { SubscriptionPlan, AiModel, ImageModel } from '../types';
 
 interface SettingsViewProps {
   onBack: () => void;
@@ -10,6 +10,12 @@ interface SettingsViewProps {
   subscriptionPlan: SubscriptionPlan;
   userName: string;
   onUserNameChange: (name: string) => void;
+  defaultAiModel: AiModel;
+  onDefaultAiModelChange: (model: AiModel) => void;
+  defaultImageModel: ImageModel;
+  onDefaultImageModelChange: (model: ImageModel) => void;
+  imageGenerationInstruction: string;
+  onImageGenerationInstructionChange: (instruction: string) => void;
 }
 
 const FeedbackModal: React.FC<{
@@ -91,18 +97,18 @@ const FeedbackModal: React.FC<{
 };
 
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThemeChange, aiSystemInstruction, onAiSystemInstructionChange, subscriptionPlan, userName, onUserNameChange }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThemeChange, aiSystemInstruction, onAiSystemInstructionChange, subscriptionPlan, userName, onUserNameChange, defaultAiModel, onDefaultAiModelChange, defaultImageModel, onDefaultImageModelChange, imageGenerationInstruction, onImageGenerationInstructionChange }) => {
   const isCustomInstructionDisabled = subscriptionPlan === 'free';
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   
   return (
     <div className="w-full max-w-lg mx-auto">
       <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl">
-        <header className="flex items-center justify-between pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Paramètres</h2>
+        <header className="flex items-center gap-4 pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
             <button onClick={onBack} title="Fermer" className="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Paramètres</h2>
         </header>
         
         <div className="space-y-8">
@@ -123,6 +129,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThe
                     </button>
                     ))}
                 </div>
+            </div>
+
+            <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Modèle IA par défaut</h3>
+                <div className="flex space-x-2 rounded-xl bg-black/10 dark:bg-slate-800 p-1">
+                    {(['brevetai', 'brevetai-plus'] as const).map((model) => (
+                    <button
+                        key={model}
+                        onClick={() => onDefaultAiModelChange(model)}
+                        className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        defaultAiModel === model
+                            ? 'bg-white dark:bg-slate-950 text-indigo-500 dark:text-sky-300 shadow-md'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                        }`}
+                    >
+                        {model === 'brevetai' ? 'BrevetAI' : 'BrevetAI +'}
+                    </button>
+                    ))}
+                </div>
+                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    Choisissez le modèle à utiliser pour démarrer une nouvelle discussion.
+                </p>
             </div>
 
              <div>
@@ -146,17 +174,61 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThe
                     value={aiSystemInstruction}
                     onChange={(e) => onAiSystemInstructionChange(e.target.value)}
                     className={`w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition ${isCustomInstructionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    placeholder="Ex: 'Sois toujours très encourageant et utilise un langage simple.' ou 'Fais des blagues sur l'histoire de temps en temps.'"
+                    placeholder="Ex: 'Sois toujours très encourageant et utilise un langage simple.' ou 'Fais-moi des résumés en 3 points-clés.'"
                     disabled={isCustomInstructionDisabled}
                 />
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                     Cette instruction sera appliquée à toutes les futures interactions avec BrevetAI (quiz, exercices et chat).
                 </p>
                 {isCustomInstructionDisabled && (
-                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm rounded-xl" title="Fonctionnalité Pro">
-                        <span className="px-4 py-2 bg-yellow-400 text-yellow-900 text-sm font-bold rounded-full shadow-lg">
-                            ⭐ Fonctionnalité Pro / Max
-                        </span>
+                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm rounded-xl" title="Fonctionnalité Pro / Max">
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 text-sm font-bold rounded-full shadow-lg">
+                            <span>Fonctionnalité Pro / Max</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+            
+            <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Modèle d'image par défaut</h3>
+                <div className="flex space-x-2 rounded-xl bg-black/10 dark:bg-slate-800 p-1">
+                    {(['face', 'face-plus'] as const).map((model) => (
+                    <button
+                        key={model}
+                        onClick={() => onDefaultImageModelChange(model)}
+                        className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        defaultImageModel === model
+                            ? 'bg-white dark:bg-slate-950 text-indigo-500 dark:text-sky-300 shadow-md'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                        }`}
+                    >
+                        {model === 'face' ? 'Face' : 'Face +'}
+                    </button>
+                    ))}
+                </div>
+                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    Choisissez le modèle pour la génération d'images. Face+ peut offrir de meilleurs résultats.
+                </p>
+            </div>
+
+            <div className="relative">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Instructions pour la génération d'images</h3>
+                <textarea
+                    rows={4}
+                    value={imageGenerationInstruction}
+                    onChange={(e) => onImageGenerationInstructionChange(e.target.value)}
+                    className={`w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition ${isCustomInstructionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    placeholder="Ex: 'style art numérique, couleurs vives' ou 'photo réaliste, en noir et blanc'."
+                    disabled={isCustomInstructionDisabled}
+                />
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    Cette instruction sera ajoutée au début de toutes vos futures demandes de génération d'images.
+                </p>
+                {isCustomInstructionDisabled && (
+                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm rounded-xl" title="Fonctionnalité Pro / Max">
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 text-sm font-bold rounded-full shadow-lg">
+                            <span>Fonctionnalité Pro / Max</span>
+                        </div>
                     </div>
                 )}
             </div>

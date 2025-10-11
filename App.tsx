@@ -11,10 +11,16 @@ import { SettingsView } from './components/SettingsView';
 import { LoginView } from './components/LoginView';
 import { ExercisesView } from './components/ExercisesView';
 import { SubscriptionView } from './components/SubscriptionView';
+import { ImageGenerationView } from './components/ImageGenerationView';
 import { ai, Type } from './services/geminiService';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel } from './types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login' | 'exercises' | 'subscription';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
+
+interface ImageUsage {
+    count: number;
+    date: string; // YYYY-MM-DD
+}
 
 const HeaderButton: React.FC<{
     onClick: () => void;
@@ -22,10 +28,11 @@ const HeaderButton: React.FC<{
     ariaLabel: string;
     children: React.ReactNode;
     className?: string;
-}> = ({ onClick, title, ariaLabel, children, className = '' }) => (
+    isIconOnly?: boolean;
+}> = ({ onClick, title, ariaLabel, children, className = '', isIconOnly = false }) => (
     <button 
         onClick={onClick} 
-        className={`flex items-center gap-2 whitespace-nowrap bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-105 transition-all duration-300 ${className}`}
+        className={`flex items-center gap-2 whitespace-nowrap bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm font-semibold ${isIconOnly ? 'rounded-full w-11 h-11 justify-center' : 'px-4 py-2.5 rounded-full'} shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-105 transition-all duration-300 ${className}`}
         title={title}
         aria-label={ariaLabel}
     >
@@ -34,9 +41,15 @@ const HeaderButton: React.FC<{
 );
 
 
-const FixedHeader: React.FC<{ onNavigateLogin: () => void; onNavigateSettings: () => void; onNavigateSubscription: () => void; }> = ({ onNavigateLogin, onNavigateSettings, onNavigateSubscription }) => (
+const FixedHeader: React.FC<{ 
+    onNavigateLogin: () => void; 
+    onNavigateSettings: () => void; 
+    onNavigateSubscription: () => void;
+    subscriptionPlan: SubscriptionPlan;
+}> = ({ onNavigateLogin, onNavigateSettings, onNavigateSubscription, subscriptionPlan }) => (
     <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-50 flex items-center space-x-3">
-       <HeaderButton 
+       {subscriptionPlan !== 'max' && (
+        <HeaderButton 
             onClick={onNavigateSubscription} 
             title="Mettre à niveau"
             ariaLabel="Mettre à niveau et voir les forfaits d'abonnement"
@@ -44,19 +57,20 @@ const FixedHeader: React.FC<{ onNavigateLogin: () => void; onNavigateSettings: (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
             <span className="hidden sm:inline">Mettre à niveau</span>
         </HeaderButton>
+       )}
        <HeaderButton
         onClick={onNavigateSettings} 
         title="Paramètres"
         ariaLabel="Ouvrir les paramètres"
-        className="!px-2.5"
+        isIconOnly={true}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>
       </HeaderButton>
       <HeaderButton 
         onClick={onNavigateLogin} 
         title="Profil"
         ariaLabel="Ouvrir la page de profil"
-        className="!px-2.5"
+        isIconOnly={true}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
       </HeaderButton>
@@ -78,6 +92,18 @@ const App: React.FC = () => {
         const savedPlan = localStorage.getItem('brevet-easy-plan');
         return (savedPlan as SubscriptionPlan) || 'free';
     });
+    const [defaultAiModel, setDefaultAiModel] = useState<AiModel>(() => {
+        const savedModel = localStorage.getItem('brevet-easy-default-ai-model');
+        return (savedModel as AiModel) || 'brevetai';
+    });
+     const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>(() => {
+        const savedModel = localStorage.getItem('brevet-easy-default-image-model');
+        return (savedModel as ImageModel) || 'face';
+    });
+    const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>(() => {
+        return localStorage.getItem('brevet-easy-image-instruction') || '';
+    });
+
 
     // User/Profile State
     const [user, setUser] = useState<{email: string} | null>(null);
@@ -100,6 +126,22 @@ const App: React.FC = () => {
         return savedSessions ? JSON.parse(savedSessions) : [];
     });
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
+
+    // Image Generation State
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+    const [imageUsage, setImageUsage] = useState<ImageUsage>(() => {
+        const savedUsage = localStorage.getItem('brevet-easy-image-usage');
+        const today = new Date().toISOString().split('T')[0];
+        if (savedUsage) {
+            const usage: ImageUsage = JSON.parse(savedUsage);
+            if (usage.date !== today) {
+                return { count: 0, date: today };
+            }
+            return usage;
+        }
+        return { count: 0, date: today };
+    });
 
     // Theme Management Effect
     useEffect(() => {
@@ -139,6 +181,25 @@ const App: React.FC = () => {
      useEffect(() => {
         localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
     }, [chatSessions]);
+    
+    // Default AI Model Persistence
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-default-ai-model', defaultAiModel);
+    }, [defaultAiModel]);
+
+    // Image Generation Settings Persistence
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-default-image-model', defaultImageModel);
+    }, [defaultImageModel]);
+    
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-image-instruction', imageGenerationInstruction);
+    }, [imageGenerationInstruction]);
+
+    // Image Usage Persistence
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-image-usage', JSON.stringify(imageUsage));
+    }, [imageUsage]);
 
     // Navigation Handlers
     const handleSubjectSelect = (subject: Subject) => {
@@ -152,12 +213,17 @@ const App: React.FC = () => {
         setQuizAnswers([]);
         setScore(0);
         setGeneratedExercisesHtml(null);
+        setGeneratedImage(null);
         setView('home');
     };
     
     const handleGoToSettings = () => setView('settings');
     const handleGoToLogin = () => setView('login');
     const handleGoToSubscription = () => setView('subscription');
+    const handleGoToImageGeneration = () => {
+        setGeneratedImage(null);
+        setView('imageGeneration');
+    };
 
     // Subscription Handler
     const handleUpgradePlan = (code: string) => {
@@ -322,6 +388,56 @@ const App: React.FC = () => {
         URL.revokeObjectURL(url);
     };
 
+    // Image Generation Flow Handlers
+    const getImageGenerationLimit = useCallback(() => {
+        if (subscriptionPlan === 'max') return Infinity;
+        if (subscriptionPlan === 'pro') return 5;
+        return 2; // free
+    }, [subscriptionPlan]);
+
+    const remainingGenerations = getImageGenerationLimit() - imageUsage.count;
+
+    const handleGenerateImage = async (prompt: string) => {
+        if (remainingGenerations <= 0 && subscriptionPlan !== 'max') {
+            alert("Vous avez atteint votre limite de générations d'images pour aujourd'hui.");
+            return;
+        }
+
+        setIsGeneratingImage(true);
+        setGeneratedImage(null);
+        try {
+            const finalPrompt = (subscriptionPlan !== 'free' && imageGenerationInstruction.trim())
+                ? `${imageGenerationInstruction.trim()}\n\n---\n\n${prompt}`
+                : prompt;
+
+            const response = await ai.models.generateImages({
+                model: 'imagen-4.0-generate-001',
+                prompt: finalPrompt,
+                config: {
+                    numberOfImages: 1,
+                    outputMimeType: 'image/jpeg',
+                },
+            });
+            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
+            setGeneratedImage(base64ImageBytes);
+
+            const today = new Date().toISOString().split('T')[0];
+            setImageUsage(prev => {
+                if (prev.date !== today) {
+                    return { count: 1, date: today };
+                }
+                return { ...prev, count: prev.count + 1 };
+            });
+
+        } catch (error) {
+            console.error("Failed to generate image:", error);
+            alert("Désolé, une erreur est survenue lors de la génération de l'image. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    };
+
+
     // Chat Flow Handlers
     const handleStartChat = () => {
         const newSession: ChatSession = {
@@ -329,7 +445,7 @@ const App: React.FC = () => {
             title: 'Nouvelle Discussion',
             createdAt: Date.now(),
             messages: [],
-            aiModel: 'brevetai', // Default model
+            aiModel: defaultAiModel,
         };
         setChatSessions(prev => [newSession, ...prev]);
         setActiveChatSessionId(newSession.id);
@@ -341,7 +457,7 @@ const App: React.FC = () => {
         updates: {
             messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
             title?: string;
-            aiModel?: 'brevetai' | 'brevetai-plus';
+            aiModel?: AiModel;
         }
     ) => {
         setChatSessions(prevSessions =>
@@ -382,7 +498,7 @@ const App: React.FC = () => {
         
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onBack={handleBackToHome} subscriptionPlan={subscriptionPlan} />;
             case 'loading':
@@ -393,18 +509,29 @@ const App: React.FC = () => {
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
             case 'exercises':
                 return <ExercisesView onDownload={handleDownloadExercises} onBack={handleBackToHome} isDownloading={false} />;
+            case 'imageGeneration':
+                return <ImageGenerationView onGenerate={handleGenerateImage} onBack={handleBackToHome} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingGenerations} />;
             case 'chat':
-                return activeSession ? <ChatView session={activeSession} onUpdateSession={handleUpdateSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} systemInstruction={aiSystemInstruction} subscriptionPlan={subscriptionPlan} userName={userName} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
+                return activeSession ? <ChatView session={activeSession} onUpdateSession={handleUpdateSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} systemInstruction={aiSystemInstruction} subscriptionPlan={subscriptionPlan} userName={userName} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
             case 'history':
                  return <HistoryView sessions={chatSessions} onSelectChat={handleSelectChat} onDeleteChat={handleDeleteChat} onBack={() => activeChatSessionId ? setView('chat') : setView('home')} />;
             case 'settings':
-                return <SettingsView onBack={() => setView('home')} theme={theme} onThemeChange={setTheme} aiSystemInstruction={aiSystemInstruction} onAiSystemInstructionChange={setAiSystemInstruction} subscriptionPlan={subscriptionPlan} userName={userName} onUserNameChange={setUserName} />;
+                return <SettingsView 
+                    onBack={() => setView('home')} 
+                    theme={theme} onThemeChange={setTheme} 
+                    aiSystemInstruction={aiSystemInstruction} onAiSystemInstructionChange={setAiSystemInstruction} 
+                    subscriptionPlan={subscriptionPlan} 
+                    userName={userName} onUserNameChange={setUserName} 
+                    defaultAiModel={defaultAiModel} onDefaultAiModelChange={setDefaultAiModel}
+                    defaultImageModel={defaultImageModel} onDefaultImageModelChange={setDefaultImageModel}
+                    imageGenerationInstruction={imageGenerationInstruction} onImageGenerationInstructionChange={setImageGenerationInstruction}
+                />;
             case 'subscription':
                 return <SubscriptionView onBack={() => setView('home')} currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'login':
                 return <LoginView onLogin={(email) => { setUser({email}); setView('home'); }} onBack={() => setView('home')} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
         }
     };
 
@@ -412,10 +539,10 @@ const App: React.FC = () => {
 
     return (
         <div className={mainContainerClasses}>
-           <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} />
+           <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} />
            {renderView()}
            <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-black/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 px-4 py-2 rounded-full text-center text-xs text-slate-700 dark:text-slate-400 shadow-lg z-50">
-                26-1.8 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+                26-2.0 (Bêta) © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
            </footer>
         </div>
     );

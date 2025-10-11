@@ -34,12 +34,15 @@ export interface ChatMessage {
     isGenerating?: boolean;
 }
 
+export type AiModel = 'brevetai' | 'brevetai-plus';
+export type ImageModel = 'face' | 'face-plus';
+
 export interface ChatSession {
     id: string;
     title: string;
     createdAt: number;
     messages: ChatMessage[];
-    aiModel: 'brevetai' | 'brevetai-plus';
+    aiModel: AiModel;
 }
 
 export type SubscriptionPlan = 'free' | 'pro' | 'max';
