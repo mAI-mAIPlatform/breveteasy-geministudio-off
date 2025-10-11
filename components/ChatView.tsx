@@ -11,7 +11,6 @@ interface ChatViewProps {
         aiModel?: 'brevetai' | 'brevetai-plus';
     }) => void;
     onBack: () => void;
-    onNavigateHistory: () => void;
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
     userName: string;
@@ -25,18 +24,15 @@ const RegenerateIcon: React.FC<{ className?: string }> = ({ className }) => <svg
 const ChatHeader: React.FC<{ 
     title: string; 
     onBack: () => void; 
-    onNavigateHistory: () => void;
     children: React.ReactNode;
-}> = ({ title, onBack, onNavigateHistory, children }) => (
+}> = ({ title, onBack, children }) => (
     <header className="flex flex-col gap-4 pb-4 border-b border-white/20 dark:border-slate-800">
         <div className="flex items-center justify-between">
             <button onClick={onBack} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <h2 className="text-xl font-bold text-center truncate px-4">{title}</h2>
-            <button onClick={onNavigateHistory} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
-            </button>
+            <div className="w-10 h-10 flex-shrink-0"></div> {/* Placeholder to keep title centered */}
         </div>
         {children}
     </header>
@@ -104,7 +100,7 @@ const Message: React.FC<{
     );
 };
 
-export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, onBack, onNavigateHistory, systemInstruction, subscriptionPlan, userName }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, onBack, systemInstruction, subscriptionPlan, userName }) => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -307,10 +303,10 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto h-full flex flex-col bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg">
+        <div className="w-full h-full flex flex-col bg-white/10 dark:bg-slate-900/60">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
             <div className="p-4 sm:p-6">
-                <ChatHeader title={session.title} onBack={onBack} onNavigateHistory={onNavigateHistory}>
+                <ChatHeader title={session.title} onBack={onBack}>
                      <div className={`flex justify-center rounded-xl bg-black/10 dark:bg-slate-800 p-1 mt-2 ${isConversationStarted ? 'opacity-70' : ''}`}>
                         {(['brevetai', 'brevetai-plus'] as const).map((model) => (
                         <button

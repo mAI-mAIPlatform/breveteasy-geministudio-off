@@ -6,7 +6,7 @@ import { LoadingView } from './components/LoadingView';
 import { QuizView } from './components/QuizView';
 import { ResultsView } from './components/ResultsView';
 import { ChatView } from './components/ChatView';
-import { HistoryView } from './components/HistoryView';
+import { HistorySidebar } from './components/HistorySidebar';
 import { SettingsView } from './components/SettingsView';
 import { LoginView } from './components/LoginView';
 import { ExercisesView } from './components/ExercisesView';
@@ -15,7 +15,7 @@ import { ImageGenerationView } from './components/ImageGenerationView';
 import { ai, Type } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel } from './types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
 
 interface ImageUsage {
     count: number;
@@ -483,7 +483,6 @@ const App: React.FC = () => {
         setChatSessions(prev => prev.filter(s => s.id !== sessionId));
         if (activeChatSessionId === sessionId) {
             setActiveChatSessionId(null);
-            setView('home'); // or go to history view if it's open
         }
     };
     
@@ -494,8 +493,6 @@ const App: React.FC = () => {
 
     // Render Logic
     const renderView = () => {
-        const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
-        
         switch (view) {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
@@ -512,9 +509,25 @@ const App: React.FC = () => {
             case 'imageGeneration':
                 return <ImageGenerationView onGenerate={handleGenerateImage} onBack={handleBackToHome} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingGenerations} />;
             case 'chat':
-                return activeSession ? <ChatView session={activeSession} onUpdateSession={handleUpdateSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} systemInstruction={aiSystemInstruction} subscriptionPlan={subscriptionPlan} userName={userName} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
-            case 'history':
-                 return <HistoryView sessions={chatSessions} onSelectChat={handleSelectChat} onDeleteChat={handleDeleteChat} onBack={() => activeChatSessionId ? setView('chat') : setView('home')} />;
+                const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
+                return activeSession ? (
+                    <ChatView 
+                        session={activeSession} 
+                        onUpdateSession={handleUpdateSession} 
+                        onBack={() => setView('home')} 
+                        systemInstruction={aiSystemInstruction} 
+                        subscriptionPlan={subscriptionPlan} 
+                        userName={userName} 
+                    />
+                ) : (
+                    <div className="flex h-full items-center justify-center text-center p-8">
+                        <div className="flex flex-col items-center">
+                            <svg className="w-24 h-24 text-slate-400 dark:text-slate-600 mb-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">Bienvenue sur BrevetAI Chat</h2>
+                            <p className="text-slate-700 dark:text-slate-400 mt-2">Sélectionnez une conversation dans la barre latérale ou commencez-en une nouvelle pour obtenir de l'aide.</p>
+                        </div>
+                    </div>
+                );
             case 'settings':
                 return <SettingsView 
                     onBack={() => setView('home')} 
@@ -535,15 +548,31 @@ const App: React.FC = () => {
         }
     };
 
-    const mainContainerClasses = `min-h-screen font-sans flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 w-full pt-24 pb-16`;
-
     return (
-        <div className={mainContainerClasses}>
-           <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} />
-           {renderView()}
-           <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-black/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 px-4 py-2 rounded-full text-center text-xs text-slate-700 dark:text-slate-400 shadow-lg z-50">
-                26-2.0 (Bêta) © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
-           </footer>
+        <div className="relative min-h-screen font-sans flex flex-col w-full">
+            <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} />
+            
+            <div className="flex flex-1 w-full pt-20 overflow-hidden" style={{ zIndex: 1 }}>
+                {view === 'chat' && (
+                    <HistorySidebar
+                        sessions={chatSessions}
+                        activeSessionId={activeChatSessionId}
+                        onSelectChat={handleSelectChat}
+                        onDeleteChat={handleDeleteChat}
+                        onNewChat={handleStartChat}
+                    />
+                )}
+
+                <main className="flex-1 overflow-y-auto">
+                    <div className={`w-full h-full flex flex-col items-center justify-center ${view === 'chat' ? 'p-0' : 'p-4 sm:p-6 lg:p-8'}`}>
+                        {renderView()}
+                    </div>
+                </main>
+            </div>
+
+            <footer className="w-full text-center p-4 text-xs text-slate-700 dark:text-slate-400 shrink-0" style={{ zIndex: 1 }}>
+                 26-2.0 (Bêta) © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+            </footer>
         </div>
     );
 };
