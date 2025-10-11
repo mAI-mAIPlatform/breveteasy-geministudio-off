@@ -9,10 +9,35 @@ import { ChatView } from './components/ChatView';
 import { HistoryView } from './components/HistoryView';
 import { SettingsView } from './components/SettingsView';
 import { LoginView } from './components/LoginView';
+import { ExercisesView } from './components/ExercisesView';
 import { ai, Type } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage } from './types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login' | 'exercises';
+
+const FixedHeader: React.FC<{ onNavigateLogin: () => void; onNavigateSettings: () => void; }> = ({ onNavigateLogin, onNavigateSettings }) => (
+    <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-50 flex items-center space-x-3">
+       <button 
+        onClick={onNavigateSettings} 
+        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:bg-white/20 dark:hover:bg-black/20 transform hover:scale-110 transition-all duration-300"
+        title="Paramètres"
+        aria-label="Ouvrir les paramètres"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-800 dark:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
+      <button 
+        onClick={onNavigateLogin} 
+        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:bg-white/20 dark:hover:bg-black/20 transform hover:scale-110 transition-all duration-300"
+        title="Profil"
+        aria-label="Ouvrir la page de profil"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-800 dark:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+      </button>
+    </div>
+);
 
 const App: React.FC = () => {
     // App State
@@ -25,16 +50,15 @@ const App: React.FC = () => {
 
     // User/Profile State
     const [user, setUser] = useState<{email: string} | null>(null);
-    const [level, setLevel] = useState(1);
-    const [xp, setXp] = useState(0);
-    const [lastXpGained, setLastXpGained] = useState(0);
-    const [leveledUp, setLeveledUp] = useState(false);
     
     // Quiz State
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
     const [score, setScore] = useState(0);
+
+    // Exercises State
+    const [generatedExercisesHtml, setGeneratedExercisesHtml] = useState<string | null>(null);
 
     // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
@@ -59,21 +83,6 @@ const App: React.FC = () => {
         localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
     }, [chatSessions]);
 
-    // XP & Leveling Logic
-    const addXp = (amount: number) => {
-        const newXp = xp + amount;
-        const xpToNextLevel = level * 100;
-        setLastXpGained(amount);
-        if (newXp >= xpToNextLevel) {
-            setLevel(level + 1);
-            setXp(newXp - xpToNextLevel);
-            setLeveledUp(true);
-        } else {
-            setXp(newXp);
-            setLeveledUp(false);
-        }
-    };
-
     // Navigation Handlers
     const handleSubjectSelect = (subject: Subject) => {
         setSelectedSubject(subject);
@@ -85,8 +94,13 @@ const App: React.FC = () => {
         setQuiz(null);
         setQuizAnswers([]);
         setScore(0);
+        setGeneratedExercisesHtml(null);
         setView('home');
     };
+    
+    const handleGoToSettings = () => setView('settings');
+    const handleGoToLogin = () => setView('login');
+
 
     // Quiz Flow Handlers
     const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
@@ -151,7 +165,6 @@ const App: React.FC = () => {
         });
         setScore(newScore);
         setQuizAnswers(answers);
-        addXp(newScore * 10);
         setView('results');
     };
 
@@ -183,12 +196,8 @@ const App: React.FC = () => {
                 throw new Error("Le contenu généré n'est pas un document HTML valide.");
             }
             
-            const blob = new Blob([generatedHtml], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            URL.revokeObjectURL(url); 
-
-            handleBackToHome();
+            setGeneratedExercisesHtml(generatedHtml);
+            setView('exercises');
 
         } catch (error) {
             console.error("Failed to generate exercises:", error);
@@ -196,6 +205,20 @@ const App: React.FC = () => {
             handleBackToHome();
         }
     }, [selectedSubject]);
+
+    const handleDownloadExercises = () => {
+        if (!generatedExercisesHtml || !selectedSubject) return;
+        
+        const blob = new Blob([generatedExercisesHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `exercices-${selectedSubject.name.toLowerCase().replace(/\s/g, '_')}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
 
     // Chat Flow Handlers
     const handleStartChat = () => {
@@ -253,7 +276,9 @@ const App: React.FC = () => {
             case 'quiz':
                 return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} />;
             case 'results':
-                return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} xpGained={lastXpGained} leveledUp={leveledUp} />;
+                return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
+            case 'exercises':
+                return <ExercisesView onDownload={handleDownloadExercises} onBack={handleBackToHome} isDownloading={false} />;
             case 'chat':
                 return activeSession ? <ChatView session={activeSession} onUpdateSession={handleUpdateSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
             case 'history':
@@ -267,16 +292,15 @@ const App: React.FC = () => {
         }
     };
 
-    const mainContainerClasses = `bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 w-full ${view === 'home' ? 'pb-12' : ''}`;
+    const mainContainerClasses = `min-h-screen font-sans flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 w-full pt-24 pb-16`;
 
     return (
         <div className={mainContainerClasses}>
+           <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} />
            {renderView()}
-           {view === 'home' && (
-                <footer className="fixed bottom-0 left-0 w-full bg-gray-100 dark:bg-gray-900 p-2 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400">
-                    26-1.5 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
-                </footer>
-           )}
+           <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-black/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-full text-center text-xs text-gray-800 dark:text-gray-300 shadow-lg z-50">
+                26-1.6 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+           </footer>
         </div>
     );
 };

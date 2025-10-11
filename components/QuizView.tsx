@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import type { Quiz, Question } from '../types';
 
@@ -15,8 +14,8 @@ const QuestionDisplay: React.FC<{
   onOptionSelect: (option: string) => void;
 }> = ({ question, questionNumber, totalQuestions, selectedOption, onOptionSelect }) => (
   <div className="w-full">
-    <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Question {questionNumber} / {totalQuestions}</p>
-    <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">{question.questionText}</h3>
+    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Question {questionNumber} / {totalQuestions}</p>
+    <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{question.questionText}</h3>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {question.options.map((option, index) => {
         const isSelected = selectedOption === option;
@@ -24,10 +23,10 @@ const QuestionDisplay: React.FC<{
           <button
             key={index}
             onClick={() => onOptionSelect(option)}
-            className={`p-4 rounded-lg text-left text-lg transition-all duration-200 border-2 ${
+            className={`p-4 rounded-2xl text-left text-lg transition-all duration-300 border ${
               isSelected
-                ? 'bg-blue-600 text-white border-blue-700 dark:border-blue-500 shadow-lg scale-105'
-                : 'bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500'
+                ? 'bg-sky-400/30 dark:bg-sky-400/40 text-white border-sky-300 dark:border-sky-400 shadow-[0_0_20px_theme(colors.sky.400)] scale-105'
+                : 'bg-white/20 dark:bg-black/20 backdrop-blur-lg border-white/30 dark:border-white/20 text-gray-800 dark:text-gray-200 hover:border-sky-300 dark:hover:border-sky-400 hover:bg-white/40 dark:hover:bg-black/30'
             }`}
           >
             {option}
@@ -76,12 +75,12 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col h-full">
       <div className="mb-6">
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-          <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+        <div className="w-full bg-black/10 dark:bg-white/10 rounded-full h-2.5">
+          <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%`, boxShadow: '0 0 10px theme(colors.sky.400)' }}></div>
         </div>
       </div>
 
-      <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-2xl shadow-inner flex-grow flex items-center justify-center">
+      <div className="bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center">
         <QuestionDisplay
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}
@@ -95,21 +94,21 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
         <button
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
-          className="px-6 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-lg shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-3 bg-white/20 dark:bg-black/20 backdrop-blur-lg border border-white/30 dark:border-white/20 text-gray-800 dark:text-gray-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-black/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Précédent
         </button>
         {currentQuestionIndex < totalQuestions - 1 ? (
           <button
             onClick={handleNext}
-            className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="px-8 py-3 bg-indigo-500/80 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-600/80 disabled:opacity-50 transition-all transform hover:scale-105"
           >
             Suivant
           </button>
         ) : (
           <button
             onClick={handleSubmit}
-            className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition-colors animate-pulse"
+            className="px-8 py-3 bg-green-500/80 text-white font-bold rounded-xl shadow-lg hover:bg-green-600/80 transition-all animate-pulse transform hover:scale-105"
           >
             Terminer le Quiz
           </button>
