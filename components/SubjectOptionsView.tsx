@@ -1,12 +1,13 @@
 // Fix: Provide the implementation for the SubjectOptionsView component.
 import React, { useState, useRef, useEffect } from 'react';
-import type { Subject } from '../types';
+import type { Subject, SubscriptionPlan } from '../types';
 
 interface SubjectOptionsViewProps {
   subject: Subject;
   onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onBack: () => void;
+  subscriptionPlan: SubscriptionPlan;
 }
 
 const OptionCard: React.FC<{ title: string; description: string; icon: React.ReactNode; onClick: () => void; }> = ({ title, description, icon, onClick }) => (
@@ -106,14 +107,23 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
 };
 
 
-export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onBack }) => {
+export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onBack, subscriptionPlan }) => {
   const [customPrompt, setCustomPrompt] = useState('');
-  const [itemCount, setItemCount] = useState<number>(5);
   const [difficulty, setDifficulty] = useState<'Facile' | 'Moyen' | 'Difficile'>('Moyen');
   const [level, setLevel] = useState<string>('Brevet');
 
+  const ITEM_COUNTS = subscriptionPlan === 'free' ? [5] : [5, 10, 15];
+  const [itemCount, setItemCount] = useState<number>(ITEM_COUNTS[0]);
+  
+  // Effect to reset item count if plan changes and current count is no longer valid
+  useEffect(() => {
+    if (!ITEM_COUNTS.includes(itemCount)) {
+        setItemCount(ITEM_COUNTS[0]);
+    }
+  }, [subscriptionPlan, itemCount, ITEM_COUNTS]);
+
+
   const LEVELS = ['CM2', '6ème', '5ème', '4ème', '3ème', 'Brevet'];
-  const ITEM_COUNTS = [5, 10, 15];
   const DIFFICULTIES = ['Facile', 'Moyen', 'Difficile'] as const;
   
   return (

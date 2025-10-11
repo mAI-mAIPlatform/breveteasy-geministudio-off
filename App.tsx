@@ -10,13 +10,22 @@ import { HistoryView } from './components/HistoryView';
 import { SettingsView } from './components/SettingsView';
 import { LoginView } from './components/LoginView';
 import { ExercisesView } from './components/ExercisesView';
+import { SubscriptionView } from './components/SubscriptionView';
 import { ai, Type } from './services/geminiService';
-import type { Subject, Quiz, ChatSession, ChatMessage } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan } from './types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login' | 'exercises';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'history' | 'settings' | 'login' | 'exercises' | 'subscription';
 
-const FixedHeader: React.FC<{ onNavigateLogin: () => void; onNavigateSettings: () => void; }> = ({ onNavigateLogin, onNavigateSettings }) => (
+const FixedHeader: React.FC<{ onNavigateLogin: () => void; onNavigateSettings: () => void; onNavigateSubscription: () => void; }> = ({ onNavigateLogin, onNavigateSettings, onNavigateSubscription }) => (
     <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-50 flex items-center space-x-3">
+       <button 
+        onClick={onNavigateSubscription} 
+        className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:bg-white/20 dark:hover:bg-black/20 transform hover:scale-110 transition-all duration-300"
+        title="Forfaits"
+        aria-label="Voir les forfaits d'abonnement"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+      </button>
        <button 
         onClick={onNavigateSettings} 
         className="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/10 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-lg hover:bg-white/20 dark:hover:bg-black/20 transform hover:scale-110 transition-all duration-300"
@@ -46,6 +55,13 @@ const App: React.FC = () => {
     const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
         const savedTheme = localStorage.getItem('brevet-easy-theme');
         return (savedTheme as any) || 'system';
+    });
+    const [aiSystemInstruction, setAiSystemInstruction] = useState<string>(() => {
+        return localStorage.getItem('brevet-easy-ai-instruction') || '';
+    });
+    const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>(() => {
+        const savedPlan = localStorage.getItem('brevet-easy-plan');
+        return (savedPlan as SubscriptionPlan) || 'free';
     });
 
     // User/Profile State
@@ -77,6 +93,16 @@ const App: React.FC = () => {
             document.documentElement.classList.toggle('dark', theme === 'dark');
         }
     }, [theme]);
+    
+    // AI Instruction Persistence Effect
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction);
+    }, [aiSystemInstruction]);
+    
+    // Subscription Plan Persistence Effect
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-plan', subscriptionPlan);
+    }, [subscriptionPlan]);
 
     // Chat Session Persistence Effect
      useEffect(() => {
@@ -100,6 +126,24 @@ const App: React.FC = () => {
     
     const handleGoToSettings = () => setView('settings');
     const handleGoToLogin = () => setView('login');
+    const handleGoToSubscription = () => setView('subscription');
+
+    // Subscription Handler
+    const handleUpgradePlan = (code: string) => {
+        const upperCaseCode = code.toUpperCase();
+        if (upperCaseCode === 'BVTPRO') {
+            setSubscriptionPlan('pro');
+            alert('Félicitations ! Vous avez activé le forfait Brevet Pro.');
+            return true;
+        }
+        if (upperCaseCode === 'BVTMAX') {
+            setSubscriptionPlan('max');
+            alert('Félicitations ! Vous avez activé le forfait Brevet Max.');
+            return true;
+        }
+        alert('Code invalide. Veuillez réessayer.');
+        return false;
+    };
 
 
     // Quiz Flow Handlers
@@ -136,13 +180,23 @@ const App: React.FC = () => {
                 prompt += `\n\nInstructions supplémentaires de l'utilisateur : focalise le quiz sur les points suivants : "${customPrompt.trim()}".`;
             }
 
+            const config: {
+                responseMimeType: string;
+                responseSchema: any;
+                systemInstruction?: string;
+            } = {
+                responseMimeType: "application/json",
+                responseSchema: quizSchema,
+            };
+
+            if (aiSystemInstruction.trim() && subscriptionPlan !== 'free') {
+                config.systemInstruction = aiSystemInstruction.trim();
+            }
+
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: quizSchema,
-                },
+                config,
             });
             
             const quizData = JSON.parse(response.text);
@@ -153,7 +207,7 @@ const App: React.FC = () => {
             alert("Désolé, une erreur est survenue lors de la génération du quiz. Veuillez réessayer.");
             handleBackToHome();
         }
-    }, [selectedSubject]);
+    }, [selectedSubject, aiSystemInstruction, subscriptionPlan]);
     
     const handleQuizSubmit = (answers: (string | null)[]) => {
         if (!quiz) return;
@@ -185,10 +239,17 @@ const App: React.FC = () => {
             if (customPrompt.trim()) {
                 prompt += `\n\nInstructions supplémentaires de l'utilisateur : base les exercices sur les points suivants : "${customPrompt.trim()}".`;
             }
+            
+            const config: { systemInstruction?: string } = {};
+
+            if (aiSystemInstruction.trim() && subscriptionPlan !== 'free') {
+                config.systemInstruction = aiSystemInstruction.trim();
+            }
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
+                config,
             });
 
             const generatedHtml = response.text;
@@ -204,7 +265,7 @@ const App: React.FC = () => {
             alert("Désolé, une erreur est survenue lors de la génération des exercices. Veuillez réessayer.");
             handleBackToHome();
         }
-    }, [selectedSubject]);
+    }, [selectedSubject, aiSystemInstruction, subscriptionPlan]);
 
     const handleDownloadExercises = () => {
         if (!generatedExercisesHtml || !selectedSubject) return;
@@ -270,7 +331,7 @@ const App: React.FC = () => {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
             case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onBack={handleBackToHome} />;
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onBack={handleBackToHome} subscriptionPlan={subscriptionPlan} />;
             case 'loading':
                 return selectedSubject && <LoadingView subject={selectedSubject.name} task={loadingTask} />;
             case 'quiz':
@@ -280,11 +341,13 @@ const App: React.FC = () => {
             case 'exercises':
                 return <ExercisesView onDownload={handleDownloadExercises} onBack={handleBackToHome} isDownloading={false} />;
             case 'chat':
-                return activeSession ? <ChatView session={activeSession} onUpdateSession={handleUpdateSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
+                return activeSession ? <ChatView session={activeSession} onUpdateSession={handleUpdateSession} onBack={() => setView('home')} onNavigateHistory={() => setView('history')} systemInstruction={aiSystemInstruction} subscriptionPlan={subscriptionPlan} /> : <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} />;
             case 'history':
                  return <HistoryView sessions={chatSessions} onSelectChat={handleSelectChat} onDeleteChat={handleDeleteChat} onBack={() => activeChatSessionId ? setView('chat') : setView('home')} />;
             case 'settings':
-                return <SettingsView onBack={() => setView('home')} theme={theme} onThemeChange={setTheme} />;
+                return <SettingsView onBack={() => setView('home')} theme={theme} onThemeChange={setTheme} aiSystemInstruction={aiSystemInstruction} onAiSystemInstructionChange={setAiSystemInstruction} subscriptionPlan={subscriptionPlan} />;
+            case 'subscription':
+                return <SubscriptionView onBack={() => setView('home')} currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'login':
                 return <LoginView onLogin={(email) => { setUser({email}); setView('home'); }} onBack={() => setView('home')} />;
             default:
@@ -296,10 +359,10 @@ const App: React.FC = () => {
 
     return (
         <div className={mainContainerClasses}>
-           <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} />
+           <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} />
            {renderView()}
            <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-black/10 backdrop-blur-lg border border-white/20 px-4 py-2 rounded-full text-center text-xs text-gray-800 dark:text-gray-300 shadow-lg z-50">
-                26-1.6 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+                26-1.8 (Bêta) © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
            </footer>
         </div>
     );

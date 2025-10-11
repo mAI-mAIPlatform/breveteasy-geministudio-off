@@ -40,3 +40,5 @@ export interface ChatSession {
     createdAt: number;
     messages: ChatMessage[];
 }
+
+export type SubscriptionPlan = 'free' | 'pro' | 'max';

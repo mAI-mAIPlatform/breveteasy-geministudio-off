@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import type { ChatSession, ChatMessage, ChatPart } from '../types';
+import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan } from '../types';
 import { ai } from '../services/geminiService';
 import type { Chat, Part } from '@google/genai';
 
@@ -8,6 +8,8 @@ interface ChatViewProps {
     onUpdateSession: (sessionId: string, messages: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]), newTitle?: string) => void;
     onBack: () => void;
     onNavigateHistory: () => void;
+    systemInstruction: string;
+    subscriptionPlan: SubscriptionPlan;
 }
 
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
@@ -89,7 +91,7 @@ const Message: React.FC<{
     );
 };
 
-export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, onBack, onNavigateHistory }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, onBack, onNavigateHistory, systemInstruction, subscriptionPlan }) => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -100,6 +102,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
+
+    const isChatLimitReached = subscriptionPlan === 'free' && session.messages.length >= 10;
 
     useEffect(scrollToBottom, [session.messages]);
 
@@ -116,11 +120,18 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                 }).filter(p => p.text || p.inlineData)
             }));
 
+        const baseInstruction = "Tu es BrevetAI, un tuteur IA spécialisé dans l'aide aux révisions pour le Brevet des collèges en France. Tes réponses doivent être pédagogiques, encourageantes et adaptées au niveau d'un élève de 3ème. Sois concis et clair. Tu peux utiliser des listes à puces ou des exemples pour faciliter la compréhension. N'hésite pas à poser des questions pour vérifier la compréhension de l'élève.";
+        
+        let finalInstruction = baseInstruction;
+        if (subscriptionPlan !== 'free' && systemInstruction.trim()) {
+            finalInstruction = `${systemInstruction.trim()}\n\n---\n\n${baseInstruction}`;
+        }
+        
         return ai.chats.create({
             model: 'gemini-2.5-flash',
             history: geminiHistory,
             config: {
-                systemInstruction: "Tu es BrevetAI, un tuteur IA spécialisé dans l'aide aux révisions pour le Brevet des collèges en France. Tes réponses doivent être pédagogiques, encourageantes et adaptées au niveau d'un élève de 3ème. Sois concis et clair. Tu peux utiliser des listes à puces ou des exemples pour faciliter la compréhension. N'hésite pas à poser des questions pour vérifier la compréhension de l'élève.",
+                systemInstruction: finalInstruction,
             },
         });
     }
@@ -148,7 +159,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
 
     const handleSendMessage = async () => {
         const textInput = input.trim();
-        if (!textInput && !attachment || isLoading) return;
+        if (!textInput && !attachment || isLoading || isChatLimitReached) return;
         
         const userParts: ChatPart[] = [];
         setIsLoading(true);
@@ -290,6 +301,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                         onEdit={handleEditMessage}
                     />
                 ))}
+                 {isChatLimitReached && (
+                    <div className="text-center p-4 bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border border-yellow-500/30 rounded-xl">
+                        Vous avez atteint la limite de messages pour cette conversation. Passez à un forfait supérieur pour continuer.
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
             </main>
 
@@ -303,7 +319,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                     </div>
                 )}
                 <div className="flex items-center bg-white/20 dark:bg-black/20 backdrop-blur-lg rounded-full p-1 shadow-inner pr-2 border border-white/20 dark:border-white/10">
-                    <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors">
+                    <button onClick={() => fileInputRef.current?.click()} disabled={isChatLimitReached} className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                     </button>
                     <textarea
@@ -315,12 +331,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                                 handleSendMessage();
                             }
                         }}
-                        placeholder="Poser une question à BrevetAI..."
+                        placeholder={isChatLimitReached ? "Limite de messages atteinte." : "Poser une question à BrevetAI..."}
                         className="flex-grow bg-transparent p-2 text-gray-900 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400 focus:outline-none resize-none leading-tight"
                         rows={1}
-                        disabled={isLoading}
+                        disabled={isLoading || isChatLimitReached}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-gray-900 dark:bg-gray-50 text-white dark:text-gray-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-gray-900 dark:bg-gray-50 text-white dark:text-gray-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
                     </button>
                 </div>
