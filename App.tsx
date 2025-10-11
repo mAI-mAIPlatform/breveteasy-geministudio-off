@@ -370,7 +370,7 @@ const App: React.FC = () => {
            <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} />
            {renderView()}
            <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto bg-black/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 px-4 py-2 rounded-full text-center text-xs text-slate-700 dark:text-slate-400 shadow-lg z-50">
-                26-1.8 (Bêta) © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+                26-1.8 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
            </footer>
         </div>
     );

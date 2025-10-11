@@ -23,7 +23,7 @@ const PlanCard: React.FC<{
 }> = ({ planKey, title, features, isCurrent, onSelectUpgrade, isRecommended }) => (
     <div className={`relative p-6 rounded-3xl border transition-all duration-300 flex flex-col ${isCurrent ? 'border-sky-400 bg-sky-400/10 shadow-lg' : 'border-slate-700 bg-slate-800/60'}`}>
         {isRecommended && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-indigo-500 text-white text-xs font-bold rounded-full shadow-md">Populaire</div>}
-        <h3 className="text-2xl font-bold text-slate-100 mb-4">{title}</h3>
+        <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-sky-400 to-red-400 bg-clip-text text-transparent">{title}</h3>
         <ul className="space-y-3 text-slate-800 dark:text-slate-300 flex-grow">
             {features.map((feature, index) => (
                 <li key={index} className="flex items-start">
@@ -40,7 +40,7 @@ const PlanCard: React.FC<{
                     onClick={() => onSelectUpgrade(planKey)}
                     className="mt-6 w-full px-6 py-3 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all"
                 >
-                    Passer à {title}
+                    Entrer le code
                 </button>
             )
         )}
@@ -101,7 +101,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack, curr
         <div className="w-full max-w-4xl mx-auto">
             <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl">
                 <header className="flex items-center justify-between pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
-                    <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Brevet +</h2>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-sky-400 to-red-400 bg-clip-text text-transparent">Brevet +</h2>
                     <button onClick={onBack} title="Fermer" className="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
@@ -109,7 +109,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onBack, curr
                 
                 <div className="text-center mb-8">
                     <p className="text-lg text-slate-700 dark:text-slate-300">
-                        Votre forfait actuel est <span className="font-bold text-sky-400">{planTitleMap[currentPlan]}</span>.
+                        Votre forfait actuel est <span className="font-bold bg-gradient-to-r from-sky-400 to-red-400 bg-clip-text text-transparent">{planTitleMap[currentPlan]}</span>.
                     </p>
                     <p className="text-slate-600 dark:text-slate-400">Passez à un forfait supérieur pour débloquer plus de fonctionnalités.</p>
                 </div>
