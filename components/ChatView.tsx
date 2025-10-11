@@ -1,15 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan } from '../types';
 import { ai } from '../services/geminiService';
 import type { Chat, Part } from '@google/genai';
 
 interface ChatViewProps {
     session: ChatSession;
-    onUpdateSession: (sessionId: string, messages: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]), newTitle?: string) => void;
+    onUpdateSession: (sessionId: string, updates: {
+        messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
+        title?: string;
+        aiModel?: 'brevetai' | 'brevetai-plus';
+    }) => void;
     onBack: () => void;
     onNavigateHistory: () => void;
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
+    userName: string;
 }
 
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
@@ -17,15 +22,23 @@ const CheckIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmln
 const EditIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>;
 const RegenerateIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M6.166 9.348L3 12.529m0 0l3.181-3.182m0 0-3.181 3.182" /></svg>;
 
-const ChatHeader: React.FC<{ title: string; onBack: () => void; onNavigateHistory: () => void; }> = ({ title, onBack, onNavigateHistory }) => (
-    <header className="flex items-center justify-between pb-4 border-b border-white/20 dark:border-slate-800">
-        <button onClick={onBack} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <h2 className="text-xl font-bold text-center truncate px-4">{title}</h2>
-        <button onClick={onNavigateHistory} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
-        </button>
+const ChatHeader: React.FC<{ 
+    title: string; 
+    onBack: () => void; 
+    onNavigateHistory: () => void;
+    children: React.ReactNode;
+}> = ({ title, onBack, onNavigateHistory, children }) => (
+    <header className="flex flex-col gap-4 pb-4 border-b border-white/20 dark:border-slate-800">
+        <div className="flex items-center justify-between">
+            <button onClick={onBack} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <h2 className="text-xl font-bold text-center truncate px-4">{title}</h2>
+            <button onClick={onNavigateHistory} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
+            </button>
+        </div>
+        {children}
     </header>
 );
 
@@ -91,7 +104,7 @@ const Message: React.FC<{
     );
 };
 
-export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, onBack, onNavigateHistory, systemInstruction, subscriptionPlan }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, onBack, onNavigateHistory, systemInstruction, subscriptionPlan, userName }) => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -103,8 +116,18 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    const messageLimit = subscriptionPlan === 'free' ? 15 : subscriptionPlan === 'pro' ? 100 : Infinity;
+    const messageLimit = useMemo(() => {
+        if (session.aiModel === 'brevetai') {
+            return Infinity;
+        }
+        // Logic for 'brevetai-plus'
+        if (subscriptionPlan === 'free') return 15;
+        if (subscriptionPlan === 'pro') return 100;
+        return Infinity; // for 'max' plan
+    }, [subscriptionPlan, session.aiModel]);
+    
     const isChatLimitReached = session.messages.length >= messageLimit;
+    const isConversationStarted = session.messages.length > 0;
 
     useEffect(scrollToBottom, [session.messages]);
 
@@ -127,13 +150,23 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
         if (subscriptionPlan !== 'free' && systemInstruction.trim()) {
             finalInstruction = `${systemInstruction.trim()}\n\n---\n\n${baseInstruction}`;
         }
+        if (userName.trim()) {
+            finalInstruction += `\n\nL'utilisateur s'appelle ${userName.trim()}. Adresse-toi à lui par son prénom de manière amicale.`;
+        }
+        
+        const config: { systemInstruction: string; thinkingConfig?: { thinkingBudget: number } } = {
+             systemInstruction: finalInstruction,
+        };
+
+        if (session.aiModel === 'brevetai') {
+            config.thinkingConfig = { thinkingBudget: 0 };
+        }
+        // For 'brevetai-plus', we omit thinkingConfig to use the default (enabled)
         
         return ai.chats.create({
             model: 'gemini-2.5-flash',
             history: geminiHistory,
-            config: {
-                systemInstruction: finalInstruction,
-            },
+            config,
         });
     }
 
@@ -152,7 +185,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                 model: 'gemini-2.5-flash',
                 contents: `Génère un titre court et concis (4-5 mots maximum) pour une discussion qui commence par cette question : "${initialPrompt}". Réponds uniquement avec le titre.`,
             });
-            onUpdateSession(session.id, (prevMessages) => prevMessages, response.text.trim().replace(/"/g, ''));
+            onUpdateSession(session.id, { title: response.text.trim().replace(/"/g, '') });
         } catch (error) {
             console.error("Error generating title:", error);
         }
@@ -181,13 +214,13 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
 
         const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
         const baseMessages = [...session.messages, userInputMessage];
-        onUpdateSession(session.id, baseMessages);
+        onUpdateSession(session.id, { messages: baseMessages });
         
         setInput('');
         setAttachment(null);
 
         const modelThinkingMessage: ChatMessage = { role: 'model', parts: [], isGenerating: true };
-        onUpdateSession(session.id, [...baseMessages, modelThinkingMessage]);
+        onUpdateSession(session.id, { messages: [...baseMessages, modelThinkingMessage] });
         
         try {
             const chat = createChatInstance(session.messages);
@@ -197,12 +230,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
             for await (const chunk of result) {
                 fullResponse += chunk.text;
                 const modelMessage: ChatMessage = { role: 'model', parts: [{ text: fullResponse }] };
-                onUpdateSession(session.id, [...baseMessages, modelMessage]);
+                onUpdateSession(session.id, { messages: [...baseMessages, modelMessage] });
             }
         } catch (error) {
             console.error("Error sending message:", error);
             const errorMessage: ChatMessage = { role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] };
-            onUpdateSession(session.id, prev => [...prev.slice(0, -1), errorMessage]);
+            onUpdateSession(session.id, { messages: prev => [...prev.slice(0, -1), errorMessage] });
         } finally {
             setIsLoading(false);
         }
@@ -228,7 +261,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
 
         // Remove the message and subsequent messages
         const newMessages = session.messages.slice(0, index);
-        onUpdateSession(session.id, newMessages);
+        onUpdateSession(session.id, { messages: newMessages });
     };
 
     const handleRegenerateResponse = async (index: number) => {
@@ -245,7 +278,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
         
         let messagesForUpdate = [...session.messages];
         messagesForUpdate[index] = { role: 'model', parts: [], isGenerating: true };
-        onUpdateSession(session.id, messagesForUpdate);
+        onUpdateSession(session.id, { messages: messagesForUpdate });
         
         const chat = createChatInstance(historyForRegen.slice(0, -1));
 
@@ -255,12 +288,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
             for await (const chunk of result) {
                 fullResponse += chunk.text;
                 messagesForUpdate[index] = { role: 'model', parts: [{ text: fullResponse }] };
-                onUpdateSession(session.id, [...messagesForUpdate]);
+                onUpdateSession(session.id, { messages: [...messagesForUpdate] });
             }
         } catch (error) {
             console.error("Error regenerating response:", error);
             messagesForUpdate[index] = { role: 'model', parts: [{ text: "Désolé, une erreur est survenue lors de la regénération." }] };
-            onUpdateSession(session.id, messagesForUpdate);
+            onUpdateSession(session.id, { messages: messagesForUpdate });
         } finally {
             setIsLoading(false);
         }
@@ -277,7 +310,24 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
         <div className="w-full max-w-4xl mx-auto h-full flex flex-col bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
             <div className="p-4 sm:p-6">
-                <ChatHeader title={session.title} onBack={onBack} onNavigateHistory={onNavigateHistory} />
+                <ChatHeader title={session.title} onBack={onBack} onNavigateHistory={onNavigateHistory}>
+                     <div className={`flex justify-center rounded-xl bg-black/10 dark:bg-slate-800 p-1 mt-2 ${isConversationStarted ? 'opacity-70' : ''}`}>
+                        {(['brevetai', 'brevetai-plus'] as const).map((model) => (
+                        <button
+                            key={model}
+                            disabled={isConversationStarted}
+                            onClick={() => onUpdateSession(session.id, { aiModel: model })}
+                            className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            session.aiModel === model
+                                ? 'bg-white dark:bg-slate-950 text-indigo-500 dark:text-sky-300 shadow-md'
+                                : `text-slate-700 dark:text-slate-300 ${!isConversationStarted ? 'hover:bg-white/50 dark:hover:bg-slate-700/50' : 'cursor-default'}`
+                            }`}
+                        >
+                            {model === 'brevetai' ? 'BrevetAI' : 'BrevetAI +'}
+                        </button>
+                        ))}
+                    </div>
+                </ChatHeader>
             </div>
 
             <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">
@@ -286,7 +336,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                         <div className="bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/20 dark:border-slate-700 p-5 rounded-full mb-4">
                             <svg className="w-12 h-12 text-indigo-500 dark:text-sky-300" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">BrevetAI</h2>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">
+                           {session.aiModel === 'brevetai' ? 'BrevetAI' : 'BrevetAI +'}
+                        </h2>
                         <p className="text-slate-700 dark:text-slate-400">Comment puis-je vous aider à réviser ?</p>
                     </div>
                 )}
@@ -304,7 +356,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                 ))}
                  {isChatLimitReached && (
                     <div className="text-center p-4 bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border border-yellow-500/30 rounded-xl">
-                        Vous avez atteint la limite de {messageLimit} messages pour cette conversation. Passez à un forfait supérieur pour continuer.
+                        Vous avez atteint la limite de {messageLimit} messages pour BrevetAI+ avec votre forfait. Passez à un forfait supérieur pour continuer.
                     </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -337,8 +389,10 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, on
                         rows={1}
                         disabled={isLoading || isChatLimitReached}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
-                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0">
+                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
+                       </svg>
                     </button>
                 </div>
             </footer>

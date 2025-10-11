@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SUBJECTS } from '../constants';
 import type { Subject } from '../types';
 
@@ -25,26 +25,32 @@ const SubjectCard: React.FC<{ subject: Subject; onSelect: () => void }> = ({ sub
   </button>
 );
 
-const BrevetAICard: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-    <button
-        onClick={onClick}
-        className="w-full bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 text-white rounded-3xl shadow-lg hover:shadow-2xl transform hover:scale-[1.03] transition-all p-8 text-left"
-    >
-        <div className="flex items-center">
-            <div className="bg-white/20 p-4 rounded-full mr-6 shadow-inner">
-                <svg className="w-10 h-10 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+const BrevetAICard: React.FC<{
+    onClick: () => void;
+}> = ({ onClick }) => {
+    return (
+        <div className="w-full bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center text-left w-full">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 flex-shrink-0 mr-5 sm:mr-6 shadow-lg flex items-center justify-center">
+                   <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                </div>
+                <div>
+                    <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+                        Discuter avec BrevetAI
+                    </h2>
+                    <p className="text-md text-slate-800 dark:text-slate-300 mt-1">
+                        Obtenez de l'aide pour vos révisions, des explications et plus encore.
+                    </p>
+                </div>
             </div>
-            <div>
-                <h2 className="text-4xl font-bold text-slate-900 dark:text-slate-50">
-                    BrevetAI
-                </h2>
-                <p className="text-lg text-slate-800 dark:text-slate-200 mt-1">
-                    L'IA spécialisée pour les révisions du Brevet.
-                </p>
+            <div className="flex items-center gap-3 w-full md:w-auto flex-shrink-0">
+                <button onClick={onClick} className="w-full md:flex-grow-0 p-3 px-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all text-center">
+                    Démarrer
+                </button>
             </div>
         </div>
-    </button>
-);
+    );
+};
 
 
 interface HomeViewProps {

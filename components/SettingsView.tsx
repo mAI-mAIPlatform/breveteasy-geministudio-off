@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { SubscriptionPlan } from '../types';
 
 interface SettingsViewProps {
@@ -8,10 +8,92 @@ interface SettingsViewProps {
   aiSystemInstruction: string;
   onAiSystemInstructionChange: (instruction: string) => void;
   subscriptionPlan: SubscriptionPlan;
+  userName: string;
+  onUserNameChange: (name: string) => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThemeChange, aiSystemInstruction, onAiSystemInstructionChange, subscriptionPlan }) => {
+const FeedbackModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+}> = ({ isOpen, onClose }) => {
+    const [feedbackMessage, setFeedbackMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!feedbackMessage.trim()) return;
+        
+        setIsSending(true);
+        // Simulate API call
+        setTimeout(() => {
+            setIsSending(false);
+            setFeedbackMessage('');
+            alert("Merci pour votre retour ! Votre message a bien été envoyé.");
+            onClose();
+        }, 1000);
+    };
+    
+    if (!isOpen) return null;
+    
+    return (
+        <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-8 rounded-3xl shadow-2xl w-full max-w-lg mx-auto transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale"
+                onClick={(e) => e.stopPropagation()}
+                style={{ animationFillMode: 'forwards' }}
+            >
+                <header className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700 mb-6">
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Votre avis nous intéresse</h3>
+                     <button onClick={onClose} title="Fermer" className="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </header>
+                <form onSubmit={handleSubmit}>
+                    <p className="text-slate-700 dark:text-slate-400 mb-4">
+                        Partagez vos suggestions, signalez un bug ou donnez simplement votre avis sur l'application.
+                    </p>
+                    <textarea
+                        rows={6}
+                        value={feedbackMessage}
+                        onChange={(e) => setFeedbackMessage(e.target.value)}
+                        className="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 transition"
+                        placeholder="Écrivez votre message ici..."
+                        required
+                    />
+                    <div className="flex justify-end items-center gap-4 mt-6">
+                        <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-black/10 dark:hover:bg-slate-700/50 transition-colors">
+                            Annuler
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!feedbackMessage.trim() || isSending}
+                            className="px-6 py-2 bg-indigo-500 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            {isSending ? 'Envoi...' : 'Envoyer'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <style>{`
+                @keyframes fade-in-scale {
+                    from { transform: scale(0.95); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                .animate-fade-in-scale {
+                    animation: fade-in-scale 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+                }
+            `}</style>
+        </div>
+    );
+};
+
+
+export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThemeChange, aiSystemInstruction, onAiSystemInstructionChange, subscriptionPlan, userName, onUserNameChange }) => {
   const isCustomInstructionDisabled = subscriptionPlan === 'free';
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   
   return (
     <div className="w-full max-w-lg mx-auto">
@@ -43,6 +125,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThe
                 </div>
             </div>
 
+             <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Mon Prénom</h3>
+                <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => onUserNameChange(e.target.value)}
+                    className="w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition"
+                    placeholder="Ex: Jean"
+                />
+                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    Indiquez votre prénom pour que BrevetAI puisse s'adresser à vous personnellement.
+                </p>
+            </div>
+
             <div className="relative">
                 <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Instructions pour BrevetAI</h3>
                 <textarea
@@ -64,8 +160,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, theme, onThe
                     </div>
                 )}
             </div>
+
+            <div className="border-t border-white/20 dark:border-slate-700 my-6"></div>
+
+            <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Support & Commentaires</h3>
+                <button
+                    onClick={() => setIsFeedbackModalOpen(true)}
+                    className="w-full text-left p-4 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm hover:bg-white/30 dark:hover:bg-slate-700/80 transition-colors flex items-center justify-between"
+                >
+                    <span>Envoyer un commentaire</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+            </div>
         </div>
       </div>
+      <FeedbackModal isOpen={isFeedbackModalOpen} onClose={() => setIsFeedbackModalOpen(false)} />
     </div>
   );
 };

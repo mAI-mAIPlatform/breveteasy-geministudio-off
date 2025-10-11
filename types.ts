@@ -39,6 +39,7 @@ export interface ChatSession {
     title: string;
     createdAt: number;
     messages: ChatMessage[];
+    aiModel: 'brevetai' | 'brevetai-plus';
 }
 
 export type SubscriptionPlan = 'free' | 'pro' | 'max';
