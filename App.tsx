@@ -111,7 +111,7 @@ const App: React.FC = () => {
     });
      const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>(() => {
         const savedModel = localStorage.getItem('brevet-easy-default-image-model');
-        return (savedModel as ImageModel) || 'face';
+        return (savedModel as ImageModel) || 'faceai';
     });
     const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-image-instruction') || '';
@@ -430,7 +430,7 @@ const App: React.FC = () => {
                 ? `${imageGenerationInstruction.trim()}\n\n---\n\n${prompt}`
                 : prompt;
 
-            if (model === 'face-plus') {
+            if (model === 'faceai-plus') {
                 finalPrompt = `portrait photographique de haute qualité, ultra détaillé, photoréaliste. ${finalPrompt}`;
             }
 

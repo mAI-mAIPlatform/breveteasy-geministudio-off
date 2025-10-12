@@ -188,7 +188,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange
             <div>
                 <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Modèle d'image par défaut</h3>
                 <div className="flex space-x-2 rounded-xl bg-black/10 dark:bg-slate-800 p-1">
-                    {(['face', 'face-plus'] as const).map((model) => (
+                    {(['faceai', 'faceai-plus'] as const).map((model) => (
                     <button
                         key={model}
                         onClick={() => onDefaultImageModelChange(model)}
@@ -198,12 +198,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange
                             : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
                         }`}
                     >
-                        {model === 'face' ? 'Face' : 'Face +'}
+                        {model === 'faceai' ? 'FaceAI' : 'FaceAI +'}
                     </button>
                     ))}
                 </div>
                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Choisissez le modèle pour la génération d'images. Face+ peut offrir de meilleurs résultats.
+                    Choisissez le modèle pour la génération d'images. FaceAI+ peut offrir de meilleurs résultats.
                 </p>
             </div>
 

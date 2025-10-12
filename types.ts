@@ -35,7 +35,7 @@ export interface ChatMessage {
 }
 
 export type AiModel = 'brevetai' | 'brevetai-plus';
-export type ImageModel = 'face' | 'face-plus';
+export type ImageModel = 'faceai' | 'faceai-plus';
 
 export interface ChatSession {
     id: string;

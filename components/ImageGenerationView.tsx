@@ -82,7 +82,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                     ) : (
                         <div className="w-full space-y-4">
                              <div className="flex justify-center rounded-xl bg-black/10 dark:bg-slate-800 p-1">
-                                {(['face', 'face-plus'] as const).map((model) => (
+                                {(['faceai', 'faceai-plus'] as const).map((model) => (
                                 <button
                                     key={model}
                                     onClick={() => setSelectedModel(model)}
@@ -92,7 +92,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                                         : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
                                     }`}
                                 >
-                                    {model === 'face' ? 'Face' : 'Face +'}
+                                    {model === 'faceai' ? 'FaceAI' : 'FaceAI +'}
                                 </button>
                                 ))}
                             </div>
