@@ -6,152 +6,153 @@ interface SubscriptionViewProps {
   onUpgrade: (code: string) => boolean;
 }
 
-const CheckmarkIcon: React.FC = () => (
-    <svg className="w-5 h-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+const CheckIcon: React.FC<{ className?: string }> = ({ className = "h-6 w-6" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
     </svg>
 );
 
-const PlanCard: React.FC<{
-    planKey: SubscriptionPlan;
-    title: string;
-    features: string[];
-    isCurrent: boolean;
-    onSelectUpgrade: (plan: SubscriptionPlan) => void;
-    isRecommended?: boolean;
-}> = ({ planKey, title, features, isCurrent, onSelectUpgrade, isRecommended }) => (
-    <div className={`relative p-6 rounded-3xl border transition-all duration-300 flex flex-col ${isCurrent ? 'border-sky-400 bg-sky-400/10 shadow-lg' : 'border-slate-700 bg-slate-800/60'}`}>
-        {isRecommended && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-indigo-500 text-white text-xs font-bold rounded-full shadow-md">Recommandé</div>}
-        <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-sky-400 to-red-400 bg-clip-text text-transparent">{title}</h3>
-        <ul className="space-y-3 text-slate-800 dark:text-slate-300 flex-grow">
-            {features.map((feature, index) => (
-                <li key={index} className="flex items-start">
-                    <CheckmarkIcon />
-                    <span className="ml-3">{feature}</span>
-                </li>
-            ))}
-        </ul>
-        {isCurrent ? (
-            <div className="mt-6 text-sm font-semibold text-sky-300 text-center">Votre forfait actuel</div>
-        ) : (
-            planKey !== 'free' && (
-                <button
-                    onClick={() => onSelectUpgrade(planKey)}
-                    className="mt-6 w-full px-6 py-3 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all"
-                >
-                    Entrer le code
-                </button>
-            )
-        )}
-    </div>
+const PlanFeature: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <li className="flex items-start">
+        <CheckIcon className="h-6 w-6 text-green-400 mr-3 flex-shrink-0" />
+        <span className="text-slate-300">{children}</span>
+    </li>
 );
 
+interface PlanCardProps {
+    planName: string;
+    planKey: SubscriptionPlan;
+    features: string[];
+    isRecommended?: boolean;
+    isCurrent: boolean;
+    onUpgrade: (code: string) => boolean;
+}
 
-export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan, onUpgrade }) => {
+const PlanCard: React.FC<PlanCardProps> = ({ planName, planKey, features, isRecommended, isCurrent, onUpgrade }) => {
     const [code, setCode] = useState('');
-    const [planToUpgrade, setPlanToUpgrade] = useState<SubscriptionPlan | null>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (code.trim()) {
-            const success = onUpgrade(code.trim());
+            const success = onUpgrade(code);
             if (success) {
                 setCode('');
-                setPlanToUpgrade(null);
             }
         }
     };
 
-    const handleSelectUpgrade = (plan: SubscriptionPlan) => {
-        setPlanToUpgrade(plan);
-        setCode('');
-    };
+    const cardBg = "bg-slate-800";
+    const isFree = planKey === 'free';
 
-    const planFeatures = {
-        free: [
-            "Niveau : Brevet uniquement",
-            "Quiz & exercices : 5 questions max",
-            "Difficulté : Normale uniquement",
-            "Chat avec BrevetAI+ : 15 messages / jour",
-            "Générations : 5 quiz ou fiches / jour",
-            "Génération d'images : 2 / jour",
-        ],
-        pro: [
-            "Tous les niveaux & difficultés",
-            "Quiz & exercices : jusqu'à 20 questions",
-            "Chat avec BrevetAI+ : 100 messages / jour",
-            "Générations : 50 quiz ou fiches / jour",
-            "Génération d'évaluations & fiches de révision",
-            "Instructions personnalisées pour l'IA",
-            "Génération d'images : 5 / jour",
-        ],
-        max: [
-            "Tous les avantages du forfait Pro",
-            "Quiz, exercices, chat & générations illimités",
-            "Génération d'images illimitée",
-            "Accès en avant-première aux nouveautés (Bêta)",
-            "Support prioritaire",
-        ]
-    };
-    
-    const planTitleMap: Record<SubscriptionPlan, string> = {
-        free: "Brevet' Easy",
-        pro: "Brevet Pro",
-        max: "Brevet Max",
+    return (
+        <div className={`relative flex flex-col p-8 ${cardBg} rounded-3xl border border-slate-700 shadow-2xl`}>
+            {isRecommended && (
+                <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-indigo-500 text-white text-sm font-bold rounded-full shadow-lg">
+                    Recommandé
+                </div>
+            )}
+            <h3 className={`text-3xl font-bold mb-6 text-center ${planKey === 'pro' ? 'text-cyan-300' : planKey === 'max' ? 'text-purple-300' : 'text-slate-100'}`}>{planName}</h3>
+            <ul className="space-y-4 mb-8 flex-grow">
+                {features.map((feature, index) => (
+                    <PlanFeature key={index}>{feature}</PlanFeature>
+                ))}
+            </ul>
+            <div className="mt-auto">
+                {isCurrent ? (
+                    <div className="text-center font-bold py-3 px-6 rounded-xl border-2 border-green-500 text-green-400">
+                        Votre forfait actuel
+                    </div>
+                ) : isFree ? null : (
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                         <input
+                            type="text"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            className="w-full text-center px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base text-slate-100 placeholder-slate-500 transition"
+                            placeholder="Code d'activation"
+                        />
+                        <button
+                            type="submit"
+                            className="w-full py-3 px-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all disabled:opacity-50"
+                            disabled={!code.trim()}
+                        >
+                            Entrer le code
+                        </button>
+                    </form>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan, onUpgrade }) => {
+    const plans = {
+        free: {
+            name: 'Gratuit',
+            features: [
+                "Quiz & exercices : jusqu'à 5 questions",
+                "Chat avec BrevetAI : 15 messages / jour",
+                "Générations : 5 quiz ou fiches / jour",
+                "Génération d'images : 2 / jour"
+            ]
+        },
+        pro: {
+            name: 'Brevet Pro',
+            recommended: true,
+            features: [
+                "Tous les niveaux & difficultés",
+                "Quiz & exercices : jusqu'à 20 questions",
+                "Chat avec BrevetAI+ : 100 messages / jour",
+                "Générations : 50 quiz ou fiches / jour",
+                "Génération d'évaluations & fiches de révision",
+                "Instructions personnalisées pour l'IA",
+                "Génération d'images : 5 / jour"
+            ]
+        },
+        max: {
+            name: 'Brevet Max',
+            features: [
+                "Tous les avantages du forfait Pro",
+                "Quiz, exercices, chat & générations illimités",
+                "Génération d'images illimitée",
+                "Accès en avant-première aux nouveautés (Bêta)",
+                "Support prioritaire"
+            ]
+        }
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto">
-            <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl">
-                <header className="text-center pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-sky-400 to-red-400 bg-clip-text text-transparent">Brevet +</h2>
-                </header>
-                
-                <div className="text-center mb-8">
-                    <p className="text-lg text-slate-700 dark:text-slate-300">
-                        Votre forfait actuel est <span className="font-bold bg-gradient-to-r from-sky-400 to-red-400 bg-clip-text text-transparent">{planTitleMap[currentPlan]}</span>.
-                    </p>
-                    <p className="text-slate-600 dark:text-slate-400">Passez à un forfait supérieur pour débloquer plus de fonctionnalités.</p>
-                </div>
+        <div className="w-full max-w-5xl mx-auto">
+            <header className="text-center mb-12">
+                <h2 className="text-5xl font-extrabold text-slate-900 dark:text-slate-100">Nos Forfaits</h2>
+                <p className="text-xl text-slate-700 dark:text-slate-400 mt-2">
+                    Choisissez le forfait qui vous convient le mieux pour réussir votre brevet.
+                </p>
+            </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <PlanCard planKey="free" title={planTitleMap.free} features={planFeatures.free} isCurrent={currentPlan === 'free'} onSelectUpgrade={handleSelectUpgrade} />
-                    <PlanCard planKey="pro" title={planTitleMap.pro} features={planFeatures.pro} isCurrent={currentPlan === 'pro'} onSelectUpgrade={handleSelectUpgrade} isRecommended />
-                    <PlanCard planKey="max" title={planTitleMap.max} features={planFeatures.max} isCurrent={currentPlan === 'max'} onSelectUpgrade={handleSelectUpgrade} />
-                </div>
-                
-                {planToUpgrade && (
-                    <div className="mt-8 p-6 bg-black/20 dark:bg-slate-800/60 rounded-2xl border border-white/10 dark:border-slate-700">
-                        <h3 className="text-xl font-semibold text-center text-slate-800 dark:text-slate-200 mb-4">
-                            Activer {planTitleMap[planToUpgrade]}
-                        </h3>
-                        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <input
-                                type="text"
-                                value={code}
-                                onChange={(e) => setCode(e.target.value)}
-                                className="w-full sm:w-64 px-4 py-3 bg-white/20 dark:bg-slate-700/60 backdrop-blur-lg border border-white/20 dark:border-slate-600 rounded-xl shadow-sm placeholder-slate-600 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-center font-semibold tracking-widest uppercase"
-                                placeholder="Entrez votre code"
-                                autoFocus
-                            />
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
-                                <button
-                                    type="submit"
-                                    className="w-full sm:w-auto px-8 py-3 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all"
-                                >
-                                    Activer
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setPlanToUpgrade(null)}
-                                    className="w-full sm:w-auto px-8 py-3 bg-black/20 dark:bg-slate-700 text-white font-medium rounded-xl hover:bg-black/30 dark:hover:bg-slate-600 transition-colors"
-                                >
-                                    Annuler
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <PlanCard
+                    planName={plans.free.name}
+                    planKey="free"
+                    features={plans.free.features}
+                    isCurrent={currentPlan === 'free'}
+                    onUpgrade={onUpgrade}
+                />
+                <PlanCard
+                    planName={plans.pro.name}
+                    planKey="pro"
+                    features={plans.pro.features}
+                    isRecommended={plans.pro.recommended}
+                    isCurrent={currentPlan === 'pro'}
+                    onUpgrade={onUpgrade}
+                />
+                <PlanCard
+                    planName={plans.max.name}
+                    planKey="max"
+                    features={plans.max.features}
+                    isCurrent={currentPlan === 'max'}
+                    onUpgrade={onUpgrade}
+                />
             </div>
         </div>
     );
