@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '../types';
-import { ai } from '../services/geminiService';
+import { ai, Type } from '../services/geminiService';
 import type { Chat, Part } from '@google/genai';
 
 interface ChatViewProps {
@@ -216,9 +216,53 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [attachment, setAttachment] = useState<{ file: File, previewUrl: string } | null>(null);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
+    const generatePromptSuggestions = useCallback(async () => {
+        setIsGeneratingSuggestions(true);
+        try {
+            const schema = {
+                type: Type.OBJECT,
+                properties: {
+                    suggestions: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING },
+                    },
+                },
+                required: ['suggestions'],
+            };
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: "Génère 3 questions de démarrage variées qu'un élève de 3ème en France pourrait poser à un tuteur IA pour ses révisions du brevet.",
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: schema,
+                }
+            });
+            const result = JSON.parse(response.text);
+            setSuggestions(result.suggestions || []);
+        } catch (error) {
+            console.error("Failed to generate prompt suggestions:", error);
+            // Fallback to static suggestions on error
+            setSuggestions([
+                "Explique-moi le théorème de Thalès.",
+                "Fais-moi un résumé de la Première Guerre mondiale.",
+                "Comment accorder le participe passé avec l'auxiliaire avoir ?",
+            ]);
+        } finally {
+            setIsGeneratingSuggestions(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (session.messages.length === 0) {
+            generatePromptSuggestions();
+        }
+    }, [session.id, session.messages.length, generatePromptSuggestions]);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -433,8 +477,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">
                 {session.messages.length === 0 && !attachment && (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/20 dark:border-slate-700 p-5 rounded-full mb-4">
-                            <svg className="w-12 h-12 text-indigo-500 dark:text-sky-300" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 shadow-lg flex items-center justify-center mb-4">
+                           <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">
                            {session.aiModel === 'brevetai' ? 'BrevetAI' : 'BrevetAI +'}
@@ -463,6 +507,23 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             </main>
 
             <footer className="p-4 sm:p-6 border-t border-white/20 dark:border-slate-800 space-y-2">
+                {!isConversationStarted && !attachment && (
+                    <div className="flex items-center justify-center gap-2 flex-wrap mb-4">
+                        {isGeneratingSuggestions ? (
+                            <div className="text-sm text-slate-500 dark:text-slate-400">Génération de suggestions...</div>
+                        ) : (
+                            suggestions.map((prompt, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setInput(prompt)}
+                                    className="px-4 py-2 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-full text-sm text-slate-800 dark:text-slate-200 hover:bg-white/40 dark:hover:bg-slate-700/80 transition-colors"
+                                >
+                                    {prompt}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                )}
                 {attachment && (
                     <div className="relative w-24 h-24 p-1 border-2 border-indigo-400 rounded-lg bg-black/10">
                         <img src={attachment.previewUrl} alt="Preview" className="w-full h-full object-cover rounded" />

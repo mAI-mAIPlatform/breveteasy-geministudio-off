@@ -6,7 +6,7 @@ const Header: React.FC = () => (
   <header className="text-center mb-12">
     <h1 className="text-6xl font-extrabold text-slate-900 dark:text-slate-50 [text-shadow:0_2px_4px_rgba(0,0,0,0.1)]">Brevet' Easy</h1>
     <p className="text-xl text-slate-700 dark:text-slate-300 mt-2">
-      Révisez intelligemment avec Brevet AI
+      Révisez avec nos outils IA de génération.
     </p>
   </header>
 );
@@ -36,10 +36,10 @@ const BrevetAICard: React.FC<{
                 </div>
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-                        Discuter avec BrevetAI
+                        BrevetAI
                     </h2>
                     <p className="text-md text-slate-800 dark:text-slate-300 mt-1">
-                        Obtenez de l'aide pour vos révisions, des explications et plus encore.
+                        Obtenez de l'aide pour vos révisions.
                     </p>
                 </div>
             </div>
@@ -64,7 +64,7 @@ const ImageGenerationCard: React.FC<{
                 </div>
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-                        Générer avec FaceAI
+                        FaceAI
                     </h2>
                     <p className="text-md text-slate-800 dark:text-slate-300 mt-1">
                        Créez une image à partir d'une description.

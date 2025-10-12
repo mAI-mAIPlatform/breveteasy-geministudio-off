@@ -1,115 +1,343 @@
-import React, { useState, useRef, useEffect } from 'react';
-import type { ChatSession } from '../types';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import type { ChatSession, Folder } from '../types';
 
 interface HistorySidebarProps {
   sessions: ChatSession[];
+  folders: Folder[];
   activeSessionId: string | null;
   onSelectChat: (chatId: string) => void;
   onDeleteChat: (chatId: string) => void;
   onNewChat: () => void;
-  onUpdateSession: (sessionId: string, updates: { title: string }) => void;
+  onUpdateSession: (sessionId: string, updates: Partial<ChatSession>) => void;
+  onNewFolder: (name: string) => void;
+  onDeleteFolder: (folderId: string) => void;
+  onUpdateFolder: (folderId: string, updates: Partial<Folder>) => void;
 }
 
 const EditIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>;
+const TrashIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+const FolderIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" /></svg>;
 
-export const HistorySidebar: React.FC<HistorySidebarProps> = ({ sessions, activeSessionId, onSelectChat, onDeleteChat, onNewChat, onUpdateSession }) => {
-  const sortedSessions = [...sessions].sort((a, b) => b.createdAt - a.createdAt);
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+
+const SessionItem: React.FC<{
+    session: ChatSession;
+    isActive: boolean;
+    isEditing: boolean;
+    editingTitle: string;
+    onTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onSaveTitle: () => void;
+    onCancelEditing: () => void;
+    onSelect: () => void;
+    onStartEditing: () => void;
+    onDelete: () => void;
+    inputRef: React.RefObject<HTMLInputElement>;
+}> = ({ session, isActive, isEditing, editingTitle, onTitleChange, onSaveTitle, onCancelEditing, onSelect, onStartEditing, onDelete, inputRef }) => {
+
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+        e.dataTransfer.setData('sessionId', session.id);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    return (
+        <div 
+            onClick={onSelect}
+            draggable={!isEditing}
+            onDragStart={handleDragStart}
+            className={`group w-full flex items-center justify-between text-left p-3 rounded-lg transition-colors ${
+                isEditing ? 'bg-indigo-500/20' :
+                isActive 
+                ? 'bg-indigo-500/20' 
+                : 'hover:bg-black/5 dark:hover:bg-slate-800/60 cursor-pointer'
+            }`}
+        >
+            {isEditing ? (
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={editingTitle}
+                    onChange={onTitleChange}
+                    onBlur={onSaveTitle}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') onSaveTitle();
+                        if (e.key === 'Escape') onCancelEditing();
+                    }}
+                    className="text-sm font-medium bg-transparent focus:outline-none w-full text-indigo-700 dark:text-sky-300"
+                />
+            ) : (
+                <>
+                <p className={`flex-grow font-medium text-sm truncate ${
+                    isActive
+                    ? 'text-indigo-700 dark:text-sky-300'
+                    : 'text-slate-800 dark:text-slate-200'
+                }`}>{session.title}</p>
+                <div className="flex flex-shrink-0">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onStartEditing(); }}
+                        className="ml-2 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-500/20 hover:text-slate-800 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Renommer la discussion"
+                    >
+                        <EditIcon className="h-4 w-4"/>
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(); }} 
+                        className="ml-1 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Supprimer la discussion"
+                    >
+                        <TrashIcon className="h-4 w-4" />
+                    </button>
+                </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
+  const { sessions, folders, activeSessionId, onSelectChat, onDeleteChat, onNewChat, onUpdateSession, onNewFolder, onDeleteFolder, onUpdateFolder } = props;
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+
+  const [openFolderIds, setOpenFolderIds] = useState<Set<string>>(new Set());
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [dragOverUngrouped, setDragOverUngrouped] = useState(false);
+  const [isHoveringFolder, setIsHoveringFolder] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
+  const newFolderInputRef = useRef<HTMLInputElement>(null);
+
+  const sortedFolders = useMemo(() => [...folders].sort((a, b) => b.createdAt - a.createdAt), [folders]);
+  const { sessionsByFolder, ungroupedSessions } = useMemo(() => {
+    const grouped: Record<string, ChatSession[]> = {};
+    const ungrouped: ChatSession[] = [];
+    
+    sessions.forEach(session => {
+        if (session.folderId) {
+            if (!grouped[session.folderId]) grouped[session.folderId] = [];
+            grouped[session.folderId].push(session);
+        } else {
+            ungrouped.push(session);
+        }
+    });
+    
+    Object.values(grouped).forEach(folderSessions => folderSessions.sort((a, b) => b.createdAt - a.createdAt));
+    ungrouped.sort((a, b) => b.createdAt - a.createdAt);
+
+    return { sessionsByFolder: grouped, ungroupedSessions: ungrouped };
+  }, [sessions]);
+
 
   useEffect(() => {
-    if (editingSessionId) {
+    if (editingId) {
       inputRef.current?.focus();
       inputRef.current?.select();
     }
-  }, [editingSessionId]);
+  }, [editingId]);
 
-  const handleStartEditing = (session: ChatSession) => {
-    setEditingSessionId(session.id);
-    setEditingTitle(session.title);
+  useEffect(() => {
+    if (isCreatingFolder) {
+        newFolderInputRef.current?.focus();
+    }
+  }, [isCreatingFolder]);
+
+  const handleStartEditing = (item: ChatSession | Folder) => {
+    setEditingId(item.id);
+    setEditingTitle('title' in item ? item.title : item.name);
   };
 
   const handleSaveTitle = () => {
-    if (editingSessionId && editingTitle.trim()) {
-      onUpdateSession(editingSessionId, { title: editingTitle.trim() });
+    if (!editingId || !editingTitle.trim()) {
+        handleCancelEditing();
+        return;
     }
-    setEditingSessionId(null);
-    setEditingTitle('');
+    const isFolder = editingId.startsWith('folder_');
+    if (isFolder) {
+        onUpdateFolder(editingId, { name: editingTitle.trim() });
+    } else {
+        onUpdateSession(editingId, { title: editingTitle.trim() });
+    }
+    handleCancelEditing();
   };
   
   const handleCancelEditing = () => {
-    setEditingSessionId(null);
+    setEditingId(null);
     setEditingTitle('');
+  };
+  
+  const toggleFolder = (folderId: string) => {
+    setOpenFolderIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(folderId)) {
+            newSet.delete(folderId);
+        } else {
+            newSet.add(folderId);
+        }
+        return newSet;
+    });
+  };
+
+  const handleDrop = (e: React.DragEvent, folderId: string | null) => {
+    e.preventDefault();
+    const sessionId = e.dataTransfer.getData('sessionId');
+    if (sessionId) {
+        const session = sessions.find(s => s.id === sessionId);
+        if (session && session.folderId !== folderId) {
+            onUpdateSession(sessionId, { folderId });
+        }
+    }
+    setDragOverFolderId(null);
+    setDragOverUngrouped(false);
+  };
+  
+  const handleConfirmNewFolder = () => {
+      if (newFolderName.trim()) {
+          onNewFolder(newFolderName.trim());
+      }
+      setIsCreatingFolder(false);
+      setNewFolderName('');
   }
 
-  return (
-    <aside className="w-80 h-full flex-shrink-0 bg-white/5 dark:bg-slate-900/40 p-4 flex flex-col gap-4 border-r border-white/10 dark:border-slate-800">
-        <button 
-            onClick={onNewChat}
-            className="w-full flex items-center justify-center gap-2 p-3 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all text-center"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-            Nouvelle Discussion
-        </button>
+  const dragFeedbackClass = 'bg-indigo-500/20 border-2 border-dashed border-indigo-400';
 
-        <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 px-2 mt-2">Historique</h3>
+  return (
+    <aside className="w-80 h-full flex-shrink-0 bg-white/5 dark:bg-slate-900/40 p-4 flex flex-col gap-2 border-r border-white/10 dark:border-slate-800">
+        <div 
+            className="flex gap-2"
+            onMouseLeave={() => setIsHoveringFolder(false)}
+        >
+            <button 
+                onMouseEnter={() => setIsHoveringFolder(false)}
+                onClick={onNewChat}
+                className={`flex items-center justify-center gap-2 p-3 font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out 
+                    ${!isHoveringFolder
+                        ? 'flex-auto bg-indigo-500 text-white hover:bg-indigo-600'
+                        : 'flex-none w-12 bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700'
+                    }`
+                }
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                <span className={`whitespace-nowrap transition-all duration-300 overflow-hidden ${!isHoveringFolder ? 'max-w-xs px-1' : 'max-w-0'}`}>
+                    Discussion
+                </span>
+            </button>
+            <button
+                onMouseEnter={() => setIsHoveringFolder(true)}
+                onClick={() => setIsCreatingFolder(true)}
+                className={`flex items-center justify-center gap-2 p-3 font-bold rounded-xl shadow-lg transition-all duration-300 ease-in-out
+                    ${isHoveringFolder
+                        ? 'flex-auto bg-indigo-500 text-white hover:bg-indigo-600'
+                        : 'flex-none w-12 bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700'
+                    }`
+                }
+                title="Nouveau dossier"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                <span className={`whitespace-nowrap transition-all duration-300 overflow-hidden ${isHoveringFolder ? 'max-w-xs px-1' : 'max-w-0'}`}>
+                    Dossier
+                </span>
+            </button>
+        </div>
         
-        <div className="flex-grow overflow-y-auto pr-2 -mr-2 space-y-2">
-             {sortedSessions.length > 0 ? (
-                <ul className="space-y-2">
-                  {sortedSessions.map((session) => (
-                    <li key={session.id}>
-                        <div 
-                            onClick={() => !editingSessionId && onSelectChat(session.id)} 
-                            className={`group w-full flex items-center justify-between text-left p-3 rounded-lg transition-colors ${
-                                editingSessionId === session.id ? 'bg-indigo-500/20' :
-                                activeSessionId === session.id 
-                                ? 'bg-indigo-500/20' 
-                                : 'hover:bg-black/5 dark:hover:bg-slate-800/60 cursor-pointer'
-                            }`}
-                        >
-                            {editingSessionId === session.id ? (
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    value={editingTitle}
-                                    onChange={(e) => setEditingTitle(e.target.value)}
-                                    onBlur={handleSaveTitle}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleSaveTitle();
-                                        if (e.key === 'Escape') handleCancelEditing();
-                                    }}
-                                    className="text-sm font-medium bg-transparent focus:outline-none w-full text-indigo-700 dark:text-sky-300"
-                                />
-                            ) : (
-                                <>
-                                <p className={`flex-grow font-medium text-sm truncate ${
-                                    activeSessionId === session.id
-                                    ? 'text-indigo-700 dark:text-sky-300'
-                                    : 'text-slate-800 dark:text-slate-200'
-                                }`}>{session.title}</p>
-                                <div className="flex flex-shrink-0">
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); handleStartEditing(session); }}
-                                        className="ml-2 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-500/20 hover:text-slate-800 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Renommer la discussion"
-                                    >
-                                        <EditIcon className="h-4 w-4"/>
-                                    </button>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); onDeleteChat(session.id); }} 
-                                        className="ml-1 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Supprimer la discussion"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
+        <div 
+            className="flex-grow overflow-y-auto pr-2 -mr-2 space-y-1 mt-2"
+            onDragOver={(e) => { e.preventDefault(); setDragOverUngrouped(true); }}
+            onDragLeave={() => setDragOverUngrouped(false)}
+            onDrop={(e) => handleDrop(e, null)}
+        >
+             <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 px-2 my-2">Historique</h3>
+             {(sortedFolders.length > 0 || ungroupedSessions.length > 0 || isCreatingFolder) ? (
+                <ul className={`space-y-1 rounded-lg transition-colors p-1 ${dragOverUngrouped ? dragFeedbackClass : ''}`}>
+                    {isCreatingFolder && (
+                        <li>
+                            <input
+                                ref={newFolderInputRef}
+                                type="text"
+                                value={newFolderName}
+                                onChange={(e) => setNewFolderName(e.target.value)}
+                                onBlur={handleConfirmNewFolder}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleConfirmNewFolder();
+                                    if (e.key === 'Escape') { setIsCreatingFolder(false); setNewFolderName(''); }
+                                }}
+                                className="text-sm font-medium bg-indigo-500/20 focus:outline-none w-full p-3 rounded-lg text-indigo-700 dark:text-sky-300 placeholder-indigo-400"
+                                placeholder="Nom du dossier..."
+                            />
+                        </li>
+                    )}
+                    {sortedFolders.map(folder => {
+                        const folderSessions = sessionsByFolder[folder.id] || [];
+                        const isOpen = openFolderIds.has(folder.id);
+                        return (
+                            <li key={folder.id} 
+                                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverFolderId(folder.id); setDragOverUngrouped(false); }}
+                                onDragLeave={() => setDragOverFolderId(null)}
+                                onDrop={(e) => { e.stopPropagation(); handleDrop(e, folder.id); }}
+                                className={`rounded-lg transition-colors ${dragOverFolderId === folder.id ? dragFeedbackClass : ''}`}
+                            >
+                                <div 
+                                    className="group w-full flex items-center justify-between text-left p-3 rounded-lg cursor-pointer hover:bg-black/5 dark:hover:bg-slate-800/60"
+                                    onClick={() => toggleFolder(folder.id)}
+                                >
+                                    {editingId === folder.id ? (
+                                        <input
+                                            ref={inputRef} type="text" value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)} onBlur={handleSaveTitle}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') handleCancelEditing(); }}
+                                            className="text-sm font-medium bg-transparent focus:outline-none w-full text-indigo-700 dark:text-sky-300"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-2 flex-grow truncate">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                                <FolderIcon className="h-5 w-5 text-slate-600 dark:text-slate-400 flex-shrink-0" />
+                                                <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{folder.name}</span>
+                                            </div>
+                                            <div className="flex flex-shrink-0">
+                                                <button onClick={(e) => { e.stopPropagation(); handleStartEditing(folder); }} className="ml-2 p-1 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100" title="Renommer"><EditIcon className="h-4 w-4"/></button>
+                                                <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }} className="ml-1 p-1 rounded-full text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-500 opacity-0 group-hover:opacity-100" title="Supprimer"><TrashIcon className="h-4 w-4"/></button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
-                                </>
-                            )}
-                        </div>
-                    </li>
-                  ))}
+                                {isOpen && (
+                                    <ul className="pl-6 pr-2 py-1 space-y-1">
+                                        {folderSessions.length > 0 ? (
+                                            folderSessions.map(session => (
+                                                <li key={session.id}>
+                                                    <SessionItem 
+                                                        session={session} isActive={activeSessionId === session.id}
+                                                        isEditing={editingId === session.id} editingTitle={editingTitle} onTitleChange={(e) => setEditingTitle(e.target.value)}
+                                                        onSaveTitle={handleSaveTitle} onCancelEditing={handleCancelEditing}
+                                                        onSelect={() => !editingId && onSelectChat(session.id)}
+                                                        onStartEditing={() => handleStartEditing(session)}
+                                                        onDelete={() => onDeleteChat(session.id)}
+                                                        inputRef={inputRef}
+                                                    />
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li className="text-xs text-slate-500 dark:text-slate-400 px-3 py-2 italic">Ce dossier est vide.</li>
+                                        )}
+                                    </ul>
+                                )}
+                            </li>
+                        )
+                    })}
+                    {ungroupedSessions.map((session) => (
+                        <li key={session.id}>
+                           <SessionItem 
+                                session={session} isActive={activeSessionId === session.id}
+                                isEditing={editingId === session.id} editingTitle={editingTitle} onTitleChange={(e) => setEditingTitle(e.target.value)}
+                                onSaveTitle={handleSaveTitle} onCancelEditing={handleCancelEditing}
+                                onSelect={() => !editingId && onSelectChat(session.id)}
+                                onStartEditing={() => handleStartEditing(session)}
+                                onDelete={() => onDeleteChat(session.id)}
+                                inputRef={inputRef}
+                           />
+                        </li>
+                    ))}
                 </ul>
             ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center px-4">

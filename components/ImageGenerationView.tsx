@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ImageModel } from '../types';
+import type { ImageModel, SubscriptionPlan } from '../types';
 
 interface ImageGenerationViewProps {
   onGenerate: (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png') => void;
@@ -7,6 +7,7 @@ interface ImageGenerationViewProps {
   generatedImage: { data: string; mimeType: string } | null;
   remainingGenerations: number;
   defaultImageModel: ImageModel;
+  subscriptionPlan: SubscriptionPlan;
 }
 
 const DownloadIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>;
@@ -39,16 +40,122 @@ const SegmentedControl = <T extends string>({ options, value, onChange, disabled
     </div>
 );
 
-export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGenerate, isGenerating, generatedImage, remainingGenerations, defaultImageModel }) => {
+// Custom Dropdown Component for better styling
+interface StyledDropdownProps<T extends string | number> {
+    label: string;
+    options: readonly T[];
+    value: T;
+    onChange: (value: T) => void;
+    renderOption?: (option: T) => React.ReactNode;
+    disabled?: boolean;
+}
+
+const StyledDropdown = <T extends string | number>({ label, options, value, onChange, renderOption, disabled = false }: StyledDropdownProps<T>) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const handleToggle = () => {
+        if (!disabled) {
+            setIsOpen(!isOpen);
+        }
+    };
+
+    const handleSelect = (option: T) => {
+        onChange(option);
+        setIsOpen(false);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div>
+            <label className="block text-sm font-semibold text-slate-800 dark:text-slate-300 mb-2">{label}</label>
+            <div className="relative" ref={dropdownRef}>
+                <button
+                    type="button"
+                    onClick={handleToggle}
+                    className={`relative w-full rounded-xl bg-white/20 dark:bg-slate-800 backdrop-blur-lg py-3 pl-4 pr-10 text-left shadow-sm border border-white/20 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                    aria-haspopup="listbox"
+                    aria-expanded={isOpen}
+                    disabled={disabled}
+                >
+                    <span className="block truncate text-slate-900 dark:text-slate-100">{renderOption ? renderOption(value) : value}</span>
+                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                        <svg className={`h-5 w-5 text-slate-500 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                    </span>
+                </button>
+                {isOpen && !disabled && (
+                    <ul
+                        className="absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white dark:bg-slate-800 py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
+                        tabIndex={-1}
+                        role="listbox"
+                    >
+                        {options.map((option) => (
+                            <li
+                                key={String(option)}
+                                onClick={() => handleSelect(option)}
+                                className={`cursor-pointer select-none relative py-2 pl-4 pr-10 text-slate-900 dark:text-slate-100 hover:bg-indigo-100 dark:hover:bg-indigo-900/50`}
+                                role="option"
+                                aria-selected={value === option}
+                            >
+                                <span className={`block truncate ${value === option ? 'font-semibold' : 'font-normal'}`}>{renderOption ? renderOption(option) : option}</span>
+                                {value === option && (
+                                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-indigo-500 dark:text-sky-300">
+                                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </span>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
+export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGenerate, isGenerating, generatedImage, remainingGenerations, defaultImageModel, subscriptionPlan }) => {
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState<ImageModel>(defaultImageModel);
-  const [style, setStyle] = useState('realiste');
+  const [style, setStyle] = useState('none');
   const [format, setFormat] = useState<'jpeg' | 'png'>('jpeg');
   const outputRef = useRef<HTMLDivElement>(null);
+  const isStyleLocked = subscriptionPlan !== 'max';
+
+  const styleOptions = [
+    { value: 'none', label: 'Aucun (par défaut)' },
+    { value: 'realiste', label: 'Réaliste' },
+    { value: 'dessin-anime', label: 'Dessin animé' },
+    { value: 'peinture-huile', label: 'Peinture à l\'huile' },
+    { value: 'art-numerique', label: 'Art numérique' },
+  ];
+
+  const formatOptions = [
+    { value: 'jpeg', label: 'JPEG' },
+    { value: 'png', label: 'PNG' },
+  ];
 
   useEffect(() => {
     setModel(defaultImageModel);
   }, [defaultImageModel]);
+
+  useEffect(() => {
+    if (isStyleLocked) {
+      setStyle('none');
+    }
+  }, [isStyleLocked]);
 
   const handleGenerateClick = () => {
     if (prompt.trim()) {
@@ -100,27 +207,34 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                     disabled={!canGenerate || isGenerating}
                 />
             </SettingRow>
-
-            <SettingRow label="Style">
-                <SegmentedControl
-                    options={[
-                        { value: 'realiste', label: 'Réaliste' },
-                        { value: 'dessin-anime', label: 'Dessin' },
-                        { value: 'peinture-huile', label: 'Peinture' },
-                        { value: 'art-numerique', label: 'Numérique' }
-                    ]}
+            
+            <div className="relative">
+                <StyledDropdown
+                    label="Style (facultatif)"
+                    options={styleOptions.map(o => o.value)}
                     value={style}
-                    onChange={setStyle as any}
+                    onChange={(val) => setStyle(val as string)}
+                    renderOption={(option) => styleOptions.find(o => o.value === option)?.label}
+                    disabled={isStyleLocked}
                 />
-            </SettingRow>
+                {isStyleLocked && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm rounded-xl" title="Fonctionnalité Max">
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 text-sm font-bold rounded-full shadow-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                            <span>MAX</span>
+                        </div>
+                    </div>
+                )}
+            </div>
 
-            <SettingRow label="Format">
-                <SegmentedControl<'jpeg' | 'png'>
-                    options={[{ value: 'jpeg', label: 'JPEG' }, { value: 'png', label: 'PNG' }]}
-                    value={format}
-                    onChange={setFormat}
-                />
-            </SettingRow>
+
+            <StyledDropdown
+                label="Format de sortie"
+                options={formatOptions.map(o => o.value)}
+                value={format}
+                onChange={(val) => setFormat(val as 'jpeg' | 'png')}
+                renderOption={(option) => formatOptions.find(o => o.value === option)?.label}
+            />
 
              <div className="pt-4 border-t border-white/20 dark:border-slate-700">
                 <button

@@ -14,7 +14,7 @@ import { ExercisesView } from './components/ExercisesView';
 import { SubscriptionView } from './components/SubscriptionView';
 import { ImageGenerationView } from './components/ImageGenerationView';
 import { ai, Type } from './services/geminiService';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder } from './types';
 
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
 type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions';
@@ -94,79 +94,63 @@ const FixedExitButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 
 const App: React.FC = () => {
     // App State
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [view, setView] = useState<View>('home');
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [loadingTask, setLoadingTask] = useState<LoadingTask>('quiz');
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
         const savedTheme = localStorage.getItem('brevet-easy-theme');
         return (savedTheme as any) || 'system';
     });
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [aiSystemInstruction, setAiSystemInstruction] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-ai-instruction') || '';
     });
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>(() => {
         const savedPlan = localStorage.getItem('brevet-easy-plan');
         return (savedPlan as SubscriptionPlan) || 'free';
     });
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [defaultAiModel, setDefaultAiModel] = useState<AiModel>(() => {
         const savedModel = localStorage.getItem('brevet-easy-default-ai-model');
         return (savedModel as AiModel) || 'brevetai';
     });
-    // Fix: Replaced `aistudios.useState` with `useState`.
      const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>(() => {
         const savedModel = localStorage.getItem('brevet-easy-default-image-model');
         return (savedModel as ImageModel) || 'faceai';
     });
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-image-instruction') || '';
     });
 
 
     // User/Profile State
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [user, setUser] = useState<{email: string} | null>(null);
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [userName, setUserName] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-user-name') || '';
     });
     
     // Quiz State
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [quiz, setQuiz] = useState<Quiz | null>(null);
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [score, setScore] = useState(0);
 
     // Exercises & HTML Content State
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [isDownloadingHtml, setIsDownloadingHtml] = useState(false);
 
     // Chat State
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
         const savedSessions = localStorage.getItem('chatSessions');
         return savedSessions ? JSON.parse(savedSessions) : [];
     });
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
+    const [folders, setFolders] = useState<Folder[]>(() => {
+        const savedFolders = localStorage.getItem('brevet-easy-folders');
+        return savedFolders ? JSON.parse(savedFolders) : [];
+    });
+
 
     // Image Generation State
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
-    // Fix: Replaced `aistudios.useState` with `useState`.
     const [imageUsage, setImageUsage] = useState<ImageUsage>(() => {
         const savedUsage = localStorage.getItem('brevet-easy-image-usage');
         const today = new Date().toISOString().split('T')[0];
@@ -181,7 +165,6 @@ const App: React.FC = () => {
     });
 
     // Theme Management Effect
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-theme', theme);
         if (theme === 'system') {
@@ -201,48 +184,45 @@ const App: React.FC = () => {
     }, [theme]);
     
     // AI Instruction Persistence Effect
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction);
     }, [aiSystemInstruction]);
     
     // User Name Persistence Effect
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-user-name', userName);
     }, [userName]);
     
     // Subscription Plan Persistence Effect
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-plan', subscriptionPlan);
     }, [subscriptionPlan]);
 
     // Chat Session Persistence Effect
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
      useEffect(() => {
         localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
     }, [chatSessions]);
     
+    // Folders Persistence Effect
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-folders', JSON.stringify(folders));
+    }, [folders]);
+
     // Default AI Model Persistence
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-default-ai-model', defaultAiModel);
     }, [defaultAiModel]);
 
     // Image Generation Settings Persistence
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-default-image-model', defaultImageModel);
     }, [defaultImageModel]);
     
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-image-instruction', imageGenerationInstruction);
     }, [imageGenerationInstruction]);
 
     // Image Usage Persistence
-    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-image-usage', JSON.stringify(imageUsage));
     }, [imageUsage]);
@@ -289,7 +269,6 @@ const App: React.FC = () => {
     };
 
     // AI Instruction Builder
-    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const buildSystemInstruction = useCallback(() => {
         let finalInstruction = aiSystemInstruction.trim();
         if (userName.trim()) {
@@ -299,7 +278,6 @@ const App: React.FC = () => {
     }, [aiSystemInstruction, userName]);
 
     // Quiz Flow Handlers
-    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
         if (!selectedSubject) return;
         setView('loading');
@@ -327,239 +305,105 @@ const App: React.FC = () => {
         };
 
         try {
-            let prompt = `Génère un quiz de ${count} questions à choix multiples sur le sujet "${selectedSubject.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. Si le niveau est "Brevet", considère que c'est un élève de fin de 3ème qui révise pour l'examen national. Chaque question doit avoir 4 options de réponse. Fournis une explication pour chaque bonne réponse. Assure-toi que la correctAnswer est l'une des chaînes de caractères dans options.`;
-            
-            if (customPrompt.trim()) {
-                prompt += `\n\nInstructions supplémentaires de l'utilisateur : focalise le quiz sur les points suivants : "${customPrompt.trim()}".`;
-            }
-
-            const config: {
-                responseMimeType: string;
-                responseSchema: any;
-                systemInstruction?: string;
-            } = {
-                responseMimeType: "application/json",
-                responseSchema: quizSchema,
-            };
-
-            const finalSystemInstruction = buildSystemInstruction();
-            if (finalSystemInstruction && subscriptionPlan !== 'free') {
-                config.systemInstruction = finalSystemInstruction;
-            }
+            const prompt = `Génère un quiz de ${count} questions sur le sujet "${selectedSubject.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. Les questions doivent être des QCM avec 4 options de réponse. Fournis une explication pour chaque bonne réponse.`;
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
                 contents: prompt,
-                config,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: quizSchema,
+                    systemInstruction: buildSystemInstruction(),
+                }
             });
             
-            const quizData = JSON.parse(response.text);
-            setQuiz(quizData);
+            const generatedQuiz = JSON.parse(response.text);
+            setQuiz(generatedQuiz);
+            setQuizAnswers(Array(generatedQuiz.questions.length).fill(null));
             setView('quiz');
+
         } catch (error) {
-            console.error("Failed to generate quiz:", error);
-            alert("Désolé, une erreur est survenue lors de la génération du quiz. Veuillez réessayer.");
+            console.error("Error generating quiz:", error);
+            alert("Une erreur est survenue lors de la génération du quiz. Veuillez réessayer.");
             handleBackToHome();
         }
-    }, [selectedSubject, subscriptionPlan, buildSystemInstruction]);
-    
+    }, [selectedSubject, buildSystemInstruction]);
+
     const handleQuizSubmit = (answers: (string | null)[]) => {
         if (!quiz) return;
-        let newScore = 0;
+        let correctAnswers = 0;
         quiz.questions.forEach((q, index) => {
             if (answers[index] === q.correctAnswer) {
-                newScore++;
+                correctAnswers++;
             }
         });
-        setScore(newScore);
+        setScore(correctAnswers);
         setQuizAnswers(answers);
         setView('results');
     };
 
-    // Generic HTML Content Generator
-    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
-    const generateHtmlContent = useCallback(async (task: 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions', prompt: string) => {
+    // Generic HTML Content Generation
+    const handleGenerateHtmlContent = useCallback(async (task: LoadingTask, instructions: string) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask(task);
+
         try {
-            const config: { systemInstruction?: string } = {};
-
-            const finalSystemInstruction = buildSystemInstruction();
-            if (finalSystemInstruction && subscriptionPlan !== 'free') {
-                config.systemInstruction = finalSystemInstruction;
-            }
-
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
-                contents: prompt,
-                config,
+                contents: instructions,
+                config: {
+                    responseMimeType: 'text/html',
+                    systemInstruction: buildSystemInstruction(),
+                }
             });
-
-            const generatedContent = response.text;
-            if (!generatedContent || !generatedContent.toLowerCase().includes('</html>')) {
-                throw new Error("Le contenu généré n'est pas un document HTML valide.");
-            }
-            
-            setGeneratedHtml(generatedContent);
-            setView('exercises'); // Re-using the exercises view for download
-
+            setGeneratedHtml(response.text);
+            setView('exercises');
         } catch (error) {
-            console.error(`Failed to generate ${task}:`, error);
-            alert(`Désolé, une erreur est survenue lors de la génération. Veuillez réessayer.`);
+            console.error(`Error generating ${task}:`, error);
+            alert(`Une erreur est survenue lors de la génération. Veuillez réessayer.`);
             handleBackToHome();
         }
-    }, [selectedSubject, subscriptionPlan, buildSystemInstruction]);
+    }, [selectedSubject, buildSystemInstruction]);
 
-    // Exercises Flow Handler
-    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
-    const handleGenerateExercises = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
-        let prompt = `Crée une fiche d'exercices complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. Si le niveau est "Brevet", considère que c'est un élève de fin de 3ème. La réponse DOIT être un document HTML complet et autonome (self-contained).
-- Inclus une balise <!DOCTYPE html>, <html>, <head>, et <body>.
-- Dans le <head>, inclus un <title> pertinent et un lien vers la police "Poppins" de Google Fonts, et une balise <style> avec du CSS pour une présentation claire, professionnelle et lisible, incluant un mode sombre.
-- Le <body> doit contenir un titre principal (h1) et ${count} exercices variés avec des énoncés clairs.
-- Fournis un corrigé détaillé pour chaque exercice dans une section séparée à la fin du document.`;
-        if (customPrompt.trim()) {
-            prompt += `\n\nInstructions supplémentaires : base les exercices sur les points suivants : "${customPrompt.trim()}".`;
-        }
-        await generateHtmlContent('exercises', prompt);
-    }, [selectedSubject, generateHtmlContent]);
-
-    // Course Sheet Flow Handler
-    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
-    const handleGenerateCours = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
-        let prompt = `Crée une fiche de cours complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. La fiche doit couvrir environ ${count} concepts clés. La réponse DOIT être un document HTML complet et autonome (self-contained).
-- Inclus <!DOCTYPE html>, <html>, <head>, et <body>.
-- Dans le <head>, inclus un <title> pertinent, un lien vers la police "Poppins" de Google Fonts, et une balise <style> avec du CSS pour une présentation claire, engageante et lisible, avec un mode sombre. Utilise des couleurs pour mettre en évidence les définitions, exemples et points clés.
-- Le <body> doit contenir un titre principal (h1) et être structuré en sections (Introduction, Définitions Clés, Concepts Principaux, Résumé).`;
-        if (customPrompt.trim()) {
-            prompt += `\n\nInstructions supplémentaires : focalise le cours sur les points suivants : "${customPrompt.trim()}".`;
-        }
-        await generateHtmlContent('cours', prompt);
-    }, [selectedSubject, generateHtmlContent]);
+    const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string) => {
+        const prompt = `Génère une fiche de ${count} exercices sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
+        handleGenerateHtmlContent('exercises', prompt);
+    };
     
-    // Revision Sheet Flow Handler
-    const handleGenerateFicheRevisions = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
-        let prompt = `Crée une fiche de révisions synthétique et visuellement claire sur le thème "${selectedSubject?.name}" pour un élève de niveau "${level}" avec une difficulté "${difficulty}". La fiche doit résumer les points essentiels à connaître en ${count} grands thèmes. La réponse DOIT être un document HTML complet et autonome (self-contained).
-- Inclus <!DOCTYPE html>, <html>, <head>, et <body>.
-- Dans le <head>, inclus un <title> pertinent, un lien vers la police "Poppins" de Google Fonts, et une balise <style> avec du CSS pour une présentation très lisible (listes à puces, mots en gras, couleurs) et un mode sombre.
-- Le <body> doit contenir un titre principal (h1) "Fiche de Révisions: ${selectedSubject?.name}" et résumer les informations les plus importantes de manière concise. Utilise des listes, des tableaux et des encadrés pour structurer l'information.`;
-        if (customPrompt.trim()) {
-            prompt += `\n\nInstructions supplémentaires : la fiche de révisions doit se concentrer sur : "${customPrompt.trim()}".`;
-        }
-        await generateHtmlContent('fiche-revisions', prompt);
-    }, [selectedSubject, generateHtmlContent]);
+    const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string) => {
+        const prompt = `Génère une fiche de cours sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquote), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
+        handleGenerateHtmlContent('cours', prompt);
+    };
 
-    // Evaluation Flow Handler
-    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
-    const handleGenerateEvaluation = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
-        let prompt = `Crée une évaluation complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. La réponse DOIT être un document HTML complet et autonome (self-contained).
-- Inclus <!DOCTYPE html>, <html>, <head>, et <body>.
-- Dans le <head>, inclus un <title> "Évaluation de ${selectedSubject?.name}", un lien vers la police "Poppins" de Google Fonts, et une balise <style> avec du CSS pour une présentation claire type examen, avec un mode sombre.
-- Le <body> doit commencer par un en-tête clair, des instructions, et inclure ${count} exercices ou questions variés (QCM, questions courtes, etc.).
-- Indique un barème de notation sur 20 points.
-- Inclus un corrigé détaillé dans une section séparée à la fin.`;
-        if (customPrompt.trim()) {
-            prompt += `\n\nInstructions supplémentaires : base l'évaluation sur les points suivants : "${customPrompt.trim()}".`;
-        }
-        await generateHtmlContent('evaluation', prompt);
-    }, [selectedSubject, generateHtmlContent]);
+    const handleGenerateEvaluation = (customPrompt: string, count: number, difficulty: string, level: string) => {
+        const prompt = `Génère une évaluation type examen sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}, contenant ${count} questions/exercices variés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté. L'évaluation doit inclure un titre, un contexte général, différents types de questions (QCM, questions de cours, exercices d'application), un barème de points, et un corrigé complet et détaillé dans une section distincte à la fin. Utilise du CSS dans une balise <style> pour une présentation professionnelle.`;
+        handleGenerateHtmlContent('evaluation', prompt);
+    };
+    
+    const handleGenerateFicheRevisions = (customPrompt: string, count: number, difficulty: string, level: string) => {
+        const prompt = `Génère une fiche de révisions synthétique sur le sujet "${selectedSubject?.name}" pour le niveau ${level}. ${customPrompt}. La fiche doit résumer les points essentiels à connaître pour le brevet. La sortie doit être un fichier HTML bien formaté, utilisant des titres, des listes à puces, du gras pour les termes importants, et un code couleur simple pour mettre en évidence les différentes sections. Le contenu doit être concis et aller à l'essentiel.`;
+        handleGenerateHtmlContent('fiche-revisions', prompt);
+    };
 
-    // HTML Download Handler
     const handleDownloadHtml = () => {
-        if (!generatedHtml || !selectedSubject || isDownloadingHtml) return;
-        
+        if (!generatedHtml || isDownloadingHtml) return;
         setIsDownloadingHtml(true);
-        const blob = new Blob([generatedHtml], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-
-        const fileTypeMap: Record<LoadingTask, string> = {
-            exercises: 'exercices',
-            cours: 'cours',
-            evaluation: 'evaluation',
-            'fiche-revisions': 'fiche-revisions',
-            quiz: 'quiz-results' // Fallback
-        };
-        const fileType = fileTypeMap[loadingTask] || 'contenu';
-        a.download = `${fileType}-${selectedSubject.name.toLowerCase().replace(/\s/g, '_')}.html`;
-        
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        setTimeout(() => setIsDownloadingHtml(false), 1000);
-    };
-
-    // Image Generation Flow Handlers
-    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
-    const getImageGenerationLimit = useCallback(() => {
-        if (subscriptionPlan === 'max') return Infinity;
-        if (subscriptionPlan === 'pro') return 5;
-        return 2; // free
-    }, [subscriptionPlan]);
-
-    const remainingGenerations = getImageGenerationLimit() - imageUsage.count;
-
-    const handleGenerateImage = async (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png') => {
-        if (remainingGenerations <= 0 && subscriptionPlan !== 'max') {
-            alert("Vous avez atteint votre limite de générations d'images pour aujourd'hui.");
-            return;
-        }
-
-        setIsGeneratingImage(true);
-        setGeneratedImage(null);
         try {
-            const stylePrefixes: Record<string, string> = {
-                'realiste': 'photo réaliste, ultra détaillé, photoréaliste, 8k, haute qualité,',
-                'dessin-anime': 'style dessin animé, couleurs vives, contours nets,',
-                'peinture-huile': "style peinture à l'huile, coups de pinceau visibles, texturé,",
-                'art-numerique': 'art numérique, style fantasy, détaillé, cinématique,',
-            };
-
-            const stylePrefix = stylePrefixes[style] || '';
-
-            let combinedPrompt = `${stylePrefix} ${prompt}`;
-
-            let finalPrompt = (subscriptionPlan !== 'free' && imageGenerationInstruction.trim())
-                ? `${imageGenerationInstruction.trim()}\n\n---\n\n${combinedPrompt}`
-                : combinedPrompt;
-
-            if (model === 'faceai-plus') {
-                finalPrompt = `portrait photographique de haute qualité, ultra détaillé, photoréaliste. ${finalPrompt}`;
-            }
-            
-            const mimeType = `image/${format}`;
-
-            const response = await ai.models.generateImages({
-                model: 'imagen-4.0-generate-001',
-                prompt: finalPrompt,
-                config: {
-                    numberOfImages: 1,
-                    outputMimeType: mimeType,
-                },
-            });
-            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-            setGeneratedImage({ data: base64ImageBytes, mimeType: mimeType });
-
-            const today = new Date().toISOString().split('T')[0];
-            setImageUsage(prev => {
-                if (prev.date !== today) {
-                    return { count: 1, date: today };
-                }
-                return { ...prev, count: prev.count + 1 };
-            });
-
+            const blob = new Blob([generatedHtml], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${loadingTask}_${selectedSubject?.name.replace(' ', '_')}.html`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } catch (error) {
-            console.error("Failed to generate image:", error);
-            alert("Désolé, une erreur est survenue lors de la génération de l'image. Veuillez réessayer.");
+            console.error("Error downloading HTML:", error);
+            alert("Le téléchargement a échoué.");
         } finally {
-            setIsGeneratingImage(false);
+            setIsDownloadingHtml(false);
         }
     };
-
 
     // Chat Flow Handlers
     const handleStartChat = () => {
@@ -575,146 +419,216 @@ const App: React.FC = () => {
         setView('chat');
     };
     
-    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
-    const handleUpdateSession = useCallback((
-        sessionId: string,
-        updates: Partial<Pick<ChatSession, 'messages' | 'title' | 'aiModel'>> & { messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]) }
-    ) => {
-        setChatSessions(prevSessions =>
-            prevSessions.map(session => {
-                if (session.id === sessionId) {
-                    const updatedMessages = updates.messages
-                        ? (typeof updates.messages === 'function' ? updates.messages(session.messages) : updates.messages)
-                        : session.messages;
-
-                    return {
-                        ...session,
-                        ...updates,
-                        messages: updatedMessages,
-                    };
-                }
-                return session;
-            })
-        );
-    }, []);
-    
-    const handleDeleteChat = (sessionId: string) => {
-        setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-        if (activeChatSessionId === sessionId) {
-            setActiveChatSessionId(null);
-        }
+    const handleNewChat = () => {
+        setActiveChatSessionId(null);
+        setTimeout(handleStartChat, 0); // Create after deselecting to ensure a fresh start
     };
-    
+
     const handleSelectChat = (sessionId: string) => {
         setActiveChatSessionId(sessionId);
         setView('chat');
     };
 
-    // Render Logic
-    const renderView = () => {
+    const handleDeleteChat = (sessionId: string) => {
+        setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+        if (activeChatSessionId === sessionId) {
+            setActiveChatSessionId(null);
+            // Optional: select the most recent chat after deletion
+            const remainingSessions = chatSessions.filter(s => s.id !== sessionId);
+            if(remainingSessions.length > 0) {
+                 const sorted = [...remainingSessions].sort((a,b) => b.createdAt - a.createdAt);
+                 setActiveChatSessionId(sorted[0].id);
+            }
+        }
+    };
+    
+    const handleUpdateSession = (sessionId: string, updates: Partial<ChatSession>) => {
+        setChatSessions(prev =>
+            prev.map(s => (s.id === sessionId ? { ...s, ...updates } : s))
+        );
+    };
+
+    // Folder Handlers
+    const handleNewFolder = (name: string) => {
+        const newFolder: Folder = {
+            id: `folder_${Date.now()}`,
+            name,
+            createdAt: Date.now(),
+        };
+        setFolders(prev => [newFolder, ...prev]);
+    };
+    
+    const handleDeleteFolder = (folderId: string) => {
+        setFolders(prev => prev.filter(f => f.id !== folderId));
+        // Un-assign sessions from the deleted folder
+        setChatSessions(prev => prev.map(s => s.folderId === folderId ? {...s, folderId: null} : s));
+    };
+
+    const handleUpdateFolder = (folderId: string, updates: Partial<Folder>) => {
+        setFolders(prev =>
+            prev.map(f => (f.id === folderId ? { ...f, ...updates } : f))
+        );
+    };
+
+    // Image Generation Handlers
+    const handleGenerateImage = useCallback(async (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png') => {
+        const generationLimit = subscriptionPlan === 'free' ? 2 : subscriptionPlan === 'pro' ? 5 : Infinity;
+        if (imageUsage.count >= generationLimit) {
+            alert("Vous avez atteint votre limite de générations d'images pour aujourd'hui.");
+            return;
+        }
+
+        setIsGeneratingImage(true);
+        setGeneratedImage(null);
+        
+        const finalModel = model === 'faceai-plus' && (subscriptionPlan === 'pro' || subscriptionPlan === 'max')
+            ? 'imagen-4.0-generate-001' // Assuming faceai-plus maps to a better model for subscribers
+            : 'imagen-4.0-generate-001';
+
+        const stylePrompt = style !== 'none' ? `style ${style.replace('-', ' ')}` : '';
+        const userInstruction = imageGenerationInstruction.trim();
+        const finalPrompt = [userInstruction, stylePrompt, prompt].filter(Boolean).join(', ');
+
+        try {
+            const response = await ai.models.generateImages({
+                model: 'imagen-4.0-generate-001',
+                prompt: finalPrompt,
+                config: {
+                    numberOfImages: 1,
+                    outputMimeType: `image/${format}`,
+                },
+            });
+            
+            const imageBytes = response.generatedImages[0].image.imageBytes;
+            setGeneratedImage({ data: imageBytes, mimeType: `image/${format}`});
+            setImageUsage(prev => ({ ...prev, count: prev.count + 1 }));
+
+        } catch (error) {
+            console.error("Error generating image:", error);
+            alert("Une erreur est survenue lors de la génération de l'image.");
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    }, [imageUsage, subscriptionPlan, imageGenerationInstruction]);
+    
+
+    const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
+    
+    const remainingImageGenerations = () => {
+        if (subscriptionPlan === 'max') return Infinity;
+        const limit = subscriptionPlan === 'pro' ? 5 : 2;
+        return Math.max(0, limit - imageUsage.count);
+    };
+
+    const renderContent = () => {
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateEvaluation={handleGenerateEvaluation} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} />;
             case 'loading':
-                return selectedSubject && <LoadingView subject={selectedSubject.name} task={loadingTask} />;
+                return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} />;
             case 'quiz':
                 return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} />;
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
             case 'exercises':
-                const contentDetails = {
-                    exercises: {
-                        title: "Exercices Générés !",
-                        description: "Votre fiche d'exercices est prête à être téléchargée.",
-                        buttonText: "Télécharger la fiche"
-                    },
-                    cours: {
-                        title: "Cours Généré !",
-                        description: "Votre fiche de cours est prête à être téléchargée.",
-                        buttonText: "Télécharger le cours"
-                    },
-                    evaluation: {
-                        title: "Évaluation Générée !",
-                        description: "Votre évaluation est prête à être téléchargée.",
-                        buttonText: "Télécharger l'évaluation"
-                    },
-                    'fiche-revisions': {
-                        title: "Fiche de Révisions Générée !",
-                        description: "Votre fiche de révisions est prête à être téléchargée.",
-                        buttonText: "Télécharger la fiche"
-                    },
-                    quiz: { title: "", description: "", buttonText: "" } // Should not happen
+                const titleMap = {
+                    exercises: "Fiche d'exercices prête !",
+                    cours: "Fiche de cours prête !",
+                    evaluation: "Évaluation prête !",
+                    'fiche-revisions': "Fiche de révisions prête !",
                 };
-                const details = contentDetails[loadingTask];
-                return <ExercisesView onDownload={handleDownloadHtml} {...details} />;
-            case 'imageGeneration':
-                return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingGenerations} defaultImageModel={defaultImageModel} />;
+                return <ExercisesView 
+                            onDownload={handleDownloadHtml}
+                            title={titleMap[loadingTask] || "Contenu prêt !"}
+                            description={`Votre document sur ${selectedSubject?.name} a été généré avec succès.`}
+                            buttonText={`Télécharger le .html`}
+                        />;
             case 'chat':
-                const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
-                return activeSession ? (
-                    <ChatView 
-                        session={activeSession} 
-                        onUpdateSession={handleUpdateSession} 
-                        systemInstruction={aiSystemInstruction} 
-                        subscriptionPlan={subscriptionPlan} 
-                        userName={userName} 
-                    />
-                ) : (
-                    <div className="flex h-full items-center justify-center text-center p-8">
-                        <div className="flex flex-col items-center">
-                            <svg className="w-24 h-24 text-slate-400 dark:text-slate-600 mb-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">Bienvenue sur BrevetAI Chat</h2>
-                            <p className="text-slate-700 dark:text-slate-400 mt-2">Sélectionnez une conversation dans la barre latérale ou commencez-en une nouvelle pour obtenir de l'aide.</p>
+                if (activeSession) {
+                    return <ChatView session={activeSession} onUpdateSession={handleUpdateSession} systemInstruction={buildSystemInstruction()} subscriptionPlan={subscriptionPlan} userName={userName}/>
+                }
+                return ( // No active session selected, show a welcome message
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 flex items-center justify-center shadow-2xl mb-6">
+                            <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                         </div>
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-200">
+                            Bienvenue sur BrevetAI !
+                        </h2>
+                        <p className="text-slate-700 dark:text-slate-400 mt-2">
+                           Sélectionnez une discussion ou commencez-en une nouvelle.
+                        </p>
                     </div>
                 );
             case 'settings':
                 return <SettingsView 
-                    theme={theme} onThemeChange={setTheme} 
-                    aiSystemInstruction={aiSystemInstruction} onAiSystemInstructionChange={setAiSystemInstruction} 
-                    subscriptionPlan={subscriptionPlan} 
-                    userName={userName} onUserNameChange={setUserName} 
-                    defaultAiModel={defaultAiModel} onDefaultAiModelChange={setDefaultAiModel}
-                    defaultImageModel={defaultImageModel} onDefaultImageModelChange={setDefaultImageModel}
-                    imageGenerationInstruction={imageGenerationInstruction} onImageGenerationInstructionChange={setImageGenerationInstruction}
+                    theme={theme} 
+                    onThemeChange={setTheme} 
+                    aiSystemInstruction={aiSystemInstruction}
+                    onAiSystemInstructionChange={setAiSystemInstruction}
+                    subscriptionPlan={subscriptionPlan}
+                    userName={userName}
+                    onUserNameChange={setUserName}
+                    defaultAiModel={defaultAiModel}
+                    onDefaultAiModelChange={setDefaultAiModel}
+                    defaultImageModel={defaultImageModel}
+                    onDefaultImageModelChange={setDefaultImageModel}
+                    imageGenerationInstruction={imageGenerationInstruction}
+                    onImageGenerationInstructionChange={setImageGenerationInstruction}
                 />;
+            case 'login':
+                return <LoginView onLogin={(email) => setUser({ email })} />;
             case 'subscription':
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
-            case 'login':
-                return <LoginView onLogin={(email) => { setUser({email}); setView('home'); }} />;
+            case 'imageGeneration':
+                 return <ImageGenerationView
+                    onGenerate={handleGenerateImage}
+                    isGenerating={isGeneratingImage}
+                    generatedImage={generatedImage}
+                    remainingGenerations={remainingImageGenerations()}
+                    defaultImageModel={defaultImageModel}
+                    subscriptionPlan={subscriptionPlan}
+                />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()}/>;
         }
     };
-
+    
+    // Main Render
     return (
-        <div className="relative min-h-screen font-sans flex flex-col w-full">
-            {view !== 'home' && <FixedExitButton onClick={handleBackToHome} />}
-            <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} />
-            
-            <div className="flex flex-1 w-full pt-20 overflow-hidden" style={{ zIndex: 1 }}>
-                {view === 'chat' && (
-                    <HistorySidebar
-                        sessions={chatSessions}
-                        activeSessionId={activeChatSessionId}
-                        onSelectChat={handleSelectChat}
-                        onDeleteChat={handleDeleteChat}
-                        onNewChat={handleStartChat}
+        <div className="h-screen w-screen flex bg-slate-100/50 dark:bg-slate-950/50 text-slate-800 dark:text-slate-200 overflow-hidden">
+            {view === 'chat' ? (
+                <>
+                    <HistorySidebar 
+                        sessions={chatSessions} 
+                        folders={folders}
+                        activeSessionId={activeChatSessionId} 
+                        onSelectChat={handleSelectChat} 
+                        onDeleteChat={handleDeleteChat} 
+                        onNewChat={handleNewChat}
                         onUpdateSession={handleUpdateSession}
+                        onNewFolder={handleNewFolder}
+                        onDeleteFolder={handleDeleteFolder}
+                        onUpdateFolder={handleUpdateFolder}
                     />
-                )}
-
-                <main className="flex-1 overflow-y-auto">
-                    <div className={`w-full h-full flex flex-col items-center justify-center ${view === 'chat' ? 'p-0' : 'p-4 sm:p-6 lg:p-8'}`}>
-                        {renderView()}
+                    <div className="flex-grow flex flex-col h-full">
+                        {renderContent()}
                     </div>
-                </main>
-            </div>
-
-            <footer className="w-full text-center p-4 text-xs text-slate-700 dark:text-slate-400 shrink-0" style={{ zIndex: 1 }}>
-                 26-2.2 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+                    <FixedExitButton onClick={handleBackToHome} />
+                </>
+            ) : (
+                <div className="flex-grow h-full overflow-y-auto">
+                    {view !== 'home' && <FixedExitButton onClick={handleBackToHome} />}
+                    <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan}/>
+                    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
+                       {renderContent()}
+                    </div>
+                </div>
+            )}
+             <footer className="fixed bottom-2 right-4 text-xs text-slate-500 dark:text-slate-600">
+                26-2.6 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA
             </footer>
         </div>
     );

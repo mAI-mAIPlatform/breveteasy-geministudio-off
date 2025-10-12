@@ -124,7 +124,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan,
     return (
         <div className="w-full max-w-5xl mx-auto">
             <header className="text-center mb-12">
-                <h2 className="text-5xl font-extrabold text-slate-900 dark:text-slate-100">Nos Forfaits</h2>
+                <h2 className="text-5xl font-extrabold text-slate-900 dark:text-slate-100">Brevet' Easy</h2>
                 <p className="text-xl text-slate-700 dark:text-slate-400 mt-2">
                     Choisissez le forfait qui vous convient le mieux pour réussir votre brevet.
                 </p>
