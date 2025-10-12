@@ -1,6 +1,6 @@
 // Fix: Provide the implementation for the main App component.
 // Fix: Corrected React import to include necessary hooks.
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HomeView } from './components/HomeView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
 import { LoadingView } from './components/LoadingView';
@@ -92,6 +92,23 @@ const FixedExitButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     </div>
 );
 
+const ScrollToTopButton: React.FC<{ onClick: () => void; isVisible: boolean }> = ({ onClick, isVisible }) => (
+    <div className={`fixed bottom-10 sm:bottom-6 lg:bottom-8 right-4 sm:right-6 lg:right-8 z-50 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <HeaderButton
+            onClick={onClick}
+            title="Remonter en haut"
+            ariaLabel="Remonter en haut de la page"
+            isIconOnly={true}
+            className="transform hover:-translate-y-1"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+        </HeaderButton>
+    </div>
+);
+
+
 const App: React.FC = () => {
     // App State
     const [view, setView] = useState<View>('home');
@@ -118,6 +135,8 @@ const App: React.FC = () => {
     const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-image-instruction') || '';
     });
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    const rootRef = useRef<HTMLElement | null>(null);
 
 
     // User/Profile State
@@ -182,6 +201,25 @@ const App: React.FC = () => {
             document.documentElement.classList.toggle('dark', theme === 'dark');
         }
     }, [theme]);
+
+    // Scroll-to-top button logic
+    useEffect(() => {
+        rootRef.current = document.getElementById('root');
+        const container = rootRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            // Show button if scrolled more than 80% of the viewport height
+            if (container.scrollTop > window.innerHeight * 0.8) {
+                setShowScrollTop(true);
+            } else {
+                setShowScrollTop(false);
+            }
+        };
+
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, []); // Runs once on mount
     
     // AI Instruction Persistence Effect
     useEffect(() => {
@@ -249,6 +287,9 @@ const App: React.FC = () => {
     const handleGoToImageGeneration = () => {
         setGeneratedImage(null);
         setView('imageGeneration');
+    };
+    const handleScrollToTop = () => {
+        rootRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     // Subscription Handler
@@ -627,6 +668,7 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
+            <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop && view !== 'chat'} />
              <footer className="fixed bottom-2 right-4 text-xs text-slate-500 dark:text-slate-600">
                 26-2.6 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA
             </footer>
