@@ -2,7 +2,7 @@ import React from 'react';
 
 interface LoadingViewProps {
   subject: string;
-  task: 'quiz' | 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions';
+  task: 'quiz' | 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions' | 'correction-evaluation';
 }
 
 const LoadingSpinner: React.FC = () => (
@@ -38,14 +38,19 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
     cours: 'du cours',
     evaluation: "de l'évaluation",
     'fiche-revisions': 'de la fiche de révisions',
+    'correction-evaluation': 'de la correction',
   };
   const titleText = titleTextMap[task] || 'du contenu';
+
+  const loadingMessage = task === 'correction-evaluation'
+    ? "Correction de vos réponses par l'IA..."
+    : `Génération ${titleText} de <span class="text-indigo-500 dark:text-sky-300">${safeSubject}</span>`;
 
 
   return (
     <div className="flex flex-col items-center justify-center text-center h-full space-y-8 w-full p-4 bg-black/10 dark:bg-slate-900/60 backdrop-filter backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl">
       <LoadingSpinner />
-      <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Génération {titleText} de <span className="text-indigo-500 dark:text-sky-300">{safeSubject}</span></h2>
+      <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: loadingMessage }}></h2>
     </div>
   );
 };

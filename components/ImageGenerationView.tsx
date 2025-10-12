@@ -3,7 +3,7 @@ import type { ImageModel, SubscriptionPlan } from '../types';
 import { PremiumBadge } from './PremiumBadge';
 
 interface ImageGenerationViewProps {
-  onGenerate: (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png') => void;
+  onGenerate: (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png', aspectRatio: string, negativePrompt: string) => void;
   isGenerating: boolean;
   generatedImage: { data: string; mimeType: string } | null;
   remainingGenerations: number;
@@ -132,6 +132,8 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   const [model, setModel] = useState<ImageModel>(defaultImageModel);
   const [style, setStyle] = useState('none');
   const [format, setFormat] = useState<'jpeg' | 'png'>('jpeg');
+  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [negativePrompt, setNegativePrompt] = useState('');
   const outputRef = useRef<HTMLDivElement>(null);
   const isStyleLocked = subscriptionPlan !== 'max';
 
@@ -147,6 +149,14 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
     { value: 'jpeg', label: 'JPEG' },
     { value: 'png', label: 'PNG' },
   ];
+  
+  const aspectRatioOptions = [
+    { value: '1:1', label: 'Carré (1:1)' },
+    { value: '16:9', label: 'Paysage (16:9)' },
+    { value: '9:16', label: 'Portrait (9:16)' },
+    { value: '4:3', label: 'Standard (4:3)' },
+    { value: '3:4', label: 'Vertical (3:4)' },
+  ];
 
   useEffect(() => {
     setModel(defaultImageModel);
@@ -160,7 +170,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
 
   const handleGenerateClick = () => {
     if (prompt.trim()) {
-      onGenerate(prompt, model, style, format);
+      onGenerate(prompt, model, style, format, aspectRatio, negativePrompt);
       setTimeout(() => {
         outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 100);
@@ -222,6 +232,25 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                     <PremiumBadge requiredPlan="max" />
                 )}
             </div>
+
+            <StyledDropdown
+                label="Ratio de l'image"
+                options={aspectRatioOptions.map(o => o.value)}
+                value={aspectRatio}
+                onChange={(val) => setAspectRatio(val as string)}
+                renderOption={(option) => aspectRatioOptions.find(o => o.value === option)?.label}
+            />
+            
+            <SettingRow label="Prompt négatif (facultatif)">
+                <textarea
+                    rows={2}
+                    value={negativePrompt}
+                    onChange={(e) => setNegativePrompt(e.target.value)}
+                    className="w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition"
+                    placeholder="Ex: texte, flou, mauvaise qualité, déformé..."
+                    disabled={!canGenerate || isGenerating}
+                />
+            </SettingRow>
 
 
             <StyledDropdown

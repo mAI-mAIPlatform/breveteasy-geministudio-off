@@ -54,3 +54,60 @@ export interface ChatSession {
 }
 
 export type SubscriptionPlan = 'free' | 'pro' | 'max';
+
+// --- Evaluation Types ---
+
+export interface BaseEvaluationQuestion {
+    questionText: string;
+    points: number;
+}
+
+export interface EvaluationQCM extends BaseEvaluationQuestion {
+    type: 'qcm';
+    options: string[];
+    correctAnswer: string;
+}
+
+export interface EvaluationFillBlank extends BaseEvaluationQuestion {
+    type: 'fill-in-the-blank';
+    // "La capitale de la France est {{BLANK}}."
+    questionTextWithBlanks: string; 
+    correctAnswers: string[]; // Answers in order of appearance
+}
+
+export interface EvaluationShortText extends BaseEvaluationQuestion {
+    type: 'short-text';
+    correctAnswer: string; // An ideal answer for comparison
+}
+
+export interface EvaluationLongText extends BaseEvaluationQuestion {
+    type: 'long-text';
+    idealAnswer: string; // The model answer for correction
+}
+
+export type EvaluationQuestion = EvaluationQCM | EvaluationFillBlank | EvaluationShortText | EvaluationLongText;
+
+export interface Evaluation {
+  subject: string;
+  title: string;
+  questions: EvaluationQuestion[];
+  totalPoints: number;
+}
+
+// For user answers
+export type EvaluationAnswers = {
+    [questionIndex: number]: string | string[]; // string for QCM/Short/Long, string[] for FillBlank
+};
+
+// For AI grading result
+export interface GradedQuestion {
+    isCorrect: boolean;
+    feedback: string;
+    scoreAwarded: number;
+}
+
+export interface EvaluationResult {
+    totalScore: number;
+    overallFeedback: string;
+    gradedQuestions: GradedQuestion[];
+}
