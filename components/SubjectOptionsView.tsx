@@ -6,25 +6,47 @@ interface SubjectOptionsViewProps {
   subject: Subject;
   onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string) => void;
+  onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string) => void;
+  onGenerateEvaluation: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   subscriptionPlan: SubscriptionPlan;
 }
 
-const OptionCard: React.FC<{ title: string; description: string; icon: React.ReactNode; onClick: () => void; }> = ({ title, description, icon, onClick }) => (
-    <button
-        onClick={onClick}
-        className="group w-full text-left p-6 bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ease-in-out flex items-center space-x-5"
-    >
-        <div className="p-3 bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 rounded-full">
-            {icon}
-        </div>
-        <div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-500 dark:group-hover:text-sky-300 transition-colors duration-300">
-                {title}
-            </h3>
-            <p className="text-slate-700 dark:text-slate-400 mt-1">{description}</p>
-        </div>
-    </button>
+const OptionCard: React.FC<{ 
+    title: string; 
+    description: string; 
+    icon: React.ReactNode; 
+    onClick: () => void; 
+    isProFeature?: boolean;
+}> = ({ title, description, icon, onClick, isProFeature = false }) => (
+    <div className="relative">
+        <button
+            onClick={onClick}
+            disabled={isProFeature}
+            className={`group w-full text-left p-6 bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg transition-all duration-300 ease-in-out flex items-center space-x-5 ${
+                isProFeature 
+                    ? 'opacity-60 cursor-not-allowed' 
+                    : 'hover:shadow-2xl hover:-translate-y-1'
+            }`}
+        >
+            <div className="p-3 bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 rounded-full">
+                {icon}
+            </div>
+            <div>
+                <h3 className={`text-xl font-bold text-slate-900 dark:text-slate-100 ${!isProFeature && 'group-hover:text-indigo-500 dark:group-hover:text-sky-300 transition-colors duration-300'}`}>
+                    {title}
+                </h3>
+                <p className="text-slate-700 dark:text-slate-400 mt-1">{description}</p>
+            </div>
+        </button>
+        {isProFeature && (
+             <div className="absolute top-3 right-3 px-2.5 py-1 bg-indigo-500 text-white text-xs font-bold rounded-full shadow-md z-10 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                <span>PRO</span>
+            </div>
+        )}
+    </div>
 );
+
 
 // New StyledDropdown component
 interface StyledDropdownProps<T extends string | number> {
@@ -112,8 +134,9 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
 };
 
 
-export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, subscriptionPlan }) => {
+export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onGenerateCours, onGenerateEvaluation, subscriptionPlan }) => {
   const isFreePlan = subscriptionPlan === 'free';
+  const isEvaluationLocked = subscriptionPlan === 'free';
 
   const [customPrompt, setCustomPrompt] = useState('');
   const [difficulty, setDifficulty] = useState<'Facile' | 'Moyen' | 'Difficile'>('Moyen');
@@ -147,6 +170,14 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
     onGenerateExercises(customPrompt, itemCount, currentDifficulty, currentLevel);
   };
   
+  const handleGenerateCoursClick = () => {
+    onGenerateCours(customPrompt, itemCount, currentDifficulty, currentLevel);
+  };
+
+  const handleGenerateEvaluationClick = () => {
+    onGenerateEvaluation(customPrompt, itemCount, currentDifficulty, currentLevel);
+  };
+  
   return (
     <div className="w-full max-w-2xl mx-auto">
         <div className="relative text-center mb-10">
@@ -177,7 +208,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                     options={ITEM_COUNTS}
                     value={itemCount}
                     onChange={setItemCount}
-                    renderOption={(option) => `${option} questions`}
+                    renderOption={(option) => `${option} éléments`}
                 />
                 <StyledDropdown<string>
                     label="Niveau"
@@ -209,6 +240,19 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                 description={`Recevez une fiche de ${itemCount} exercices avec corrigés.`}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
                 onClick={handleGenerateExercisesClick}
+            />
+            <OptionCard
+                title="Générer un cours"
+                description={`Obtenez une fiche de cours structurée sur ${itemCount} concepts clés.`}
+                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" /></svg>}
+                onClick={handleGenerateCoursClick}
+            />
+            <OptionCard
+                title="Générer une évaluation"
+                description={`Créez une évaluation type examen de ${itemCount} questions avec corrigé.`}
+                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+                onClick={handleGenerateEvaluationClick}
+                isProFeature={isEvaluationLocked}
             />
         </main>
     </div>

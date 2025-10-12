@@ -16,6 +16,7 @@ import { ai, Type } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel } from './types';
 
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
+type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'evaluation';
 
 interface ImageUsage {
     count: number;
@@ -93,7 +94,7 @@ const FixedExitButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 const App: React.FC = () => {
     // App State
     const [view, setView] = useState<View>('home');
-    const [loadingTask, setLoadingTask] = useState<'quiz' | 'exercises'>('quiz');
+    const [loadingTask, setLoadingTask] = useState<LoadingTask>('quiz');
     const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
         const savedTheme = localStorage.getItem('brevet-easy-theme');
         return (savedTheme as any) || 'system';
@@ -130,10 +131,9 @@ const App: React.FC = () => {
     const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
     const [score, setScore] = useState(0);
 
-    // Exercises State
-    const [generatedExercisesHtml, setGeneratedExercisesHtml] = useState<string | null>(null);
-    // Fix: Add state for download status to satisfy ExercisesViewProps.
-    const [isDownloadingExercises, setIsDownloadingExercises] = useState(false);
+    // Exercises & HTML Content State
+    const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+    const [isDownloadingHtml, setIsDownloadingHtml] = useState(false);
 
     // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
@@ -227,7 +227,7 @@ const App: React.FC = () => {
         setQuiz(null);
         setQuizAnswers([]);
         setScore(0);
-        setGeneratedExercisesHtml(null);
+        setGeneratedHtml(null);
         setGeneratedImage(null);
         setView('home');
     };
@@ -343,24 +343,12 @@ const App: React.FC = () => {
         setView('results');
     };
 
-    // Exercises Flow Handlers
-    const handleGenerateExercises = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
+    // Generic HTML Content Generator
+    const generateHtmlContent = useCallback(async (task: 'exercises' | 'cours' | 'evaluation', prompt: string) => {
         if (!selectedSubject) return;
         setView('loading');
-        setLoadingTask('exercises');
+        setLoadingTask(task);
         try {
-            let prompt = `Crée une fiche d'exercices complète et bien structurée sur le thème "${selectedSubject.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. Si le niveau est "Brevet", considère que c'est un élève de fin de 3ème qui révise pour l'examen national. La réponse DOIT être un document HTML complet et autonome (self-contained).
-- Inclus une balise <!DOCTYPE html>, <html>, <head>, et <body>.
-- Dans le <head>, inclus un <title> pertinent et un lien vers la police "Poppins" de Google Fonts.
-- Inclus aussi une balise <style> avec du CSS pour une présentation claire, professionnelle et lisible. Utilise la police 'Poppins', sans-serif. Style les titres (h1, h2, h3), les paragraphes, et crée des classes pour les sections d'exercices et les sections de corrigés. Le corrigé doit être clairement séparé et facile à identifier. Ajoute un style sobre pour le mode sombre (dark mode).
-- Le <body> doit contenir un titre principal (h1) et ${count} exercices variés avec des énoncés clairs (utilise des h2 pour chaque exercice).
-- Fournis un corrigé détaillé pour chaque exercice dans une section séparée à la fin du document (commençant par un h1 "Corrigé").
-- La structure doit être sémantique (utilise des balises comme <section>, <article>, etc.).`;
-
-            if (customPrompt.trim()) {
-                prompt += `\n\nInstructions supplémentaires de l'utilisateur : base les exercices sur les points suivants : "${customPrompt.trim()}".`;
-            }
-            
             const config: { systemInstruction?: string } = {};
 
             const finalSystemInstruction = buildSystemInstruction();
@@ -374,38 +362,85 @@ const App: React.FC = () => {
                 config,
             });
 
-            const generatedHtml = response.text;
-            if (!generatedHtml || !generatedHtml.toLowerCase().includes('</html>')) {
+            const generatedContent = response.text;
+            if (!generatedContent || !generatedContent.toLowerCase().includes('</html>')) {
                 throw new Error("Le contenu généré n'est pas un document HTML valide.");
             }
             
-            setGeneratedExercisesHtml(generatedHtml);
-            setView('exercises');
+            setGeneratedHtml(generatedContent);
+            setView('exercises'); // Re-using the exercises view for download
 
         } catch (error) {
-            console.error("Failed to generate exercises:", error);
-            alert("Désolé, une erreur est survenue lors de la génération des exercices. Veuillez réessayer.");
+            console.error(`Failed to generate ${task}:`, error);
+            alert(`Désolé, une erreur est survenue lors de la génération. Veuillez réessayer.`);
             handleBackToHome();
         }
     }, [selectedSubject, subscriptionPlan, buildSystemInstruction]);
 
-    // Fix: Implement download state handling for ExercisesView.
-    const handleDownloadExercises = () => {
-        if (!generatedExercisesHtml || !selectedSubject || isDownloadingExercises) return;
+    // Exercises Flow Handler
+    const handleGenerateExercises = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
+        let prompt = `Crée une fiche d'exercices complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. Si le niveau est "Brevet", considère que c'est un élève de fin de 3ème. La réponse DOIT être un document HTML complet et autonome (self-contained).
+- Inclus une balise <!DOCTYPE html>, <html>, <head>, et <body>.
+- Dans le <head>, inclus un <title> pertinent et un lien vers la police "Poppins" de Google Fonts, et une balise <style> avec du CSS pour une présentation claire, professionnelle et lisible, incluant un mode sombre.
+- Le <body> doit contenir un titre principal (h1) et ${count} exercices variés avec des énoncés clairs.
+- Fournis un corrigé détaillé pour chaque exercice dans une section séparée à la fin du document.`;
+        if (customPrompt.trim()) {
+            prompt += `\n\nInstructions supplémentaires : base les exercices sur les points suivants : "${customPrompt.trim()}".`;
+        }
+        await generateHtmlContent('exercises', prompt);
+    }, [selectedSubject, generateHtmlContent]);
+
+    // Course Sheet Flow Handler
+    const handleGenerateCours = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
+        let prompt = `Crée une fiche de cours complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. La fiche doit couvrir environ ${count} concepts clés. La réponse DOIT être un document HTML complet et autonome (self-contained).
+- Inclus <!DOCTYPE html>, <html>, <head>, et <body>.
+- Dans le <head>, inclus un <title> pertinent, un lien vers la police "Poppins" de Google Fonts, et une balise <style> avec du CSS pour une présentation claire, engageante et lisible, avec un mode sombre. Utilise des couleurs pour mettre en évidence les définitions, exemples et points clés.
+- Le <body> doit contenir un titre principal (h1) et être structuré en sections (Introduction, Définitions Clés, Concepts Principaux, Résumé).`;
+        if (customPrompt.trim()) {
+            prompt += `\n\nInstructions supplémentaires : focalise le cours sur les points suivants : "${customPrompt.trim()}".`;
+        }
+        await generateHtmlContent('cours', prompt);
+    }, [selectedSubject, generateHtmlContent]);
+    
+    // Evaluation Flow Handler
+    const handleGenerateEvaluation = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
+        let prompt = `Crée une évaluation complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. La réponse DOIT être un document HTML complet et autonome (self-contained).
+- Inclus <!DOCTYPE html>, <html>, <head>, et <body>.
+- Dans le <head>, inclus un <title> "Évaluation de ${selectedSubject?.name}", un lien vers la police "Poppins" de Google Fonts, et une balise <style> avec du CSS pour une présentation claire type examen, avec un mode sombre.
+- Le <body> doit commencer par un en-tête clair, des instructions, et inclure ${count} exercices ou questions variés (QCM, questions courtes, etc.).
+- Indique un barème de notation sur 20 points.
+- Inclus un corrigé détaillé dans une section séparée à la fin.`;
+        if (customPrompt.trim()) {
+            prompt += `\n\nInstructions supplémentaires : base l'évaluation sur les points suivants : "${customPrompt.trim()}".`;
+        }
+        await generateHtmlContent('evaluation', prompt);
+    }, [selectedSubject, generateHtmlContent]);
+
+    // HTML Download Handler
+    const handleDownloadHtml = () => {
+        if (!generatedHtml || !selectedSubject || isDownloadingHtml) return;
         
-        setIsDownloadingExercises(true);
-        const blob = new Blob([generatedExercisesHtml], { type: 'text/html' });
+        setIsDownloadingHtml(true);
+        const blob = new Blob([generatedHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `exercices-${selectedSubject.name.toLowerCase().replace(/\s/g, '_')}.html`;
+
+        const fileTypeMap: Record<LoadingTask, string> = {
+            exercises: 'exercices',
+            cours: 'cours',
+            evaluation: 'evaluation',
+            quiz: 'quiz-results' // Fallback
+        };
+        const fileType = fileTypeMap[loadingTask] || 'contenu';
+        a.download = `${fileType}-${selectedSubject.name.toLowerCase().replace(/\s/g, '_')}.html`;
+        
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        // Use a timeout to provide visual feedback, as the download is synchronous.
-        setTimeout(() => setIsDownloadingExercises(false), 1000);
+        setTimeout(() => setIsDownloadingHtml(false), 1000);
     };
 
     // Image Generation Flow Handlers
@@ -516,7 +551,7 @@ const App: React.FC = () => {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
             case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} subscriptionPlan={subscriptionPlan} />;
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateEvaluation={handleGenerateEvaluation} subscriptionPlan={subscriptionPlan} />;
             case 'loading':
                 return selectedSubject && <LoadingView subject={selectedSubject.name} task={loadingTask} />;
             case 'quiz':
@@ -524,8 +559,26 @@ const App: React.FC = () => {
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
             case 'exercises':
-                // Fix: Pass the isDownloading prop to ExercisesView.
-                return <ExercisesView onDownload={handleDownloadExercises} isDownloading={isDownloadingExercises} />;
+                const contentDetails = {
+                    exercises: {
+                        title: "Exercices Générés !",
+                        description: "Votre fiche d'exercices est prête à être téléchargée.",
+                        buttonText: "Télécharger la fiche"
+                    },
+                    cours: {
+                        title: "Cours Généré !",
+                        description: "Votre fiche de cours est prête à être téléchargée.",
+                        buttonText: "Télécharger le cours"
+                    },
+                    evaluation: {
+                        title: "Évaluation Générée !",
+                        description: "Votre évaluation est prête à être téléchargée.",
+                        buttonText: "Télécharger l'évaluation"
+                    },
+                    quiz: { title: "", description: "", buttonText: "" } // Should not happen
+                };
+                const details = contentDetails[loadingTask];
+                return <ExercisesView onDownload={handleDownloadHtml} {...details} />;
             case 'imageGeneration':
                 return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingGenerations} defaultImageModel={defaultImageModel} />;
             case 'chat':
