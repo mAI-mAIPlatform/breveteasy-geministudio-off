@@ -24,16 +24,18 @@ const FeedbackModal: React.FC<{
 }> = ({ isOpen, onClose }) => {
     const [feedbackMessage, setFeedbackMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!feedbackMessage.trim()) return;
+        if (!feedbackMessage.trim() || !termsAccepted) return;
         
         setIsSending(true);
         // Simulate API call
         setTimeout(() => {
             setIsSending(false);
             setFeedbackMessage('');
+            setTermsAccepted(false);
             alert("Merci pour votre retour ! Votre message a bien été envoyé.");
             onClose();
         }, 1000);
@@ -69,13 +71,26 @@ const FeedbackModal: React.FC<{
                         placeholder="Écrivez votre message ici..."
                         required
                     />
+                    <div className="flex items-center mt-4">
+                        <input
+                            id="terms"
+                            name="terms"
+                            type="checkbox"
+                            checked={termsAccepted}
+                            onChange={(e) => setTermsAccepted(e.target.checked)}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600 rounded bg-slate-100 dark:bg-slate-800"
+                        />
+                        <label htmlFor="terms" className="ml-3 block text-sm text-slate-700 dark:text-slate-400">
+                            J'accepte les conditions d'utilisation (obligatoire)
+                        </label>
+                    </div>
                     <div className="flex justify-end items-center gap-4 mt-6">
                         <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-black/10 dark:hover:bg-slate-700/50 transition-colors">
                             Annuler
                         </button>
                         <button
                             type="submit"
-                            disabled={!feedbackMessage.trim() || isSending}
+                            disabled={!feedbackMessage.trim() || !termsAccepted || isSending}
                             className="px-6 py-2 bg-indigo-500 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {isSending ? 'Envoi...' : 'Envoyer'}

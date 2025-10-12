@@ -25,7 +25,7 @@ const QuestionDisplay: React.FC<{
             onClick={() => onOptionSelect(option)}
             className={`p-4 rounded-2xl text-left text-lg transition-all duration-300 border ${
               isSelected
-                ? 'bg-sky-400/30 dark:bg-sky-400/40 text-white border-sky-300 dark:border-sky-400 shadow-[0_0_20px_theme(colors.sky.400)] scale-105'
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-[0_0_20px_rgba(167,139,250,0.5)] scale-105'
                 : 'bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-sky-300 dark:hover:border-sky-400 hover:bg-white/40 dark:hover:bg-slate-700/60'
             }`}
           >
