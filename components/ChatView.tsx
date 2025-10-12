@@ -220,7 +220,19 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto'; // Reset to calculate new scrollHeight
+            const maxHeight = 192; // 12rem
+            const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+            textarea.style.height = `${newHeight}px`;
+            textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+        }
+    }, [input]);
+
     const generatePromptSuggestions = useCallback(async () => {
         setIsGeneratingSuggestions(true);
         try {
@@ -532,11 +544,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         </button>
                     </div>
                 )}
-                <div className="flex items-center bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-full p-1 shadow-inner pr-2 border border-white/20 dark:border-slate-700">
-                    <button onClick={() => fileInputRef.current?.click()} disabled={isChatLimitReached} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <div className="flex items-end bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-2xl p-1 shadow-inner pr-2 border border-white/20 dark:border-slate-700">
+                    <button onClick={() => fileInputRef.current?.click()} disabled={isChatLimitReached} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-1">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                     </button>
                     <textarea
+                        ref={textareaRef}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => {
@@ -550,7 +563,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         rows={1}
                         disabled={isLoading || isChatLimitReached}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0">
+                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
                        </svg>

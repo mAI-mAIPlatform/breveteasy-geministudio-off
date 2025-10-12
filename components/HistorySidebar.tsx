@@ -12,6 +12,7 @@ interface HistorySidebarProps {
   onNewFolder: (name: string) => void;
   onDeleteFolder: (folderId: string) => void;
   onUpdateFolder: (folderId: string, updates: Partial<Folder>) => void;
+  onExitChat: () => void;
 }
 
 const EditIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>;
@@ -93,7 +94,7 @@ const SessionItem: React.FC<{
 };
 
 export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
-  const { sessions, folders, activeSessionId, onSelectChat, onDeleteChat, onNewChat, onUpdateSession, onNewFolder, onDeleteFolder, onUpdateFolder } = props;
+  const { sessions, folders, activeSessionId, onSelectChat, onDeleteChat, onNewChat, onUpdateSession, onNewFolder, onDeleteFolder, onUpdateFolder, onExitChat } = props;
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -203,6 +204,22 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
 
   return (
     <aside className="w-80 h-full flex-shrink-0 bg-white/5 dark:bg-slate-900/40 p-4 flex flex-col gap-2 border-r border-white/10 dark:border-slate-800">
+        <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center gap-2">
+                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-sky-400 flex-shrink-0 shadow-lg flex items-center justify-center">
+                   <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                </div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">BrevetAI</h2>
+            </div>
+            <button 
+                onClick={onExitChat}
+                className="flex items-center justify-center w-10 h-10 bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-full shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-105 transition-all duration-300"
+                title="Retour à l'accueil"
+                aria-label="Retourner à l'accueil"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
         <div 
             className="flex gap-2"
             onMouseLeave={() => setIsHoveringFolder(false)}

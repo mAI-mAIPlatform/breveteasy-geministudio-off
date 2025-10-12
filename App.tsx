@@ -79,8 +79,8 @@ const FixedHeader: React.FC<{
     </div>
 );
 
-const FixedExitButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-    <div className="fixed top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-50">
+const FixedExitButton: React.FC<{ onClick: () => void; position?: 'fixed' | 'absolute' }> = ({ onClick, position = 'fixed' }) => (
+    <div className={`${position} top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-50`}>
         <HeaderButton 
             onClick={onClick} 
             title="Retour à l'accueil"
@@ -639,38 +639,40 @@ const App: React.FC = () => {
     
     // Main Render
     return (
-        <div className="h-screen w-screen flex bg-slate-100/50 dark:bg-slate-950/50 text-slate-800 dark:text-slate-200 overflow-hidden">
-            {view === 'chat' ? (
-                <>
-                    <HistorySidebar 
-                        sessions={chatSessions} 
-                        folders={folders}
-                        activeSessionId={activeChatSessionId} 
-                        onSelectChat={handleSelectChat} 
-                        onDeleteChat={handleDeleteChat} 
-                        onNewChat={handleNewChat}
-                        onUpdateSession={handleUpdateSession}
-                        onNewFolder={handleNewFolder}
-                        onDeleteFolder={handleDeleteFolder}
-                        onUpdateFolder={handleUpdateFolder}
-                    />
-                    <div className="flex-grow flex flex-col h-full">
-                        {renderContent()}
+        <div className="min-h-screen w-screen flex flex-col bg-slate-100/50 dark:bg-slate-950/50 text-slate-800 dark:text-slate-200">
+            <div className="flex-grow flex overflow-hidden">
+                {view === 'chat' ? (
+                    <>
+                        <HistorySidebar 
+                            sessions={chatSessions} 
+                            folders={folders}
+                            activeSessionId={activeChatSessionId} 
+                            onSelectChat={handleSelectChat} 
+                            onDeleteChat={handleDeleteChat} 
+                            onNewChat={handleNewChat}
+                            onUpdateSession={handleUpdateSession}
+                            onNewFolder={handleNewFolder}
+                            onDeleteFolder={handleDeleteFolder}
+                            onUpdateFolder={handleUpdateFolder}
+                            onExitChat={handleBackToHome}
+                        />
+                        <div className="flex-grow flex flex-col h-full relative">
+                            {renderContent()}
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-grow h-full overflow-y-auto">
+                        {view !== 'home' && <FixedExitButton onClick={handleBackToHome} />}
+                        <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan}/>
+                        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
+                           {renderContent()}
+                        </div>
                     </div>
-                    <FixedExitButton onClick={handleBackToHome} />
-                </>
-            ) : (
-                <div className="flex-grow h-full overflow-y-auto">
-                    {view !== 'home' && <FixedExitButton onClick={handleBackToHome} />}
-                    <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan}/>
-                    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
-                       {renderContent()}
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
             <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop && view !== 'chat'} />
-             <footer className="fixed bottom-2 right-4 text-xs text-slate-500 dark:text-slate-600">
-                26-2.6 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA
+            <footer className="text-center py-2 px-4 text-xs text-slate-500 dark:text-slate-600 border-t border-white/10 dark:border-slate-800 shrink-0">
+                26-2.7 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA
             </footer>
         </div>
     );
