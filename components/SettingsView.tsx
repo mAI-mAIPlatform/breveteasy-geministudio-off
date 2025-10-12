@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { SubscriptionPlan, AiModel, ImageModel } from '../types';
+import { PremiumBadge } from './PremiumBadge';
 
 interface SettingsViewProps {
   theme: 'light' | 'dark' | 'system';
@@ -177,11 +178,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange
                     Cette instruction sera appliquée à toutes les futures interactions avec BrevetAI (quiz, exercices et chat).
                 </p>
                 {isCustomInstructionDisabled && (
-                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm rounded-xl" title="Brevet Pro">
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 text-sm font-bold rounded-full shadow-lg">
-                            <span>Brevet Pro</span>
-                        </div>
-                    </div>
+                     <PremiumBadge requiredPlan="pro" />
                 )}
             </div>
             
@@ -221,11 +218,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange
                     Cette instruction sera ajoutée au début de toutes vos futures demandes de génération d'images.
                 </p>
                 {isCustomInstructionDisabled && (
-                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm rounded-xl" title="Brevet Pro">
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 text-sm font-bold rounded-full shadow-lg">
-                            <span>Brevet Pro</span>
-                        </div>
-                    </div>
+                     <PremiumBadge requiredPlan="pro" />
                 )}
             </div>
 

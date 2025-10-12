@@ -13,6 +13,7 @@ import { LoginView } from './components/LoginView';
 import { ExercisesView } from './components/ExercisesView';
 import { SubscriptionView } from './components/SubscriptionView';
 import { ImageGenerationView } from './components/ImageGenerationView';
+import { WelcomeView } from './components/WelcomeView';
 import { ai, Type } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder } from './types';
 
@@ -590,19 +591,7 @@ const App: React.FC = () => {
                 if (activeSession) {
                     return <ChatView session={activeSession} onUpdateSession={handleUpdateSession} systemInstruction={buildSystemInstruction()} subscriptionPlan={subscriptionPlan} userName={userName}/>
                 }
-                return ( // No active session selected, show a welcome message
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 flex items-center justify-center shadow-2xl mb-6">
-                            <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                        </div>
-                        <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-200">
-                            Bienvenue sur BrevetAI !
-                        </h2>
-                        <p className="text-slate-700 dark:text-slate-400 mt-2">
-                           Sélectionnez une discussion ou commencez-en une nouvelle.
-                        </p>
-                    </div>
-                );
+                return <WelcomeView />;
             case 'settings':
                 return <SettingsView 
                     theme={theme} 
@@ -640,7 +629,7 @@ const App: React.FC = () => {
     // Main Render
     return (
         <div className="min-h-screen w-screen flex flex-col bg-slate-100/50 dark:bg-slate-950/50 text-slate-800 dark:text-slate-200">
-            <div className="flex-grow flex overflow-hidden">
+            <div className="flex-grow flex">
                 {view === 'chat' ? (
                     <>
                         <HistorySidebar 
@@ -661,7 +650,7 @@ const App: React.FC = () => {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-grow h-full overflow-y-auto">
+                    <div className="flex-grow w-full">
                         {view !== 'home' && <FixedExitButton onClick={handleBackToHome} />}
                         <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan}/>
                         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">

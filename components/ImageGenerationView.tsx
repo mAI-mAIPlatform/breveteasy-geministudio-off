@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ImageModel, SubscriptionPlan } from '../types';
+import { PremiumBadge } from './PremiumBadge';
 
 interface ImageGenerationViewProps {
   onGenerate: (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png') => void;
@@ -218,12 +219,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                     disabled={isStyleLocked}
                 />
                 {isStyleLocked && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm rounded-xl" title="Fonctionnalité Max">
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 text-sm font-bold rounded-full shadow-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-                            <span>MAX</span>
-                        </div>
-                    </div>
+                    <PremiumBadge requiredPlan="max" />
                 )}
             </div>
 
