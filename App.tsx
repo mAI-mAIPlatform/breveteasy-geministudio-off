@@ -539,7 +539,7 @@ const App: React.FC = () => {
     };
     
     const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string) => {
-        const prompt = `Génère une fiche de cours sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquote), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
+        const prompt = `Génère une fiche de cours sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquojte), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
         handleGenerateHtmlContent('cours', prompt);
     };
     
@@ -738,7 +738,8 @@ const App: React.FC = () => {
                     defaultAiModel={defaultAiModel}
                     onDefaultAiModelChange={setDefaultAiModel}
                     defaultImageModel={defaultImageModel}
-                    onDefaultImageModelChange={setDefaultAiModel}
+                    // Fix: Pass the correct state setter for the default image model.
+                    onDefaultImageModelChange={setDefaultImageModel}
                     imageGenerationInstruction={imageGenerationInstruction}
                     onImageGenerationInstructionChange={setImageGenerationInstruction}
                 />;
@@ -794,8 +795,16 @@ const App: React.FC = () => {
                 )}
             </div>
             <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop && view !== 'chat'} />
-            <footer className="text-center py-2 px-4 text-xs text-slate-500 dark:text-slate-600 border-t border-white/10 dark:border-slate-800 shrink-0">
-                26-2.7 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA
+            <footer className="flex justify-center items-center gap-4 text-center py-2 px-4 text-xs text-slate-500 dark:text-slate-600 border-t border-white/10 dark:border-slate-800 shrink-0">
+                <span>26-2.8 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA</span>
+                <a 
+                    href="https://github.com/mAI-mAIPlatform/breveteasy-geministudio-off/releases/" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="px-2 py-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-md hover:bg-slate-300/50 dark:hover:bg-slate-700/50 transition-colors font-semibold"
+                >
+                    Notes de version
+                </a>
             </footer>
         </div>
     );

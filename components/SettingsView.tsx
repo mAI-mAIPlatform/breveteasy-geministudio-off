@@ -1,259 +1,167 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { SubscriptionPlan, AiModel, ImageModel } from '../types';
 import { PremiumBadge } from './PremiumBadge';
 
+type Theme = 'light' | 'dark' | 'system';
+
 interface SettingsViewProps {
-  theme: 'light' | 'dark' | 'system';
-  onThemeChange: (theme: 'light' | 'dark' | 'system') => void;
-  aiSystemInstruction: string;
-  onAiSystemInstructionChange: (instruction: string) => void;
-  subscriptionPlan: SubscriptionPlan;
-  userName: string;
-  onUserNameChange: (name: string) => void;
-  defaultAiModel: AiModel;
-  onDefaultAiModelChange: (model: AiModel) => void;
-  defaultImageModel: ImageModel;
-  onDefaultImageModelChange: (model: ImageModel) => void;
-  imageGenerationInstruction: string;
-  onImageGenerationInstructionChange: (instruction: string) => void;
+    theme: Theme;
+    onThemeChange: (theme: Theme) => void;
+    aiSystemInstruction: string;
+    onAiSystemInstructionChange: (instruction: string) => void;
+    subscriptionPlan: SubscriptionPlan;
+    userName: string;
+    onUserNameChange: (name: string) => void;
+    defaultAiModel: AiModel;
+    onDefaultAiModelChange: (model: AiModel) => void;
+    defaultImageModel: ImageModel;
+    onDefaultImageModelChange: (model: ImageModel) => void;
+    imageGenerationInstruction: string;
+    onImageGenerationInstructionChange: (instruction: string) => void;
 }
 
-const FeedbackModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-}> = ({ isOpen, onClose }) => {
-    const [feedbackMessage, setFeedbackMessage] = useState('');
-    const [isSending, setIsSending] = useState(false);
-    const [termsAccepted, setTermsAccepted] = useState(false);
+const SettingSection: React.FC<{ title: string; description: string; children: React.ReactNode }> = ({ title, description, children }) => (
+    <div className="bg-white/5 dark:bg-slate-900/40 backdrop-blur-xl border border-white/10 dark:border-slate-800 p-6 rounded-2xl shadow-lg">
+        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{title}</h3>
+        <p className="text-sm text-slate-700 dark:text-slate-400 mt-1 mb-6">{description}</p>
+        <div className="space-y-4">
+            {children}
+        </div>
+    </div>
+);
+
+const RadioGroup: React.FC<{
+    options: { value: string; label: string; icon?: React.ReactNode }[];
+    selectedValue: string;
+    onChange: (value: any) => void;
+    name: string;
+}> = ({ options, selectedValue, onChange, name }) => (
+    <div className="flex flex-wrap gap-3">
+        {options.map(({ value, label, icon }) => (
+            <label key={value} className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${selectedValue === value ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white/20 dark:bg-slate-800/60 border-transparent hover:border-slate-400/50'}`}>
+                <input
+                    type="radio"
+                    name={name}
+                    value={value}
+                    checked={selectedValue === value}
+                    onChange={() => onChange(value)}
+                    className="sr-only"
+                />
+                {icon}
+                <span className="font-semibold text-sm">{label}</span>
+            </label>
+        ))}
+    </div>
+);
+
+
+export const SettingsView: React.FC<SettingsViewProps> = ({
+    theme,
+    onThemeChange,
+    aiSystemInstruction,
+    onAiSystemInstructionChange,
+    subscriptionPlan,
+    userName,
+    onUserNameChange,
+    defaultAiModel,
+    onDefaultAiModelChange,
+    defaultImageModel,
+    onDefaultImageModelChange,
+    imageGenerationInstruction,
+    onImageGenerationInstructionChange,
+}) => {
+    const isFree = subscriptionPlan === 'free';
+
+    const themeOptions = [
+        { value: 'light', label: 'Clair', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg> },
+        { value: 'dark', label: 'Sombre', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg> },
+        { value: 'system', label: 'Système', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
+    ];
     
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!feedbackMessage.trim() || !termsAccepted) return;
-        
-        setIsSending(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsSending(false);
-            setFeedbackMessage('');
-            setTermsAccepted(false);
-            alert("Merci pour votre retour ! Votre message a bien été envoyé.");
-            onClose();
-        }, 1000);
-    };
+    const aiModelOptions = [
+        { value: 'brevetai', label: 'BrevetAI' },
+        { value: 'brevetai-plus', label: 'BrevetAI +' },
+    ];
     
-    if (!isOpen) return null;
-    
+    const imageModelOptions = [
+        { value: 'faceai', label: 'FaceAI' },
+        { value: 'faceai-plus', label: 'FaceAI +' },
+    ];
+
+
     return (
-        <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300"
-            onClick={onClose}
-        >
-            <div 
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-8 rounded-3xl shadow-2xl w-full max-w-lg mx-auto transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale"
-                onClick={(e) => e.stopPropagation()}
-                style={{ animationFillMode: 'forwards' }}
-            >
-                <header className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700 mb-6">
-                    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Votre avis nous intéresse</h3>
-                     <button onClick={onClose} title="Fermer" className="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-black/10 dark:hover:bg-slate-800 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </header>
-                <form onSubmit={handleSubmit}>
-                    <p className="text-slate-700 dark:text-slate-400 mb-4">
-                        Partagez vos suggestions, signalez un bug ou donnez simplement votre avis sur l'application.
-                    </p>
-                    <textarea
-                        rows={6}
-                        value={feedbackMessage}
-                        onChange={(e) => setFeedbackMessage(e.target.value)}
-                        className="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 transition"
-                        placeholder="Écrivez votre message ici..."
-                        required
-                    />
-                    <div className="flex items-center mt-4">
-                        <input
-                            id="terms"
-                            name="terms"
-                            type="checkbox"
-                            checked={termsAccepted}
-                            onChange={(e) => setTermsAccepted(e.target.checked)}
-                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600 rounded bg-slate-100 dark:bg-slate-800"
-                        />
-                        <label htmlFor="terms" className="ml-3 block text-sm text-slate-700 dark:text-slate-400">
-                            J'accepte les conditions d'utilisation (obligatoire)
+        <div className="w-full max-w-2xl mx-auto">
+            <h1 className="text-4xl font-bold text-center text-slate-900 dark:text-slate-100 mb-10">Paramètres</h1>
+            <div className="space-y-8">
+                <SettingSection title="Apparence" description="Choisissez le thème visuel de l'application.">
+                    <RadioGroup name="theme" options={themeOptions} selectedValue={theme} onChange={onThemeChange} />
+                </SettingSection>
+
+                <SettingSection title="Profil" description="Ces informations permettent de personnaliser votre expérience.">
+                     <div>
+                        <label htmlFor="user-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            Votre prénom
                         </label>
+                        <input
+                            id="user-name"
+                            type="text"
+                            value={userName}
+                            onChange={(e) => onUserNameChange(e.target.value)}
+                            className="w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400"
+                            placeholder="Entrez votre prénom..."
+                        />
                     </div>
-                    <div className="flex justify-end items-center gap-4 mt-6">
-                        <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-black/10 dark:hover:bg-slate-700/50 transition-colors">
-                            Annuler
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={!feedbackMessage.trim() || !termsAccepted || isSending}
-                            className="px-6 py-2 bg-indigo-500 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            {isSending ? 'Envoi...' : 'Envoyer'}
-                        </button>
+                </SettingSection>
+
+                <SettingSection title="Personnalisation de l'IA" description="Modifiez le comportement de l'IA pour qu'elle corresponde à vos besoins.">
+                    <div className="relative">
+                        <label htmlFor="ai-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            Instruction système pour BrevetAI
+                        </label>
+                        <textarea
+                            id="ai-instruction"
+                            rows={4}
+                            value={aiSystemInstruction}
+                            onChange={(e) => onAiSystemInstructionChange(e.target.value)}
+                            className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`}
+                            placeholder="Ex: 'Explique les choses de manière très simple, comme si j'avais 10 ans.'"
+                            disabled={isFree}
+                        />
+                         {isFree && <PremiumBadge requiredPlan="pro" />}
                     </div>
-                </form>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            Modèle par défaut pour le chat
+                        </label>
+                        <RadioGroup name="aiModel" options={aiModelOptions} selectedValue={defaultAiModel} onChange={onDefaultAiModelChange} />
+                    </div>
+                </SettingSection>
+                
+                 <SettingSection title="Génération d'images" description="Personnalisez le comportement de FaceAI.">
+                    <div className="relative">
+                        <label htmlFor="image-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            Instruction de style globale
+                        </label>
+                        <textarea
+                            id="image-instruction"
+                            rows={3}
+                            value={imageGenerationInstruction}
+                            onChange={(e) => onImageGenerationInstructionChange(e.target.value)}
+                             className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`}
+                            placeholder="Ex: 'Toutes les images doivent avoir un style cartoon.'"
+                            disabled={isFree}
+                        />
+                         {isFree && <PremiumBadge requiredPlan="pro" />}
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            Modèle par défaut pour FaceAI
+                        </label>
+                        <RadioGroup name="imageModel" options={imageModelOptions} selectedValue={defaultImageModel} onChange={onDefaultImageModelChange} />
+                    </div>
+                </SettingSection>
+
             </div>
-            <style>{`
-                @keyframes fade-in-scale {
-                    from { transform: scale(0.95); opacity: 0; }
-                    to { transform: scale(1); opacity: 1; }
-                }
-                .animate-fade-in-scale {
-                    animation: fade-in-scale 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-                }
-            `}</style>
         </div>
     );
 };
-
-
-export const SettingsView: React.FC<SettingsViewProps> = ({ theme, onThemeChange, aiSystemInstruction, onAiSystemInstructionChange, subscriptionPlan, userName, onUserNameChange, defaultAiModel, onDefaultAiModelChange, defaultImageModel, onDefaultImageModelChange, imageGenerationInstruction, onImageGenerationInstructionChange }) => {
-  const isCustomInstructionDisabled = subscriptionPlan === 'free';
-  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-  
-  return (
-    <div className="w-full max-w-lg mx-auto">
-      <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl">
-        <header className="text-center pb-4 border-b border-white/20 dark:border-slate-700 mb-6">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Paramètres</h2>
-        </header>
-        
-        <div className="space-y-8">
-            <div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Thème d'affichage</h3>
-                <div className="flex space-x-2 rounded-xl bg-black/10 dark:bg-slate-800 p-1">
-                    {(['light', 'dark', 'system'] as const).map((t) => (
-                    <button
-                        key={t}
-                        onClick={() => onThemeChange(t)}
-                        className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        theme === t
-                            ? 'bg-white dark:bg-slate-950 text-indigo-500 dark:text-sky-300 shadow-md'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-                        }`}
-                    >
-                        {t === 'light' ? 'Clair' : t === 'dark' ? 'Sombre' : 'Système'}
-                    </button>
-                    ))}
-                </div>
-            </div>
-
-            <div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Mon Prénom</h3>
-                <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => onUserNameChange(e.target.value)}
-                    className="w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition"
-                    placeholder="Ex: Jean"
-                />
-                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Indiquez votre prénom pour que BrevetAI puisse s'adresser à vous personnellement.
-                </p>
-            </div>
-
-            <div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Modèle IA par défaut</h3>
-                <div className="flex space-x-2 rounded-xl bg-black/10 dark:bg-slate-800 p-1">
-                    {(['brevetai', 'brevetai-plus'] as const).map((model) => (
-                    <button
-                        key={model}
-                        onClick={() => onDefaultAiModelChange(model)}
-                        className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        defaultAiModel === model
-                            ? 'bg-white dark:bg-slate-950 text-indigo-500 dark:text-sky-300 shadow-md'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-                        }`}
-                    >
-                        {model === 'brevetai' ? 'BrevetAI' : 'BrevetAI +'}
-                    </button>
-                    ))}
-                </div>
-                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Choisissez le modèle à utiliser pour démarrer une nouvelle discussion.
-                </p>
-            </div>
-
-            <div className="relative">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Instructions pour BrevetAI</h3>
-                <textarea
-                    rows={4}
-                    value={aiSystemInstruction}
-                    onChange={(e) => onAiSystemInstructionChange(e.target.value)}
-                    className={`w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition ${isCustomInstructionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    placeholder="Ex: 'Sois toujours très encourageant et utilise un langage simple.' ou 'Fais-moi des résumés en 3 points-clés.'"
-                    disabled={isCustomInstructionDisabled}
-                />
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Cette instruction sera appliquée à toutes les futures interactions avec BrevetAI (quiz, exercices et chat).
-                </p>
-                {isCustomInstructionDisabled && (
-                     <PremiumBadge requiredPlan="pro" />
-                )}
-            </div>
-            
-            <div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Modèle d'image par défaut</h3>
-                <div className="flex space-x-2 rounded-xl bg-black/10 dark:bg-slate-800 p-1">
-                    {(['faceai', 'faceai-plus'] as const).map((model) => (
-                    <button
-                        key={model}
-                        onClick={() => onDefaultImageModelChange(model)}
-                        className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        defaultImageModel === model
-                            ? 'bg-white dark:bg-slate-950 text-indigo-500 dark:text-sky-300 shadow-md'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50'
-                        }`}
-                    >
-                        {model === 'faceai' ? 'FaceAI' : 'FaceAI +'}
-                    </button>
-                    ))}
-                </div>
-                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Choisissez le modèle pour la génération d'images. FaceAI+ peut offrir de meilleurs résultats.
-                </p>
-            </div>
-
-            <div className="relative">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Instructions pour la génération d'images</h3>
-                <textarea
-                    rows={4}
-                    value={imageGenerationInstruction}
-                    onChange={(e) => onImageGenerationInstructionChange(e.target.value)}
-                    className={`w-full p-3 bg-white/20 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base placeholder-slate-600 dark:placeholder-slate-500 transition ${isCustomInstructionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    placeholder="Ex: 'style art numérique, couleurs vives' ou 'photo réaliste, en noir et blanc'."
-                    disabled={isCustomInstructionDisabled}
-                />
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                    Cette instruction sera ajoutée au début de toutes vos futures demandes de génération d'images.
-                </p>
-                {isCustomInstructionDisabled && (
-                     <PremiumBadge requiredPlan="pro" />
-                )}
-            </div>
-
-            <div className="border-t border-white/20 dark:border-slate-700 my-6"></div>
-
-            <div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Support & Commentaires</h3>
-                <button
-                    onClick={() => setIsFeedbackModalOpen(true)}
-                    className="w-full text-left p-4 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-xl shadow-sm hover:bg-white/30 dark:hover:bg-slate-700/80 transition-colors flex items-center justify-between"
-                >
-                    <span>Envoyer un commentaire</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-            </div>
-        </div>
-      </div>
-      <FeedbackModal isOpen={isFeedbackModalOpen} onClose={() => setIsFeedbackModalOpen(false)} />
-    </div>
-  );
-};
-
-export default SettingsView;
