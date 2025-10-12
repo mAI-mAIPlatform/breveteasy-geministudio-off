@@ -1,4 +1,5 @@
 // Fix: Provide the implementation for the main App component.
+// Fix: Corrected React import to include necessary hooks.
 import React, { useState, useEffect, useCallback } from 'react';
 import { HomeView } from './components/HomeView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
@@ -93,58 +94,79 @@ const FixedExitButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 
 const App: React.FC = () => {
     // App State
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [view, setView] = useState<View>('home');
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [loadingTask, setLoadingTask] = useState<LoadingTask>('quiz');
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
         const savedTheme = localStorage.getItem('brevet-easy-theme');
         return (savedTheme as any) || 'system';
     });
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [aiSystemInstruction, setAiSystemInstruction] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-ai-instruction') || '';
     });
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>(() => {
         const savedPlan = localStorage.getItem('brevet-easy-plan');
         return (savedPlan as SubscriptionPlan) || 'free';
     });
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [defaultAiModel, setDefaultAiModel] = useState<AiModel>(() => {
         const savedModel = localStorage.getItem('brevet-easy-default-ai-model');
         return (savedModel as AiModel) || 'brevetai';
     });
+    // Fix: Replaced `aistudios.useState` with `useState`.
      const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>(() => {
         const savedModel = localStorage.getItem('brevet-easy-default-image-model');
         return (savedModel as ImageModel) || 'faceai';
     });
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-image-instruction') || '';
     });
 
 
     // User/Profile State
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [user, setUser] = useState<{email: string} | null>(null);
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [userName, setUserName] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-user-name') || '';
     });
     
     // Quiz State
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [quiz, setQuiz] = useState<Quiz | null>(null);
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [score, setScore] = useState(0);
 
     // Exercises & HTML Content State
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [isDownloadingHtml, setIsDownloadingHtml] = useState(false);
 
     // Chat State
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
         const savedSessions = localStorage.getItem('chatSessions');
         return savedSessions ? JSON.parse(savedSessions) : [];
     });
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
 
     // Image Generation State
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-    const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+    // Fix: Replaced `aistudios.useState` with `useState`.
+    const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
+    // Fix: Replaced `aistudios.useState` with `useState`.
     const [imageUsage, setImageUsage] = useState<ImageUsage>(() => {
         const savedUsage = localStorage.getItem('brevet-easy-image-usage');
         const today = new Date().toISOString().split('T')[0];
@@ -159,6 +181,7 @@ const App: React.FC = () => {
     });
 
     // Theme Management Effect
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-theme', theme);
         if (theme === 'system') {
@@ -178,40 +201,48 @@ const App: React.FC = () => {
     }, [theme]);
     
     // AI Instruction Persistence Effect
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction);
     }, [aiSystemInstruction]);
     
     // User Name Persistence Effect
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-user-name', userName);
     }, [userName]);
     
     // Subscription Plan Persistence Effect
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-plan', subscriptionPlan);
     }, [subscriptionPlan]);
 
     // Chat Session Persistence Effect
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
      useEffect(() => {
         localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
     }, [chatSessions]);
     
     // Default AI Model Persistence
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-default-ai-model', defaultAiModel);
     }, [defaultAiModel]);
 
     // Image Generation Settings Persistence
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-default-image-model', defaultImageModel);
     }, [defaultImageModel]);
     
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-image-instruction', imageGenerationInstruction);
     }, [imageGenerationInstruction]);
 
     // Image Usage Persistence
+    // Fix: Replaced `aistudios.useEffect` with `useEffect`.
     useEffect(() => {
         localStorage.setItem('brevet-easy-image-usage', JSON.stringify(imageUsage));
     }, [imageUsage]);
@@ -258,6 +289,7 @@ const App: React.FC = () => {
     };
 
     // AI Instruction Builder
+    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const buildSystemInstruction = useCallback(() => {
         let finalInstruction = aiSystemInstruction.trim();
         if (userName.trim()) {
@@ -267,6 +299,7 @@ const App: React.FC = () => {
     }, [aiSystemInstruction, userName]);
 
     // Quiz Flow Handlers
+    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
         if (!selectedSubject) return;
         setView('loading');
@@ -344,6 +377,7 @@ const App: React.FC = () => {
     };
 
     // Generic HTML Content Generator
+    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const generateHtmlContent = useCallback(async (task: 'exercises' | 'cours' | 'evaluation', prompt: string) => {
         if (!selectedSubject) return;
         setView('loading');
@@ -378,6 +412,7 @@ const App: React.FC = () => {
     }, [selectedSubject, subscriptionPlan, buildSystemInstruction]);
 
     // Exercises Flow Handler
+    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const handleGenerateExercises = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
         let prompt = `Crée une fiche d'exercices complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. Si le niveau est "Brevet", considère que c'est un élève de fin de 3ème. La réponse DOIT être un document HTML complet et autonome (self-contained).
 - Inclus une balise <!DOCTYPE html>, <html>, <head>, et <body>.
@@ -391,6 +426,7 @@ const App: React.FC = () => {
     }, [selectedSubject, generateHtmlContent]);
 
     // Course Sheet Flow Handler
+    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const handleGenerateCours = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
         let prompt = `Crée une fiche de cours complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. La fiche doit couvrir environ ${count} concepts clés. La réponse DOIT être un document HTML complet et autonome (self-contained).
 - Inclus <!DOCTYPE html>, <html>, <head>, et <body>.
@@ -403,6 +439,7 @@ const App: React.FC = () => {
     }, [selectedSubject, generateHtmlContent]);
     
     // Evaluation Flow Handler
+    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const handleGenerateEvaluation = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
         let prompt = `Crée une évaluation complète et bien structurée sur le thème "${selectedSubject?.name}" avec un niveau de difficulté "${difficulty}" pour un élève de niveau "${level}" en France. La réponse DOIT être un document HTML complet et autonome (self-contained).
 - Inclus <!DOCTYPE html>, <html>, <head>, et <body>.
@@ -444,6 +481,7 @@ const App: React.FC = () => {
     };
 
     // Image Generation Flow Handlers
+    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const getImageGenerationLimit = useCallback(() => {
         if (subscriptionPlan === 'max') return Infinity;
         if (subscriptionPlan === 'pro') return 5;
@@ -452,7 +490,7 @@ const App: React.FC = () => {
 
     const remainingGenerations = getImageGenerationLimit() - imageUsage.count;
 
-    const handleGenerateImage = async (prompt: string, model: ImageModel) => {
+    const handleGenerateImage = async (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png') => {
         if (remainingGenerations <= 0 && subscriptionPlan !== 'max') {
             alert("Vous avez atteint votre limite de générations d'images pour aujourd'hui.");
             return;
@@ -461,24 +499,37 @@ const App: React.FC = () => {
         setIsGeneratingImage(true);
         setGeneratedImage(null);
         try {
+            const stylePrefixes: Record<string, string> = {
+                'realiste': 'photo réaliste, ultra détaillé, photoréaliste, 8k, haute qualité,',
+                'dessin-anime': 'style dessin animé, couleurs vives, contours nets,',
+                'peinture-huile': "style peinture à l'huile, coups de pinceau visibles, texturé,",
+                'art-numerique': 'art numérique, style fantasy, détaillé, cinématique,',
+            };
+
+            const stylePrefix = stylePrefixes[style] || '';
+
+            let combinedPrompt = `${stylePrefix} ${prompt}`;
+
             let finalPrompt = (subscriptionPlan !== 'free' && imageGenerationInstruction.trim())
-                ? `${imageGenerationInstruction.trim()}\n\n---\n\n${prompt}`
-                : prompt;
+                ? `${imageGenerationInstruction.trim()}\n\n---\n\n${combinedPrompt}`
+                : combinedPrompt;
 
             if (model === 'faceai-plus') {
                 finalPrompt = `portrait photographique de haute qualité, ultra détaillé, photoréaliste. ${finalPrompt}`;
             }
+            
+            const mimeType = `image/${format}`;
 
             const response = await ai.models.generateImages({
                 model: 'imagen-4.0-generate-001',
                 prompt: finalPrompt,
                 config: {
                     numberOfImages: 1,
-                    outputMimeType: 'image/jpeg',
+                    outputMimeType: mimeType,
                 },
             });
             const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-            setGeneratedImage(base64ImageBytes);
+            setGeneratedImage({ data: base64ImageBytes, mimeType: mimeType });
 
             const today = new Date().toISOString().split('T')[0];
             setImageUsage(prev => {
@@ -511,6 +562,7 @@ const App: React.FC = () => {
         setView('chat');
     };
     
+    // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const handleUpdateSession = useCallback((
         sessionId: string,
         updates: Partial<Pick<ChatSession, 'messages' | 'title' | 'aiModel'>> & { messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]) }
@@ -644,7 +696,7 @@ const App: React.FC = () => {
             </div>
 
             <footer className="w-full text-center p-4 text-xs text-slate-700 dark:text-slate-400 shrink-0" style={{ zIndex: 1 }}>
-                 26-2.0 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
+                 26-2.2 © All rights reserved | Brevet' Easy - BrevetAI | Official Website and IA
             </footer>
         </div>
     );
