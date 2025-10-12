@@ -2,7 +2,7 @@ import React from 'react';
 
 interface LoadingViewProps {
   subject: string;
-  task: 'quiz' | 'exercises' | 'cours' | 'evaluation';
+  task: 'quiz' | 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions';
 }
 
 const LoadingSpinner: React.FC = () => (
@@ -37,6 +37,7 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
     exercises: 'des exercices',
     cours: 'du cours',
     evaluation: "de l'évaluation",
+    'fiche-revisions': 'de la fiche de révisions',
   };
   const titleText = titleTextMap[task] || 'du contenu';
 

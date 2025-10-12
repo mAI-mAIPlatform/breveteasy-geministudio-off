@@ -495,6 +495,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                        </svg>
                     </button>
                 </div>
+                {session.aiModel === 'brevetai-plus' && (
+                    <p className="text-center text-xs text-slate-600 dark:text-slate-400 pt-1">
+                        {isFinite(messageLimit) ? `${Math.max(0, messageLimit - session.messages.length)} messages restants avec votre forfait.` : 'Messages illimités.'}
+                    </p>
+                )}
             </footer>
         </div>
     );

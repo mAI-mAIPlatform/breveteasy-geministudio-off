@@ -71,13 +71,10 @@ const ImageGenerationCard: React.FC<{
                     </p>
                 </div>
             </div>
-             <div className="flex flex-col items-center gap-3 w-full md:w-auto flex-shrink-0">
+             <div className="flex items-center gap-3 w-full md:w-auto flex-shrink-0">
                 <button onClick={onClick} className="w-full md:w-auto p-3 px-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all text-center">
                     Démarrer
                 </button>
-                 <span className="text-xs text-slate-600 dark:text-slate-400">
-                    {isFinite(remaining) ? `${remaining} restantes` : 'Illimitées'}
-                </span>
             </div>
         </div>
     );

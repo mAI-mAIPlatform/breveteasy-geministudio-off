@@ -21,7 +21,7 @@ const PlanCard: React.FC<{
     isRecommended?: boolean;
 }> = ({ planKey, title, features, isCurrent, onSelectUpgrade, isRecommended }) => (
     <div className={`relative p-6 rounded-3xl border transition-all duration-300 flex flex-col ${isCurrent ? 'border-sky-400 bg-sky-400/10 shadow-lg' : 'border-slate-700 bg-slate-800/60'}`}>
-        {isRecommended && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-indigo-500 text-white text-xs font-bold rounded-full shadow-md">Populaire</div>}
+        {isRecommended && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-indigo-500 text-white text-xs font-bold rounded-full shadow-md">Recommandé</div>}
         <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-sky-400 to-red-400 bg-clip-text text-transparent">{title}</h3>
         <ul className="space-y-3 text-slate-800 dark:text-slate-300 flex-grow">
             {features.map((feature, index) => (
@@ -81,6 +81,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan,
             "Quiz & exercices : jusqu'à 20 questions",
             "Chat avec BrevetAI+ : 100 messages / jour",
             "Générations : 50 quiz ou fiches / jour",
+            "Génération d'évaluations & fiches de révision",
             "Instructions personnalisées pour l'IA",
             "Génération d'images : 5 / jour",
         ],

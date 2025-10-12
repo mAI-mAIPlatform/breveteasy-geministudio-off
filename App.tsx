@@ -17,7 +17,7 @@ import { ai, Type } from './services/geminiService';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel } from './types';
 
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
-type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'evaluation';
+type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions';
 
 interface ImageUsage {
     count: number;
@@ -378,7 +378,7 @@ const App: React.FC = () => {
 
     // Generic HTML Content Generator
     // Fix: Replaced `aistudios.useCallback` with `useCallback`.
-    const generateHtmlContent = useCallback(async (task: 'exercises' | 'cours' | 'evaluation', prompt: string) => {
+    const generateHtmlContent = useCallback(async (task: 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions', prompt: string) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask(task);
@@ -438,6 +438,18 @@ const App: React.FC = () => {
         await generateHtmlContent('cours', prompt);
     }, [selectedSubject, generateHtmlContent]);
     
+    // Revision Sheet Flow Handler
+    const handleGenerateFicheRevisions = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
+        let prompt = `Crée une fiche de révisions synthétique et visuellement claire sur le thème "${selectedSubject?.name}" pour un élève de niveau "${level}" avec une difficulté "${difficulty}". La fiche doit résumer les points essentiels à connaître en ${count} grands thèmes. La réponse DOIT être un document HTML complet et autonome (self-contained).
+- Inclus <!DOCTYPE html>, <html>, <head>, et <body>.
+- Dans le <head>, inclus un <title> pertinent, un lien vers la police "Poppins" de Google Fonts, et une balise <style> avec du CSS pour une présentation très lisible (listes à puces, mots en gras, couleurs) et un mode sombre.
+- Le <body> doit contenir un titre principal (h1) "Fiche de Révisions: ${selectedSubject?.name}" et résumer les informations les plus importantes de manière concise. Utilise des listes, des tableaux et des encadrés pour structurer l'information.`;
+        if (customPrompt.trim()) {
+            prompt += `\n\nInstructions supplémentaires : la fiche de révisions doit se concentrer sur : "${customPrompt.trim()}".`;
+        }
+        await generateHtmlContent('fiche-revisions', prompt);
+    }, [selectedSubject, generateHtmlContent]);
+
     // Evaluation Flow Handler
     // Fix: Replaced `aistudios.useCallback` with `useCallback`.
     const handleGenerateEvaluation = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
@@ -467,6 +479,7 @@ const App: React.FC = () => {
             exercises: 'exercices',
             cours: 'cours',
             evaluation: 'evaluation',
+            'fiche-revisions': 'fiche-revisions',
             quiz: 'quiz-results' // Fallback
         };
         const fileType = fileTypeMap[loadingTask] || 'contenu';
@@ -603,7 +616,7 @@ const App: React.FC = () => {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingGenerations} />;
             case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateEvaluation={handleGenerateEvaluation} subscriptionPlan={subscriptionPlan} />;
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateEvaluation={handleGenerateEvaluation} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} />;
             case 'loading':
                 return selectedSubject && <LoadingView subject={selectedSubject.name} task={loadingTask} />;
             case 'quiz':
@@ -626,6 +639,11 @@ const App: React.FC = () => {
                         title: "Évaluation Générée !",
                         description: "Votre évaluation est prête à être téléchargée.",
                         buttonText: "Télécharger l'évaluation"
+                    },
+                    'fiche-revisions': {
+                        title: "Fiche de Révisions Générée !",
+                        description: "Votre fiche de révisions est prête à être téléchargée.",
+                        buttonText: "Télécharger la fiche"
                     },
                     quiz: { title: "", description: "", buttonText: "" } // Should not happen
                 };
