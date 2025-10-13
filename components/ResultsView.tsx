@@ -36,8 +36,8 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <div className="flex flex-col items-center justify-center text-center bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl mb-8">
-          <h2 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-4">Résultats du Quiz</h2>
+      <div className="flex flex-col items-center justify-center text-center bg-white/10 dark:bg-black/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl mb-8">
+          <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Résultats du Quiz</h2>
           
           <div className="relative my-6" style={{filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.1))'}}>
               <svg className="w-48 h-48" viewBox="0 0 36 36">
@@ -45,7 +45,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
                   <path className={feedback.stroke} strokeDasharray={`${percentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.5s ease-in-out' }} />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-5xl font-bold text-slate-900 dark:text-slate-100">{scoreOutOf20}</span>
+                  <span className="text-5xl font-bold text-slate-900 dark:text-white">{scoreOutOf20}</span>
                   <span className="text-xl text-slate-600 dark:text-slate-400">/ 20</span>
               </div>
           </div>
@@ -63,15 +63,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
           </div>
       </div>
 
-      <div ref={correctionRef} className="w-full mt-12 bg-black/5 dark:bg-slate-950/70 backdrop-blur-xl border border-white/10 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-inner">
-            <h3 className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 mb-8 text-center">Correction détaillée</h3>
+      <div ref={correctionRef} className="w-full mt-12 bg-black/5 dark:bg-black/60 backdrop-blur-xl border border-white/10 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-inner">
+            <h3 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-8 text-center">Correction détaillée</h3>
             <div className="space-y-6">
                 {quiz?.questions.map((question, index) => {
                     const userAnswer = userAnswers[index];
                     const isCorrect = userAnswer === question.correctAnswer;
                     return (
                         <div key={index} className="bg-white/10 dark:bg-slate-800/60 backdrop-blur-xl border border-white/20 dark:border-slate-700 p-6 rounded-2xl shadow-lg">
-                            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">{index + 1}. {question.questionText}</p>
+                            <p className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{index + 1}. {question.questionText}</p>
                             <div className="mb-3">
                                 <span className="text-sm font-bold text-slate-600 dark:text-slate-400">Votre réponse :</span>
                                 {userAnswer ? (

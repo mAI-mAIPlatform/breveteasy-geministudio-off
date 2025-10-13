@@ -484,6 +484,35 @@ const App: React.FC = () => {
         );
     };
 
+    const handleDownloadChat = (sessionId: string) => {
+        const session = chatSessions.find(s => s.id === sessionId);
+        if (!session) return;
+    
+        const sanitizedTitle = session.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filename = `brevetai_discussion_${sanitizedTitle || 'sans_titre'}.txt`;
+    
+        let content = `Titre: ${session.title}\n`;
+        content += `Date: ${new Date(session.createdAt).toLocaleString('fr-FR')}\n`;
+        content += `Modèle: ${session.aiModel}\n`;
+        content += '------------------------------------\n\n';
+    
+        session.messages.forEach(message => {
+            const role = message.role === 'user' ? 'Utilisateur' : 'BrevetAI';
+            const textParts = message.parts.map(p => p.text).filter(Boolean).join('\n');
+            if (textParts) {
+                content += `${role}:\n${textParts}\n\n`;
+            }
+        });
+    
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // Folder Handlers
     const handleNewFolder = (name: string) => {
         const newFolder: Folder = {
@@ -641,7 +670,8 @@ const App: React.FC = () => {
                             folders={folders}
                             activeSessionId={activeChatSessionId} 
                             onSelectChat={handleSelectChat} 
-                            onDeleteChat={handleDeleteChat} 
+                            onDeleteChat={handleDeleteChat}
+                            onDownloadChat={handleDownloadChat}
                             onNewChat={handleNewChat}
                             onUpdateSession={handleUpdateSession}
                             onNewFolder={handleNewFolder}
@@ -664,8 +694,8 @@ const App: React.FC = () => {
                 )}
             </div>
             <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop && view !== 'chat'} />
-            <footer className="flex justify-center items-center gap-4 text-center py-2 px-4 text-xs text-slate-500 dark:text-slate-600 border-t border-white/10 dark:border-slate-800 shrink-0">
-                <span>26-2.9 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA</span>
+            <footer className="flex justify-center items-center gap-4 text-center py-2 px-4 text-xs text-slate-500 dark:text-slate-400 border-t border-white/10 dark:border-slate-800 shrink-0">
+                <span>26-3.0 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA</span>
             </footer>
         </div>
     );

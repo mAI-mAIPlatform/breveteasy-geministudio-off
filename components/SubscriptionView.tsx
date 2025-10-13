@@ -51,7 +51,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ planName, planKey, features, isReco
                     Recommandé
                 </div>
             )}
-            <h3 className={`text-3xl font-bold mb-6 text-center ${planKey === 'pro' ? 'text-cyan-300' : planKey === 'max' ? 'text-purple-300' : 'text-slate-100'}`}>{planName}</h3>
+            <h3 className={`text-3xl font-bold mb-6 text-center ${planKey === 'pro' ? 'text-cyan-300' : planKey === 'max' ? 'text-purple-300' : 'text-white'}`}>{planName}</h3>
             <ul className="space-y-4 mb-8 flex-grow">
                 {features.map((feature, index) => (
                     <PlanFeature key={index}>{feature}</PlanFeature>
@@ -90,9 +90,9 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan,
         free: {
             name: 'Gratuit',
             features: [
-                "Quiz & exercices : jusqu'à 5 questions",
-                "Chat avec BrevetAI : 15 messages / jour",
-                "Générations : 5 quiz ou fiches / jour",
+                "Générations (Quiz, Exercices) : 5 / jour",
+                "Max 5 questions/exercices par génération",
+                "Chat avec BrevetAI+ : 15 messages / jour",
                 "Génération d'images : 2 / jour"
             ]
         },
@@ -100,11 +100,12 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan,
             name: 'Brevet Pro',
             recommended: true,
             features: [
-                "Tous les niveaux & difficultés",
-                "Quiz & exercices : jusqu'à 20 questions",
+                "Tous les avantages du forfait Gratuit, et...",
+                "Générations (Quiz, Exercices) : 50 / jour",
+                "Max 20 questions/exercices par génération",
+                "Génération de cours & fiches de révision",
+                "Accès à tous les niveaux & difficultés",
                 "Chat avec BrevetAI+ : 100 messages / jour",
-                "Générations : 50 quiz ou fiches / jour",
-                "Génération de fiches de révision",
                 "Instructions personnalisées pour l'IA",
                 "Génération d'images : 5 / jour"
             ]
@@ -113,10 +114,9 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan,
             name: 'Brevet Max',
             features: [
                 "Tous les avantages du forfait Pro",
-                "Quiz, exercices, chat & générations illimités",
-                "Génération d'images illimitée",
-                "Accès en avant-première aux nouveautés (Bêta)",
-                "Support prioritaire"
+                "Générations illimitées (Quiz, Exercices, Cours...)",
+                "Chat & Génération d'images illimités",
+                "Accès en avant-première & Support prioritaire"
             ]
         }
     };
@@ -124,8 +124,8 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan,
     return (
         <div className="w-full max-w-5xl mx-auto">
             <header className="text-center mb-12">
-                <h2 className="text-5xl font-extrabold text-slate-900 dark:text-slate-100">Brevet' Easy</h2>
-                <p className="text-xl text-slate-700 dark:text-slate-400 mt-2">
+                <h2 className="text-5xl font-extrabold text-slate-900 dark:text-white">Brevet' Easy</h2>
+                <p className="text-xl text-slate-700 dark:text-slate-300 mt-2">
                     Choisissez le forfait qui vous convient le mieux pour réussir votre brevet.
                 </p>
             </header>

@@ -18,6 +18,11 @@ interface ChatViewProps {
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
 const CheckIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
 const EditIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>;
+const RegenerateIcon: React.FC<{ className?: string }> = ({ className }) => 
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+    </svg>;
+
 
 const ModelSelectorDropdown: React.FC<{
     aiModel: AiModel;
@@ -151,20 +156,42 @@ const ChatHeader: React.FC<{
 const Message: React.FC<{
     message: ChatMessage;
     index: number;
-    isLastMessage: boolean;
     copiedIndex: number | null;
     onCopy: (parts: ChatPart[], index: number) => void;
-    onRegenerate: (index: number) => void;
+    onRegenerate: (index: number, modification: 'longer' | 'shorter' | 'change_model', newModel?: AiModel) => void;
     onEdit: (index: number) => void;
-}> = ({ message, index, isLastMessage, copiedIndex, onCopy, onRegenerate, onEdit }) => {
+    regenMenuIndex: number | null;
+    setRegenMenuIndex: (index: number | null) => void;
+}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit, regenMenuIndex, setRegenMenuIndex }) => {
     const isModel = message.role === 'model';
+    const isRegenMenuOpen = regenMenuIndex === index;
+    const regenMenuRef = useRef<HTMLDivElement>(null);
 
-    const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors opacity-0 group-hover:opacity-100";
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (regenMenuRef.current && !regenMenuRef.current.contains(event.target as Node)) {
+                setRegenMenuIndex(null);
+            }
+        };
+        if (isRegenMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isRegenMenuOpen, setRegenMenuIndex]);
+
+    const handleRegenOptionClick = (mod: 'longer' | 'shorter' | 'change_model', model?: AiModel) => {
+        onRegenerate(index, mod, model);
+        setRegenMenuIndex(null);
+    };
+    
+    const actionBarClass = "flex items-center self-center gap-1 p-1 bg-white/60 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200";
+    const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
+    const menuItemClass = "w-full text-left px-3 py-1.5 text-sm rounded-md text-slate-800 dark:text-slate-200 hover:bg-indigo-500 hover:text-white transition-colors flex items-center gap-3";
 
     return (
         <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'justify-end'}`}>
             {!isModel && (
-                <div className="flex items-center self-center">
+                <div className={actionBarClass}>
                     <button onClick={() => onEdit(index)} title="Modifier" className={actionButtonClass}>
                         <EditIcon className="h-4 w-4" />
                     </button>
@@ -197,13 +224,36 @@ const Message: React.FC<{
             </div>
 
             {isModel && !message.isGenerating && (
-                 <div className="flex items-center self-center">
+                 <div className={actionBarClass}>
                     <button onClick={() => onCopy(message.parts, index)} title="Copier" className={actionButtonClass}>
                         {copiedIndex === index ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
                     </button>
-                    <button onClick={() => onRegenerate(index)} title="Regénérer" className={actionButtonClass}>
-                        <EditIcon className="h-4 w-4" />
-                    </button>
+                    <div className="relative" ref={regenMenuRef}>
+                        <button onClick={() => setRegenMenuIndex(isRegenMenuOpen ? null : index)} title="Regénérer" className={actionButtonClass}>
+                            <RegenerateIcon className="h-4 w-4" />
+                        </button>
+                        {isRegenMenuOpen && (
+                            <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-20 p-2 space-y-1">
+                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('longer')}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                                    <span>Plus long</span>
+                                </button>
+                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('shorter')}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h4" /></svg>
+                                    <span>Plus court</span>
+                                </button>
+                                <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
+                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai')}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                                    <span>Régénérer avec BrevetAI</span>
+                                </button>
+                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-plus')}>
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                                    <span>Régénérer avec BrevetAI +</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
@@ -215,6 +265,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [attachment, setAttachment] = useState<{ file: File, previewUrl: string } | null>(null);
+    const [regenMenuIndex, setRegenMenuIndex] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -249,7 +300,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
 
     useEffect(scrollToBottom, [session.messages]);
 
-    const createChatInstance = (history: ChatMessage[]): Chat => {
+    const createChatInstance = (history: ChatMessage[], modelOverride?: AiModel): Chat => {
         const geminiHistory: { role: 'user' | 'model'; parts: Part[] }[] = history
             .filter(m => !m.isGenerating)
             .map(m => ({
@@ -272,11 +323,13 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             finalInstruction += `\n\nL'utilisateur s'appelle ${userName.trim()}. Adresse-toi à lui par son prénom de manière amicale.`;
         }
         
+        const modelToUse = modelOverride || session.aiModel;
+
         const config: { systemInstruction: string; thinkingConfig?: { thinkingBudget: number } } = {
              systemInstruction: finalInstruction,
         };
 
-        if (session.aiModel === 'brevetai') {
+        if (modelToUse === 'brevetai') {
             config.thinkingConfig = { thinkingBudget: 0 };
         }
         // For 'brevetai-plus', we omit thinkingConfig to use the default (enabled)
@@ -382,7 +435,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         onUpdateSession(session.id, { messages: newMessages });
     };
 
-    const handleRegenerateResponse = async (index: number) => {
+    const handleRegenerateResponse = async (index: number, modification: 'longer' | 'shorter' | 'change_model', newModel?: AiModel) => {
         if (isLoading || session.messages[index]?.role !== 'model') return;
 
         setIsLoading(true);
@@ -397,11 +450,35 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         let messagesForUpdate = [...session.messages];
         messagesForUpdate[index] = { role: 'model', parts: [], isGenerating: true };
         onUpdateSession(session.id, { messages: messagesForUpdate });
+
+        const chatHistoryForAi = historyForRegen.slice(0, -1);
+        const modelForRegen = modification === 'change_model' && newModel ? newModel : session.aiModel;
+        const chat = createChatInstance(chatHistoryForAi, modelForRegen);
         
-        const chat = createChatInstance(historyForRegen.slice(0, -1));
+        const originalUserParts: ChatPart[] = JSON.parse(JSON.stringify(userPromptMessage.parts)); // Deep copy
+
+        if (modification === 'longer' || modification === 'shorter') {
+            const instruction = modification === 'longer' 
+                ? "\n\n(Instruction pour l'IA : Régénère ta réponse précédente, mais en la rendant plus longue et plus détaillée.)"
+                : "\n\n(Instruction pour l'IA : Régénère ta réponse précédente, mais en la rendant plus courte et plus concise.)";
+            
+            let textPartFound = false;
+            for (const part of originalUserParts) {
+                if (part.text) {
+                    part.text += instruction;
+                    textPartFound = true;
+                    break;
+                }
+            }
+            if (!textPartFound) {
+                originalUserParts.push({ text: instruction });
+            }
+        }
+        
+        const promptForRegenParts: Part[] = originalUserParts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' });
 
         try {
-            const result = await chat.sendMessageStream({ message: userPromptMessage.parts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' }) });
+            const result = await chat.sendMessageStream({ message: promptForRegenParts });
             let fullResponse = '';
             for await (const chunk of result) {
                 fullResponse += chunk.text;
@@ -458,11 +535,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         key={index}
                         index={index}
                         message={msg}
-                        isLastMessage={index === session.messages.length - 1}
                         copiedIndex={copiedIndex}
                         onCopy={handleCopy}
                         onRegenerate={handleRegenerateResponse}
                         onEdit={handleEditMessage}
+                        regenMenuIndex={regenMenuIndex}
+                        setRegenMenuIndex={setRegenMenuIndex}
                     />
                 ))}
                  {isChatLimitReached && (

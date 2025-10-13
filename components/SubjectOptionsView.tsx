@@ -179,12 +179,12 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   return (
     <div className="w-full max-w-2xl mx-auto">
         <div className="relative text-center mb-10">
-            <h1 className="text-5xl font-bold text-slate-900 dark:text-slate-100">
+            <h1 className="text-5xl font-bold text-slate-900 dark:text-white">
                 {subject.name}
             </h1>
         </div>
         
-        <div className="relative z-10 bg-slate-100/60 dark:bg-slate-800/50 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/50 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
+        <div className="relative z-10 bg-slate-100/60 dark:bg-black/40 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/50 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
             <div className="mb-6">
                 <label htmlFor="custom-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">
                     Instructions spécifiques (facultatif)
@@ -244,6 +244,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                 description={`Obtenez une fiche de cours structurée sur ${itemCount} concepts clés.`}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" /></svg>}
                 onClick={handleGenerateCoursClick}
+                isProFeature={isFreePlan}
             />
             <OptionCard
                 title="Générer une fiche de révisions"
