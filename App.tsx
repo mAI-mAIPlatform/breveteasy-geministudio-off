@@ -14,13 +14,11 @@ import { ExercisesView } from './components/ExercisesView';
 import { SubscriptionView } from './components/SubscriptionView';
 import { ImageGenerationView } from './components/ImageGenerationView';
 import { WelcomeView } from './components/WelcomeView';
-import { EvaluationView } from './components/EvaluationView';
-import { EvaluationResultsView } from './components/EvaluationResultsView';
 import { ai, Type } from './services/geminiService';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, Evaluation, EvaluationAnswers, EvaluationResult } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder } from './types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'evaluation' | 'evaluationResults';
-type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions' | 'correction-evaluation';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
+type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions';
 
 interface ImageUsage {
     count: number;
@@ -154,11 +152,6 @@ const App: React.FC = () => {
     const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
     const [score, setScore] = useState(0);
 
-    // Evaluation State
-    const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-    const [evaluationAnswers, setEvaluationAnswers] = useState<EvaluationAnswers>({});
-    const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
-
     // Exercises & HTML Content State
     const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
     const [isDownloadingHtml, setIsDownloadingHtml] = useState(false);
@@ -286,9 +279,6 @@ const App: React.FC = () => {
         setScore(0);
         setGeneratedHtml(null);
         setGeneratedImage(null);
-        setEvaluation(null);
-        setEvaluationAnswers({});
-        setEvaluationResult(null);
         setView('home');
     };
     
@@ -405,7 +395,6 @@ const App: React.FC = () => {
                 model: 'gemini-2.5-flash',
                 contents: instructions,
                 config: {
-                    responseMimeType: 'text/html',
                     systemInstruction: buildSystemInstruction(),
                 }
             });
@@ -417,121 +406,6 @@ const App: React.FC = () => {
             handleBackToHome();
         }
     }, [selectedSubject, buildSystemInstruction]);
-    
-    // Interactive Evaluation Flow
-    const handleGenerateEvaluation = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
-        if (!selectedSubject) return;
-        setView('loading');
-        setLoadingTask('evaluation');
-
-        const evaluationSchema = {
-            type: Type.OBJECT,
-            properties: {
-                subject: { type: Type.STRING },
-                title: { type: Type.STRING },
-                totalPoints: { type: Type.NUMBER, description: "La note totale de l'évaluation, doit être 20." },
-                questions: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            type: { type: Type.STRING, enum: ['qcm', 'fill-in-the-blank', 'short-text', 'long-text'] },
-                            questionText: { type: Type.STRING },
-                            points: { type: Type.NUMBER },
-                            options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Pour les questions QCM." },
-                            correctAnswer: { type: Type.STRING, description: "Pour les QCM et textes courts." },
-                            questionTextWithBlanks: { type: Type.STRING, description: "Pour les textes à trous, utilise {{BLANK}} pour les trous." },
-                            correctAnswers: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Pour les textes à trous." },
-                            idealAnswer: { type: Type.STRING, description: "Pour les textes longs." }
-                        },
-                        required: ['type', 'questionText', 'points']
-                    }
-                }
-            },
-            required: ['subject', 'title', 'totalPoints', 'questions']
-        };
-
-        try {
-            const prompt = `Génère une évaluation interactive de ${count} questions sur "${selectedSubject.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. L'évaluation doit être notée sur 20 points au total. Répartis les points entre les questions. Inclus une variété de types de questions : 'qcm', 'fill-in-the-blank', 'short-text', et 'long-text'. Pour 'fill-in-the-blank', utilise la syntaxe 'questionTextWithBlanks' avec des '{{BLANK}}'.`;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: evaluationSchema,
-                    systemInstruction: buildSystemInstruction(),
-                }
-            });
-            
-            const generatedEval = JSON.parse(response.text);
-            setEvaluation(generatedEval);
-            setEvaluationAnswers({});
-            setEvaluationResult(null);
-            setView('evaluation');
-
-        } catch (error) {
-            console.error("Error generating evaluation:", error);
-            alert("Une erreur est survenue lors de la génération de l'évaluation. Veuillez réessayer.");
-            handleBackToHome();
-        }
-    }, [selectedSubject, buildSystemInstruction]);
-
-    const handleEvaluationSubmit = async (answers: EvaluationAnswers) => {
-        if (!evaluation) return;
-        setEvaluationAnswers(answers);
-        setView('loading');
-        setLoadingTask('correction-evaluation');
-
-        const gradingSchema = {
-            type: Type.OBJECT,
-            properties: {
-                totalScore: { type: Type.NUMBER, description: "Note finale sur 20." },
-                overallFeedback: { type: Type.STRING, description: "Feedback général pour l'élève." },
-                gradedQuestions: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            isCorrect: { type: Type.BOOLEAN },
-                            feedback: { type: Type.STRING },
-                            scoreAwarded: { type: Type.NUMBER }
-                        },
-                        required: ['isCorrect', 'feedback', 'scoreAwarded']
-                    }
-                }
-            },
-            required: ['totalScore', 'overallFeedback', 'gradedQuestions']
-        };
-
-        try {
-            const prompt = `Tu es un professeur correcteur. Voici une évaluation, les réponses de l'élève, et le barème. Analyse chaque réponse, en particulier les réponses textuelles. Fournis un feedback constructif pour chaque question, attribue des points, et calcule la note finale sur 20. Sois encourageant.
-            
-            ÉVALUATION ET CORRIGÉ:
-            ${JSON.stringify(evaluation)}
-
-            RÉPONSES DE L'ÉLÈVE:
-            ${JSON.stringify(answers)}
-            `;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: gradingSchema
-                }
-            });
-            const result = JSON.parse(response.text);
-            setEvaluationResult(result);
-            setView('evaluationResults');
-
-        } catch(error) {
-             console.error("Error grading evaluation:", error);
-            alert("Une erreur est survenue lors de la correction. Veuillez réessayer.");
-            setView('evaluation'); // Go back to the evaluation view on error
-        }
-    };
 
     const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string) => {
         const prompt = `Génère une fiche de ${count} exercices sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
@@ -697,22 +571,17 @@ const App: React.FC = () => {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
             case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateEvaluation={handleGenerateEvaluation} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} />;
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} />;
             case 'loading':
                 return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} />;
             case 'quiz':
                 return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} />;
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
-            case 'evaluation':
-                return evaluation && <EvaluationView evaluation={evaluation} onSubmit={handleEvaluationSubmit} />;
-            case 'evaluationResults':
-                return evaluation && evaluationResult && <EvaluationResultsView evaluation={evaluation} userAnswers={evaluationAnswers} result={evaluationResult} onRestart={handleBackToHome} />;
             case 'exercises':
                 const titleMap = {
                     exercises: "Fiche d'exercices prête !",
                     cours: "Fiche de cours prête !",
-                    evaluation: "Évaluation prête !",
                     'fiche-revisions': "Fiche de révisions prête !",
                 };
                 return <ExercisesView 
@@ -763,7 +632,7 @@ const App: React.FC = () => {
     
     // Main Render
     return (
-        <div className="min-h-screen w-screen flex flex-col bg-slate-100/50 dark:bg-slate-950/50 text-slate-800 dark:text-slate-200">
+        <div className="min-h-screen w-screen flex flex-col">
             <div className="flex-grow flex">
                 {view === 'chat' ? (
                     <>
@@ -796,15 +665,7 @@ const App: React.FC = () => {
             </div>
             <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop && view !== 'chat'} />
             <footer className="flex justify-center items-center gap-4 text-center py-2 px-4 text-xs text-slate-500 dark:text-slate-600 border-t border-white/10 dark:border-slate-800 shrink-0">
-                <span>26-2.8 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA</span>
-                <a 
-                    href="https://github.com/mAI-mAIPlatform/breveteasy-geministudio-off/releases/" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="px-2 py-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-md hover:bg-slate-300/50 dark:hover:bg-slate-700/50 transition-colors font-semibold"
-                >
-                    Notes de version
-                </a>
+                <span>26-2.9 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA</span>
             </footer>
         </div>
     );

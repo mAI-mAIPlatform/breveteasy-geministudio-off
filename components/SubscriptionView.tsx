@@ -104,7 +104,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan,
                 "Quiz & exercices : jusqu'à 20 questions",
                 "Chat avec BrevetAI+ : 100 messages / jour",
                 "Générations : 50 quiz ou fiches / jour",
-                "Génération d'évaluations & fiches de révision",
+                "Génération de fiches de révision",
                 "Instructions personnalisées pour l'IA",
                 "Génération d'images : 5 / jour"
             ]

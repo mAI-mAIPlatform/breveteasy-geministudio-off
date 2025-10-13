@@ -8,7 +8,6 @@ interface SubjectOptionsViewProps {
   onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string) => void;
-  onGenerateEvaluation: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateFicheRevisions: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   subscriptionPlan: SubscriptionPlan;
 }
@@ -133,9 +132,8 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
 };
 
 
-export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onGenerateCours, onGenerateEvaluation, onGenerateFicheRevisions, subscriptionPlan }) => {
+export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onGenerateCours, onGenerateFicheRevisions, subscriptionPlan }) => {
   const isFreePlan = subscriptionPlan === 'free';
-  const isEvaluationLocked = subscriptionPlan === 'free';
   const isFicheRevisionsLocked = subscriptionPlan === 'free';
 
   const [customPrompt, setCustomPrompt] = useState('');
@@ -172,10 +170,6 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   
   const handleGenerateCoursClick = () => {
     onGenerateCours(customPrompt, itemCount, currentDifficulty, currentLevel);
-  };
-
-  const handleGenerateEvaluationClick = () => {
-    onGenerateEvaluation(customPrompt, itemCount, currentDifficulty, currentLevel);
   };
 
   const handleGenerateFicheRevisionsClick = () => {
@@ -257,13 +251,6 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>}
                 onClick={handleGenerateFicheRevisionsClick}
                 isProFeature={isFicheRevisionsLocked}
-            />
-            <OptionCard
-                title="Générer une évaluation"
-                description={`Créez une évaluation type examen de ${itemCount} questions avec corrigé.`}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
-                onClick={handleGenerateEvaluationClick}
-                isProFeature={isEvaluationLocked}
             />
         </main>
     </div>

@@ -89,6 +89,11 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   const STYLES = ['none', 'photographie', 'cinematic', 'minimaliste', 'art-digital', 'origami', 'pixel-art'];
   const FORMATS = ['jpeg', 'png'] as const;
   const RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4'] as const;
+  
+  const imageModelDisplayNames: Record<ImageModel, string> = {
+    'faceai': 'FaceAI',
+    'faceai-plus': 'FaceAI +',
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -104,7 +109,13 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                 </div>
                 
                 <div className="relative">
-                    <StyledDropdown<ImageModel> label="Modèle" options={['faceai', 'faceai-plus']} value={model} onChange={setModel} />
+                    <StyledDropdown<ImageModel> 
+                        label="Modèle" 
+                        options={['faceai', 'faceai-plus']} 
+                        value={model} 
+                        onChange={setModel}
+                        renderOption={(option) => imageModelDisplayNames[option]}
+                    />
                     {model === 'faceai-plus' && subscriptionPlan === 'free' && <PremiumBadge requiredPlan="pro" />}
                 </div>
 

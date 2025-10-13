@@ -55,59 +55,57 @@ export interface ChatSession {
 
 export type SubscriptionPlan = 'free' | 'pro' | 'max';
 
-// --- Evaluation Types ---
+// Fix: Add missing type definitions for the Evaluation feature.
+export type EvaluationQuestionType = 'qcm' | 'fill-in-the-blank' | 'short-text' | 'long-text';
 
 export interface BaseEvaluationQuestion {
     questionText: string;
     points: number;
+    type: EvaluationQuestionType;
 }
 
-export interface EvaluationQCM extends BaseEvaluationQuestion {
+export interface QcmEvaluationQuestion extends BaseEvaluationQuestion {
     type: 'qcm';
     options: string[];
     correctAnswer: string;
 }
 
-export interface EvaluationFillBlank extends BaseEvaluationQuestion {
+export interface FillInTheBlankEvaluationQuestion extends BaseEvaluationQuestion {
     type: 'fill-in-the-blank';
-    // "La capitale de la France est {{BLANK}}."
-    questionTextWithBlanks: string; 
-    correctAnswers: string[]; // Answers in order of appearance
+    questionTextWithBlanks: string;
+    correctAnswers: string[];
 }
 
-export interface EvaluationShortText extends BaseEvaluationQuestion {
+export interface ShortTextEvaluationQuestion extends BaseEvaluationQuestion {
     type: 'short-text';
-    correctAnswer: string; // An ideal answer for comparison
+    correctAnswer: string;
 }
 
-export interface EvaluationLongText extends BaseEvaluationQuestion {
+export interface LongTextEvaluationQuestion extends BaseEvaluationQuestion {
     type: 'long-text';
-    idealAnswer: string; // The model answer for correction
+    idealAnswer: string;
 }
 
-export type EvaluationQuestion = EvaluationQCM | EvaluationFillBlank | EvaluationShortText | EvaluationLongText;
+export type EvaluationQuestion = QcmEvaluationQuestion | FillInTheBlankEvaluationQuestion | ShortTextEvaluationQuestion | LongTextEvaluationQuestion;
 
 export interface Evaluation {
-  subject: string;
-  title: string;
-  questions: EvaluationQuestion[];
-  totalPoints: number;
+    title: string;
+    subject: string;
+    questions: EvaluationQuestion[];
 }
 
-// For user answers
 export type EvaluationAnswers = {
-    [questionIndex: number]: string | string[]; // string for QCM/Short/Long, string[] for FillBlank
+    [questionIndex: number]: string | string[];
 };
 
-// For AI grading result
-export interface GradedQuestion {
+export interface GradedQuestionResult {
     isCorrect: boolean;
-    feedback: string;
     scoreAwarded: number;
+    feedback: string;
 }
 
 export interface EvaluationResult {
     totalScore: number;
     overallFeedback: string;
-    gradedQuestions: GradedQuestion[];
+    gradedQuestions: GradedQuestionResult[];
 }

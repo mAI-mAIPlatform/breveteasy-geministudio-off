@@ -161,6 +161,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     </div>
                 </SettingSection>
 
+                <SettingSection title="À propos" description="Informations sur l'application et les mises à jour.">
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-700 dark:text-slate-400">Version 26-2.9</span>
+                        <a 
+                            href="https://github.com/mAI-mAIPlatform/breveteasy-geministudio-off/releases/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors text-sm"
+                        >
+                            Notes de version
+                        </a>
+                    </div>
+                </SettingSection>
             </div>
         </div>
     );

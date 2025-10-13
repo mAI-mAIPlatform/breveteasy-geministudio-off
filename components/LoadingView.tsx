@@ -2,7 +2,7 @@ import React from 'react';
 
 interface LoadingViewProps {
   subject: string;
-  task: 'quiz' | 'exercises' | 'cours' | 'evaluation' | 'fiche-revisions' | 'correction-evaluation';
+  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions';
 }
 
 const LoadingSpinner: React.FC = () => (
@@ -36,15 +36,11 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
     quiz: 'du quiz',
     exercises: 'des exercices',
     cours: 'du cours',
-    evaluation: "de l'évaluation",
     'fiche-revisions': 'de la fiche de révisions',
-    'correction-evaluation': 'de la correction',
   };
   const titleText = titleTextMap[task] || 'du contenu';
 
-  const loadingMessage = task === 'correction-evaluation'
-    ? "Correction de vos réponses par l'IA..."
-    : `Génération ${titleText} de <span class="text-indigo-500 dark:text-sky-300">${safeSubject}</span>`;
+  const loadingMessage = `Génération ${titleText} de <span class="text-indigo-500 dark:text-sky-300">${safeSubject}</span>`;
 
 
   return (

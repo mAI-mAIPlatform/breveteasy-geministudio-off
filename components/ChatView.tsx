@@ -18,7 +18,6 @@ interface ChatViewProps {
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
 const CheckIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
 const EditIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>;
-const RegenerateIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M6.166 9.348L3 12.529m0 0l3.181-3.182m0 0-3.181 3.182" /></svg>;
 
 const ModelSelectorDropdown: React.FC<{
     aiModel: AiModel;
@@ -203,7 +202,7 @@ const Message: React.FC<{
                         {copiedIndex === index ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
                     </button>
                     <button onClick={() => onRegenerate(index)} title="Regénérer" className={actionButtonClass}>
-                        <RegenerateIcon className="h-4 w-4" />
+                        <EditIcon className="h-4 w-4" />
                     </button>
                 </div>
             )}
@@ -216,8 +215,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [attachment, setAttachment] = useState<{ file: File, previewUrl: string } | null>(null);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -232,48 +229,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
         }
     }, [input]);
-
-    const generatePromptSuggestions = useCallback(async () => {
-        setIsGeneratingSuggestions(true);
-        try {
-            const schema = {
-                type: Type.OBJECT,
-                properties: {
-                    suggestions: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                    },
-                },
-                required: ['suggestions'],
-            };
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: "Génère 3 questions de démarrage variées qu'un élève de 3ème en France pourrait poser à un tuteur IA pour ses révisions du brevet.",
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: schema,
-                }
-            });
-            const result = JSON.parse(response.text);
-            setSuggestions(result.suggestions || []);
-        } catch (error) {
-            console.error("Failed to generate prompt suggestions:", error);
-            // Fallback to static suggestions on error
-            setSuggestions([
-                "Explique-moi le théorème de Thalès.",
-                "Fais-moi un résumé de la Première Guerre mondiale.",
-                "Comment accorder le participe passé avec l'auxiliaire avoir ?",
-            ]);
-        } finally {
-            setIsGeneratingSuggestions(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (session.messages.length === 0) {
-            generatePromptSuggestions();
-        }
-    }, [session.id, session.messages.length, generatePromptSuggestions]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -519,23 +474,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             </main>
 
             <footer className="p-4 sm:p-6 border-t border-white/20 dark:border-slate-800 space-y-2">
-                {!isConversationStarted && !attachment && (
-                    <div className="flex items-center justify-center gap-2 flex-wrap mb-4">
-                        {isGeneratingSuggestions ? (
-                            <div className="text-sm text-slate-500 dark:text-slate-400">Génération de suggestions...</div>
-                        ) : (
-                            suggestions.map((prompt, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setInput(prompt)}
-                                    className="px-4 py-2 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-full text-sm text-slate-800 dark:text-slate-200 hover:bg-white/40 dark:hover:bg-slate-700/80 transition-colors"
-                                >
-                                    {prompt}
-                                </button>
-                            ))
-                        )}
-                    </div>
-                )}
                 {attachment && (
                     <div className="relative w-24 h-24 p-1 border-2 border-indigo-400 rounded-lg bg-black/10">
                         <img src={attachment.previewUrl} alt="Preview" className="w-full h-full object-cover rounded" />
