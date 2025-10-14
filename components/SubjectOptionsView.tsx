@@ -10,6 +10,7 @@ interface SubjectOptionsViewProps {
   onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateFicheRevisions: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   subscriptionPlan: SubscriptionPlan;
+  defaultItemCount: number;
   defaultDifficulty: 'Facile' | 'Normal' | 'Difficile' | 'Expert';
   defaultLevel: string;
 }
@@ -134,7 +135,7 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
 };
 
 
-export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onGenerateCours, onGenerateFicheRevisions, subscriptionPlan, defaultDifficulty, defaultLevel }) => {
+export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onGenerateCours, onGenerateFicheRevisions, subscriptionPlan, defaultItemCount, defaultDifficulty, defaultLevel }) => {
   const isFreePlan = subscriptionPlan === 'free';
   const isFicheRevisionsLocked = subscriptionPlan === 'free';
 
@@ -143,12 +144,25 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   const [level, setLevel] = useState<string>(defaultLevel);
 
   const ITEM_COUNTS = useMemo(() => {
-    if (subscriptionPlan === 'max') return [5, 10, 15, 20, 25];
-    if (subscriptionPlan === 'pro') return [5, 10, 15, 20];
-    return [5]; // free
-  }, [subscriptionPlan]);
+    let counts: number[];
+    if (subscriptionPlan === 'max') {
+        counts = [5, 10, 15, 20, 25];
+    } else if (subscriptionPlan === 'pro') {
+        counts = [5, 10, 15, 20];
+    } else {
+        counts = [5];
+    }
+    
+    // For paying users, if their custom default isn't in the standard list,
+    // add it so their preference is respected and available as an option.
+    if (subscriptionPlan !== 'free' && !counts.includes(defaultItemCount)) {
+        counts.push(defaultItemCount);
+        counts.sort((a, b) => a - b);
+    }
+    return counts;
+  }, [subscriptionPlan, defaultItemCount]);
 
-  const [itemCount, setItemCount] = useState<number>(ITEM_COUNTS[0]);
+  const [itemCount, setItemCount] = useState<number>(defaultItemCount);
   
   useEffect(() => {
     if (!ITEM_COUNTS.includes(itemCount)) {

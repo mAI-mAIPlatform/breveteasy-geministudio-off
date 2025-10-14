@@ -140,6 +140,9 @@ const App: React.FC = () => {
     const rootRef = useRef<HTMLElement | null>(null);
 
     // Generation default settings
+    const [defaultItemCount, setDefaultItemCount] = useState<number>(() => {
+        return parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10);
+    });
     const [defaultDifficulty, setDefaultDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>(() => {
         const saved = localStorage.getItem('brevet-easy-default-difficulty');
         if (saved === 'Moyen') return 'Normal';
@@ -280,6 +283,10 @@ const App: React.FC = () => {
     }, [imageUsage]);
     
     // Default Generation Settings Persistence
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-default-item-count', String(defaultItemCount));
+    }, [defaultItemCount]);
+
     useEffect(() => {
         localStorage.setItem('brevet-easy-default-difficulty', defaultDifficulty);
     }, [defaultDifficulty]);
@@ -622,79 +629,45 @@ const App: React.FC = () => {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
             case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'loading':
                 return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} />;
             case 'quiz':
                 return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} />;
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
-            case 'exercises':
-                const titleMap = {
-                    exercises: "Fiche d'exercices prête !",
-                    cours: "Fiche de cours prête !",
-                    'fiche-revisions': "Fiche de révisions prête !",
-                };
-                return <ExercisesView 
-                            onDownload={handleDownloadHtml}
-                            title={titleMap[loadingTask] || "Contenu prêt !"}
-                            description={`Votre document sur ${selectedSubject?.name} a été généré avec succès.`}
-                            buttonText={`Télécharger le .html`}
-                        />;
-            case 'chat':
-                if (activeSession) {
-                    return <ChatView session={activeSession} onUpdateSession={handleUpdateSession} systemInstruction={buildSystemInstruction()} subscriptionPlan={subscriptionPlan} userName={userName}/>
-                }
-                return <WelcomeView />;
             case 'settings':
-                return <SettingsView 
-                    theme={theme} 
-                    onThemeChange={setTheme} 
-                    aiSystemInstruction={aiSystemInstruction}
-                    onAiSystemInstructionChange={setAiSystemInstruction}
-                    subscriptionPlan={subscriptionPlan}
-                    userName={userName}
-                    onUserNameChange={setUserName}
-                    defaultAiModel={defaultAiModel}
-                    onDefaultAiModelChange={setDefaultAiModel}
-                    defaultImageModel={defaultImageModel}
-                    onDefaultImageModelChange={setDefaultImageModel}
-                    imageGenerationInstruction={imageGenerationInstruction}
-                    onImageGenerationInstructionChange={setImageGenerationInstruction}
-                    defaultDifficulty={defaultDifficulty}
-                    onDefaultDifficultyChange={setDefaultDifficulty}
-                    defaultLevel={defaultLevel}
-                    onDefaultLevelChange={setDefaultLevel}
-                />;
-            case 'login':
-                return <LoginView onLogin={(email) => setUser({ email })} />;
-            case 'subscription':
-                return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
-            case 'imageGeneration':
-                 return <ImageGenerationView
-                    onGenerate={handleGenerateImage}
-                    isGenerating={isGeneratingImage}
-                    generatedImage={generatedImage}
-                    remainingGenerations={remainingImageGenerations()}
-                    defaultImageModel={defaultImageModel}
-                    subscriptionPlan={subscriptionPlan}
-                />;
-            default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()}/>;
-        }
-    };
-    
-    // Main Render
-    return (
-        <div className="min-h-screen w-screen flex flex-col">
-            <div className="flex-grow flex">
-                {view === 'chat' ? (
-                    <>
+                return (
+                    <SettingsView
+                        theme={theme}
+                        onThemeChange={setTheme}
+                        aiSystemInstruction={aiSystemInstruction}
+                        onAiSystemInstructionChange={setAiSystemInstruction}
+                        subscriptionPlan={subscriptionPlan}
+                        userName={userName}
+                        onUserNameChange={setUserName}
+                        defaultAiModel={defaultAiModel}
+                        onDefaultAiModelChange={setDefaultAiModel}
+                        defaultImageModel={defaultImageModel}
+                        onDefaultImageModelChange={setDefaultImageModel}
+                        imageGenerationInstruction={imageGenerationInstruction}
+                        onImageGenerationInstructionChange={setImageGenerationInstruction}
+                        defaultItemCount={defaultItemCount}
+                        onDefaultItemCountChange={setDefaultItemCount}
+                        defaultDifficulty={defaultDifficulty}
+                        onDefaultDifficultyChange={setDefaultDifficulty}
+                        defaultLevel={defaultLevel}
+                        onDefaultLevelChange={setDefaultLevel}
+                    />
+                );
+            case 'chat':
+                return (
+                    <div className="w-full h-full flex flex-row">
                         <HistorySidebar 
-                            sessions={chatSessions} 
+                            sessions={chatSessions}
                             folders={folders}
-                            activeSessionId={activeChatSessionId} 
-                            onSelectChat={handleSelectChat} 
+                            activeSessionId={activeChatSessionId}
+                            onSelectChat={handleSelectChat}
                             onDeleteChat={handleDeleteChat}
                             onDownloadChat={handleDownloadChat}
                             onNewChat={handleNewChat}
@@ -704,24 +677,49 @@ const App: React.FC = () => {
                             onUpdateFolder={handleUpdateFolder}
                             onExitChat={handleBackToHome}
                         />
-                        <div className="flex-grow flex flex-col h-full relative">
-                            {renderContent()}
-                        </div>
-                    </>
-                ) : (
-                    <div className="flex-grow w-full">
-                        {view !== 'home' && <FixedExitButton onClick={handleBackToHome} />}
-                        <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan}/>
-                        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
-                           {renderContent()}
+                        <div className="flex-grow h-full">
+                            {activeSession ? (
+                                <ChatView 
+                                    session={activeSession} 
+                                    onUpdateSession={handleUpdateSession} 
+                                    systemInstruction={aiSystemInstruction}
+                                    subscriptionPlan={subscriptionPlan}
+                                    userName={userName}
+                                />
+                            ) : (
+                                <WelcomeView />
+                            )}
                         </div>
                     </div>
-                )}
-            </div>
-            <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop && view !== 'chat'} />
-            <footer className="flex justify-center items-center gap-4 text-center py-2 px-4 text-xs text-slate-500 dark:text-slate-400 border-t border-white/10 dark:border-slate-800 shrink-0">
-                <span>26-3.0 © All rights reserved | Brevet' Easy - BrevetAI/FaceAI | Official Website and IA</span>
-            </footer>
+                );
+            case 'login':
+                return <LoginView onLogin={(email) => setUser({email})} />;
+            case 'exercises':
+                const contentConfig = {
+                    exercises: { title: "Exercices générés !", description: "Votre fiche d'exercices est prête à être téléchargée.", buttonText: "Télécharger les exercices" },
+                    cours: { title: "Cours généré !", description: "Votre fiche de cours est prête à être téléchargée.", buttonText: "Télécharger le cours" },
+                    'fiche-revisions': { title: "Fiche générée !", description: "Votre fiche de révisions est prête.", buttonText: "Télécharger la fiche" },
+                }[loadingTask] || { title: "Contenu généré !", description: "Votre contenu est prêt.", buttonText: "Télécharger" };
+                
+                return <ExercisesView onDownload={handleDownloadHtml} {...contentConfig} />;
+            case 'subscription':
+                return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
+            case 'imageGeneration':
+                 return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
+            default:
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
+        }
+    };
+    
+    const showHeader = !['chat'].includes(view);
+    const showExitButton = !['home', 'chat'].includes(view);
+
+    return (
+        <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 flex items-start justify-center">
+             {showHeader && <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} />}
+             {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
+             <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
+             {renderContent()}
         </div>
     );
 };

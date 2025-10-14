@@ -121,6 +121,8 @@ interface SettingsViewProps {
     onDefaultImageModelChange: (model: ImageModel) => void;
     imageGenerationInstruction: string;
     onImageGenerationInstructionChange: (instruction: string) => void;
+    defaultItemCount: number;
+    onDefaultItemCountChange: (count: number) => void;
     defaultDifficulty: 'Facile' | 'Normal' | 'Difficile' | 'Expert';
     onDefaultDifficultyChange: (difficulty: 'Facile' | 'Normal' | 'Difficile' | 'Expert') => void;
     defaultLevel: string;
@@ -261,6 +263,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     onDefaultImageModelChange,
     imageGenerationInstruction,
     onImageGenerationInstructionChange,
+    defaultItemCount,
+    onDefaultItemCountChange,
     defaultDifficulty,
     onDefaultDifficultyChange,
     defaultLevel,
@@ -338,21 +342,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <SettingSection title="Paramètres de génération par défaut" description="Choisissez les options par défaut pour la génération de contenu.">
                     <div className="relative">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <StyledDropdown<string>
-                                label="Niveau"
-                                options={LEVELS}
-                                value={defaultLevel}
-                                onChange={onDefaultLevelChange}
+                        <div className="space-y-4">
+                            <StyledDropdown<number>
+                                label="Nombre d'éléments"
+                                options={Array.from({ length: 10 }, (_, i) => i + 1)}
+                                value={defaultItemCount}
+                                onChange={onDefaultItemCountChange}
+                                renderOption={(option) => `${option} élément${option > 1 ? 's' : ''}`}
                                 disabled={subscriptionPlan !== 'max'}
                             />
-                            <StyledDropdown<'Facile' | 'Normal' | 'Difficile' | 'Expert'>
-                                label="Difficulté"
-                                options={DIFFICULTIES}
-                                value={defaultDifficulty}
-                                onChange={onDefaultDifficultyChange}
-                                disabled={subscriptionPlan !== 'max'}
-                            />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <StyledDropdown<string>
+                                    label="Niveau"
+                                    options={LEVELS}
+                                    value={defaultLevel}
+                                    onChange={onDefaultLevelChange}
+                                    disabled={subscriptionPlan !== 'max'}
+                                />
+                                <StyledDropdown<'Facile' | 'Normal' | 'Difficile' | 'Expert'>
+                                    label="Difficulté"
+                                    options={DIFFICULTIES}
+                                    value={defaultDifficulty}
+                                    onChange={onDefaultDifficultyChange}
+                                    disabled={subscriptionPlan !== 'max'}
+                                />
+                            </div>
                         </div>
                         {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" />}
                     </div>
