@@ -10,6 +10,8 @@ interface SubjectOptionsViewProps {
   onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateFicheRevisions: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   subscriptionPlan: SubscriptionPlan;
+  defaultDifficulty: 'Facile' | 'Normal' | 'Difficile' | 'Expert';
+  defaultLevel: string;
 }
 
 const OptionCard: React.FC<{ 
@@ -84,7 +86,7 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
     return (
         <div>
             <label className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">{label}</label>
-            <div className="relative" ref={dropdownRef}>
+            <div className={`relative ${isOpen ? 'z-20' : ''}`} ref={dropdownRef}>
                 <button
                     type="button"
                     onClick={handleToggle}
@@ -132,13 +134,13 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
 };
 
 
-export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onGenerateCours, onGenerateFicheRevisions, subscriptionPlan }) => {
+export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onGenerateCours, onGenerateFicheRevisions, subscriptionPlan, defaultDifficulty, defaultLevel }) => {
   const isFreePlan = subscriptionPlan === 'free';
   const isFicheRevisionsLocked = subscriptionPlan === 'free';
 
   const [customPrompt, setCustomPrompt] = useState('');
-  const [difficulty, setDifficulty] = useState<'Facile' | 'Moyen' | 'Difficile'>('Moyen');
-  const [level, setLevel] = useState<string>('Brevet');
+  const [difficulty, setDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>(defaultDifficulty);
+  const [level, setLevel] = useState<string>(defaultLevel);
 
   const ITEM_COUNTS = useMemo(() => {
     if (subscriptionPlan === 'max') return [5, 10, 15, 20, 25];
@@ -155,10 +157,10 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   }, [itemCount, ITEM_COUNTS]);
 
   const LEVELS = ['CM2', '6ème', '5ème', '4ème', '3ème', 'Brevet'];
-  const DIFFICULTIES = ['Facile', 'Moyen', 'Difficile'] as const;
+  const DIFFICULTIES = ['Facile', 'Normal', 'Difficile', 'Expert'] as const;
 
   const currentLevel = isFreePlan ? 'Brevet' : level;
-  const currentDifficulty = isFreePlan ? 'Moyen' : difficulty;
+  const currentDifficulty = isFreePlan ? 'Normal' : difficulty;
 
   const handleGenerateQuizClick = () => {
     onGenerateQuiz(customPrompt, itemCount, currentDifficulty, currentLevel);
@@ -215,7 +217,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                     onChange={setLevel}
                     disabled={isFreePlan}
                 />
-                <StyledDropdown<'Facile' | 'Moyen' | 'Difficile'>
+                <StyledDropdown<'Facile' | 'Normal' | 'Difficile' | 'Expert'>
                     label="Difficulté"
                     options={DIFFICULTIES}
                     value={currentDifficulty}

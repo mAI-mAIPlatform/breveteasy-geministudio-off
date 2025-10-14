@@ -116,7 +116,7 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan,
                 "Tous les avantages du forfait Pro",
                 "Générations illimitées (Quiz, Exercices, Cours...)",
                 "Chat & Génération d'images illimités",
-                "Accès en avant-première & Support prioritaire"
+                "Support prioritaire"
             ]
         }
     };

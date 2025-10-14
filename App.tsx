@@ -139,6 +139,19 @@ const App: React.FC = () => {
     const [showScrollTop, setShowScrollTop] = useState(false);
     const rootRef = useRef<HTMLElement | null>(null);
 
+    // Generation default settings
+    const [defaultDifficulty, setDefaultDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>(() => {
+        const saved = localStorage.getItem('brevet-easy-default-difficulty');
+        if (saved === 'Moyen') return 'Normal';
+        if (saved === 'Facile' || saved === 'Normal' || saved === 'Difficile' || saved === 'Expert') {
+            return saved;
+        }
+        return 'Normal';
+    });
+    const [defaultLevel, setDefaultLevel] = useState<string>(() => {
+        return localStorage.getItem('brevet-easy-default-level') || 'Brevet';
+    });
+
 
     // User/Profile State
     const [user, setUser] = useState<{email: string} | null>(null);
@@ -265,6 +278,15 @@ const App: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('brevet-easy-image-usage', JSON.stringify(imageUsage));
     }, [imageUsage]);
+    
+    // Default Generation Settings Persistence
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-default-difficulty', defaultDifficulty);
+    }, [defaultDifficulty]);
+
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-default-level', defaultLevel);
+    }, [defaultLevel]);
 
     // Navigation Handlers
     const handleSubjectSelect = (subject: Subject) => {
@@ -600,7 +622,7 @@ const App: React.FC = () => {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
             case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} />;
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'loading':
                 return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} />;
             case 'quiz':
@@ -636,10 +658,13 @@ const App: React.FC = () => {
                     defaultAiModel={defaultAiModel}
                     onDefaultAiModelChange={setDefaultAiModel}
                     defaultImageModel={defaultImageModel}
-                    // Fix: Pass the correct state setter for the default image model.
                     onDefaultImageModelChange={setDefaultImageModel}
                     imageGenerationInstruction={imageGenerationInstruction}
                     onImageGenerationInstructionChange={setImageGenerationInstruction}
+                    defaultDifficulty={defaultDifficulty}
+                    onDefaultDifficultyChange={setDefaultDifficulty}
+                    defaultLevel={defaultLevel}
+                    onDefaultLevelChange={setDefaultLevel}
                 />;
             case 'login':
                 return <LoginView onLogin={(email) => setUser({ email })} />;
