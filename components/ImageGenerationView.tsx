@@ -70,6 +70,15 @@ const StyledDropdown = <T extends string>({ label, options, value, onChange, ren
     );
 };
 
+const STYLES_OPTIONS: { value: string; label: string }[] = [
+    { value: 'none', label: 'Aucun' },
+    { value: 'photographie', label: 'Photographie' },
+    { value: 'cinematic', label: 'Cinématique' },
+    { value: 'minimaliste', label: 'Minimaliste' },
+    { value: 'art-digital', label: 'Art Numérique' },
+    { value: 'origami', label: 'Origami' },
+    { value: 'pixel-art', label: 'Pixel Art' },
+];
 
 export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGenerate, isGenerating, generatedImage, remainingGenerations, defaultImageModel, subscriptionPlan }) => {
   const [prompt, setPrompt] = useState('');
@@ -86,7 +95,6 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
     onGenerate(prompt, model, style, format, aspectRatio, negativePrompt);
   };
   
-  const STYLES = ['none', 'photographie', 'cinematic', 'minimaliste', 'art-digital', 'origami', 'pixel-art'];
   const FORMATS = ['jpeg', 'png'] as const;
   const RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4'] as const;
   
@@ -123,7 +131,13 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                     <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Paramètres</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                            <StyledDropdown<string> label="Style" options={STYLES} value={style} onChange={setStyle} />
+                            <StyledDropdown<string> 
+                                label="Style" 
+                                options={STYLES_OPTIONS.map(opt => opt.value)} 
+                                value={style} 
+                                onChange={setStyle}
+                                renderOption={val => STYLES_OPTIONS.find(opt => opt.value === val)?.label ?? val}
+                            />
                         </div>
                         <div>
                            <StyledDropdown<string> label="Ratio" options={RATIOS} value={aspectRatio} onChange={setAspectRatio} />

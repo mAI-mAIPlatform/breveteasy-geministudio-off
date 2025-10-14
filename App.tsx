@@ -50,7 +50,7 @@ const FixedHeader: React.FC<{
     onNavigateSubscription: () => void;
     subscriptionPlan: SubscriptionPlan;
 }> = ({ onNavigateLogin, onNavigateSettings, onNavigateSubscription, subscriptionPlan }) => (
-    <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-50 flex items-center space-x-3">
+    <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-[100] flex items-center space-x-3">
        {subscriptionPlan !== 'max' && (
         <HeaderButton 
             onClick={onNavigateSubscription} 
@@ -81,7 +81,7 @@ const FixedHeader: React.FC<{
 );
 
 const FixedExitButton: React.FC<{ onClick: () => void; position?: 'fixed' | 'absolute' }> = ({ onClick, position = 'fixed' }) => (
-    <div className={`${position} top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-50`}>
+    <div className={`${position} top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-[100]`}>
         <HeaderButton 
             onClick={onClick} 
             title="Retour à l'accueil"
@@ -94,7 +94,7 @@ const FixedExitButton: React.FC<{ onClick: () => void; position?: 'fixed' | 'abs
 );
 
 const ScrollToTopButton: React.FC<{ onClick: () => void; isVisible: boolean }> = ({ onClick, isVisible }) => (
-    <div className={`fixed bottom-10 sm:bottom-6 lg:bottom-8 right-4 sm:right-6 lg:right-8 z-50 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div className={`fixed bottom-10 sm:bottom-6 lg:bottom-8 right-4 sm:right-6 lg:right-8 z-[100] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <HeaderButton
             onClick={onClick}
             title="Remonter en haut"
