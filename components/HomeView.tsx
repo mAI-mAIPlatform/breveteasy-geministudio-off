@@ -14,7 +14,7 @@ const Header: React.FC = () => (
 const SubjectCard: React.FC<{ subject: Subject; onSelect: () => void }> = ({ subject, onSelect }) => (
   <button
     onClick={onSelect}
-    className="group flex flex-col items-center justify-center p-6 bg-white/10 dark:bg-black/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out w-full space-y-4"
+    className="group flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out w-full space-y-4"
   >
     <div className={`p-4 rounded-full ${subject.bgColor} transition-colors duration-300`}>
       {React.cloneElement(subject.icon, { className: `h-12 w-12 ${subject.color}`})}
@@ -29,7 +29,7 @@ const BrevetAICard: React.FC<{
     onClick: () => void;
 }> = ({ onClick }) => {
     return (
-        <div className="w-full bg-white/10 dark:bg-black/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-lg p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center text-left w-full">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 flex-shrink-0 mr-5 sm:mr-6 shadow-lg flex items-center justify-center">
                    <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
@@ -57,10 +57,10 @@ const ImageGenerationCard: React.FC<{
     remaining: number;
 }> = ({ onClick, remaining }) => {
     return (
-        <div className="w-full bg-white/10 dark:bg-black/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-lg p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center text-left w-full">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-400 to-red-400 flex-shrink-0 mr-5 sm:mr-6 shadow-lg flex items-center justify-center">
-                   <svg xmlns="http://www.w.org/2000/svg" className="h-9 w-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </div>
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white">

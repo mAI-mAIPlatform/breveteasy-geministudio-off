@@ -40,7 +40,7 @@ const HeaderButton: React.FC<{
 }> = ({ onClick, title, ariaLabel, children, className = '', isIconOnly = false }) => (
     <button 
         onClick={onClick} 
-        className={`flex items-center gap-2 whitespace-nowrap bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm font-semibold ${isIconOnly ? 'rounded-full w-11 h-11 justify-center' : 'px-4 py-2.5 rounded-full'} shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-105 transition-all duration-300 ${className}`}
+        className={`flex items-center gap-2 whitespace-nowrap bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm font-semibold ${isIconOnly ? 'rounded-full w-11 h-11 justify-center' : 'px-4 py-2.5 rounded-full'} shadow-lg hover:bg-slate-100 dark:hover:bg-slate-800 transform hover:scale-105 transition-all duration-300 ${className}`}
         title={title}
         aria-label={ariaLabel}
     >
@@ -773,7 +773,7 @@ const App: React.FC = () => {
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
              {view === 'quiz' && quiz && (
                 <div className="w-full max-w-4xl mx-auto pt-20">
-                    <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-2.5">
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5">
                         <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${quizProgress}%`, boxShadow: '0 0 10px theme(colors.sky.400)' }}></div>
                     </div>
                 </div>

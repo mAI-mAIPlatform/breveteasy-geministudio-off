@@ -28,7 +28,7 @@ const QuestionDisplay: React.FC<{
             className={`p-4 rounded-2xl text-left text-lg transition-all duration-300 border ${
               isSelected
                 ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-[0_0_20px_rgba(167,139,250,0.5)] scale-105'
-                : 'bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-sky-300 dark:hover:border-sky-400 hover:bg-white/40 dark:hover:bg-slate-700/60'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-sky-300 dark:hover:border-sky-400 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             {option}
@@ -79,7 +79,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col">
-      <div className={`bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center ${animationClass} mt-6`}>
+      <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center ${animationClass} mt-6`}>
         <QuestionDisplay
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}
@@ -93,7 +93,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
         <button
           onClick={handlePrevious}
           disabled={currentQuestionIndex === 0}
-          className="px-6 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Précédent
         </button>

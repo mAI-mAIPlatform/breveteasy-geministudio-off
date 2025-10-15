@@ -55,7 +55,7 @@ const ModelSelectorDropdown: React.FC<{
                 className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-lg font-bold transition-colors ${
                     isConversationStarted
                         ? 'cursor-default text-slate-800 dark:text-slate-200'
-                        : 'bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 hover:bg-white/20 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200'
+                        : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
                 style={{minWidth: '145px'}}
             >
@@ -70,7 +70,7 @@ const ModelSelectorDropdown: React.FC<{
                 )}
             </button>
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-full rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-10 p-1">
+                <div className="absolute top-full left-0 mt-2 w-full rounded-xl bg-white dark:bg-slate-800 shadow-2xl border border-slate-200 dark:border-slate-700 z-10 p-1">
                     {(['brevetai', 'brevetai-plus'] as const).map((model) => (
                         <button
                             key={model}
@@ -184,7 +184,7 @@ const Message: React.FC<{
         setRegenMenuIndex(null);
     };
     
-    const actionBarClass = "flex items-center self-center gap-1 p-1 bg-white/60 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200";
+    const actionBarClass = "flex items-center self-center gap-1 p-1 bg-white dark:bg-slate-800 border border-slate-300/50 dark:border-slate-700/50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200";
     const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
     const menuItemClass = "w-full text-left px-3 py-1.5 text-sm rounded-md text-slate-800 dark:text-slate-200 hover:bg-indigo-500 hover:text-white transition-colors flex items-center gap-3";
 
@@ -201,7 +201,7 @@ const Message: React.FC<{
                 </div>
             )}
             
-            <div className={`max-w-xl lg:max-w-2xl px-5 py-3 shadow-md ${isModel ? 'bg-white/30 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-t-2xl rounded-br-2xl' : 'bg-indigo-500/80 backdrop-blur-md text-white rounded-t-2xl rounded-bl-2xl'}`}>
+            <div className={`max-w-xl lg:max-w-2xl px-5 py-3 shadow-md ${isModel ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-t-2xl rounded-br-2xl' : 'bg-indigo-500 text-white rounded-t-2xl rounded-bl-2xl'}`}>
                 {message.isGenerating ? (
                     <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
@@ -233,7 +233,7 @@ const Message: React.FC<{
                             <RegenerateIcon className="h-4 w-4" />
                         </button>
                         {isRegenMenuOpen && (
-                            <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-20 p-2 space-y-1">
+                            <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-white dark:bg-slate-800 shadow-2xl border border-slate-200 dark:border-slate-700 z-20 p-2 space-y-1">
                                 <button className={menuItemClass} onClick={() => handleRegenOptionClick('longer')}>
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" /></svg>
                                     <span>Plus long</span>
@@ -506,7 +506,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-white/10 dark:bg-slate-900/60">
+        <div className="w-full h-full flex flex-col bg-slate-50 dark:bg-slate-900">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
             <div className="p-4 sm:p-6">
                 <ChatHeader
@@ -551,7 +551,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                 <div ref={messagesEndRef} />
             </main>
 
-            <footer className="p-4 sm:p-6 border-t border-white/20 dark:border-slate-800 space-y-2">
+            <footer className="p-4 sm:p-6 border-t border-slate-200 dark:border-slate-800 space-y-2">
                 {attachment && (
                     <div className="relative w-24 h-24 p-1 border-2 border-indigo-400 rounded-lg bg-black/10">
                         <img src={attachment.previewUrl} alt="Preview" className="w-full h-full object-cover rounded" />
@@ -560,7 +560,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         </button>
                     </div>
                 )}
-                <div className="flex items-end bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-2xl p-1 shadow-inner pr-2 border border-white/20 dark:border-slate-700">
+                <div className="flex items-end bg-white dark:bg-slate-800 rounded-2xl p-1 shadow-inner pr-2 border border-slate-200 dark:border-slate-700">
                     <button onClick={() => fileInputRef.current?.click()} disabled={isChatLimitReached} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-1">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                     </button>

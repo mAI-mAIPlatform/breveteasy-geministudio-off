@@ -66,8 +66,8 @@ const ShareModal: React.FC<{ isOpen: boolean; onClose: () => void; scoreOutOf20:
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fade-in" aria-modal="true" role="dialog">
-            <div ref={modalRef} className="relative w-full max-w-md bg-[#f0f2f5] dark:bg-slate-900/80 dark:backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[110] p-4 animate-fade-in" aria-modal="true" role="dialog">
+            <div ref={modalRef} className="relative w-full max-w-md bg-[#f0f2f5] dark:bg-slate-900 rounded-3xl shadow-2xl p-6 sm:p-8">
                 <button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-md z-10" aria-label="Fermer">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -136,7 +136,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
         scoreOutOf20={scoreOutOf20} 
         subject={quiz?.subject || ''} 
       />
-      <div className="flex flex-col items-center justify-center text-center bg-white/10 dark:bg-black/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl mb-8">
+      <div className="flex flex-col items-center justify-center text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-xl mb-8">
           <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Résultats du Quiz</h2>
           
           <div className="relative my-6" style={{filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.1))'}}>
@@ -157,23 +157,23 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
             <button onClick={onRestart} className="px-8 py-4 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all w-full sm:w-auto">
                 Accueil
             </button>
-            <button onClick={scrollToCorrection} className="px-8 py-4 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transform hover:scale-105 transition-all w-full sm:w-auto">
+            <button onClick={scrollToCorrection} className="px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-slate-100 dark:hover:bg-slate-700 transform hover:scale-105 transition-all w-full sm:w-auto">
                 Voir la correction
             </button>
-             <button onClick={() => setIsShareModalOpen(true)} className="px-8 py-4 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-indigo-500 dark:text-sky-300 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transform hover:scale-105 transition-all w-full sm:w-auto flex items-center justify-center">
+             <button onClick={() => setIsShareModalOpen(true)} className="px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-500 dark:text-sky-300 font-bold rounded-xl shadow-lg hover:bg-slate-100 dark:hover:bg-slate-700 transform hover:scale-105 transition-all w-full sm:w-auto flex items-center justify-center">
                 <ShareIcon /> Partager
             </button>
           </div>
       </div>
 
-      <div ref={correctionRef} className="w-full mt-12 bg-black/5 dark:bg-black/60 backdrop-blur-xl border border-white/10 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-inner">
+      <div ref={correctionRef} className="w-full mt-12 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-inner">
             <h3 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-8 text-center">Correction détaillée</h3>
             <div className="space-y-6">
                 {quiz?.questions.map((question, index) => {
                     const userAnswer = userAnswers[index];
                     const isCorrect = userAnswer === question.correctAnswer;
                     return (
-                        <div key={index} className="bg-white/10 dark:bg-slate-800/60 backdrop-blur-xl border border-white/20 dark:border-slate-700 p-6 rounded-2xl shadow-lg">
+                        <div key={index} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 rounded-2xl shadow-lg">
                             <p className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{index + 1}. {question.questionText}</p>
                             <div className="mb-3">
                                 <span className="text-sm font-bold text-slate-600 dark:text-slate-400">Votre réponse :</span>

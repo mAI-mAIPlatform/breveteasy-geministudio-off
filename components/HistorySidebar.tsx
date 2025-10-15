@@ -51,7 +51,7 @@ const SessionItem: React.FC<{
                 isEditing ? 'bg-indigo-500/20' :
                 isActive 
                 ? 'bg-indigo-500/20' 
-                : 'hover:bg-black/5 dark:hover:bg-slate-800/60 cursor-pointer'
+                : 'hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer'
             }`}
         >
             {isEditing ? (
@@ -266,11 +266,11 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
   const dragFeedbackClass = 'bg-indigo-500/20 border-2 border-dashed border-indigo-400';
 
   return (
-    <aside className="w-80 h-full flex-shrink-0 bg-white/5 dark:bg-slate-900/40 p-4 flex flex-col gap-2 border-r border-white/10 dark:border-slate-800">
+    <aside className="w-80 h-full flex-shrink-0 bg-slate-100 dark:bg-slate-900 p-4 flex flex-col gap-2 border-r border-slate-200 dark:border-slate-800">
         <div className="flex justify-between items-center mb-2">
             <button 
                 onClick={onExitChat}
-                className="flex items-center justify-center w-10 h-10 bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-full shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-105 transition-all duration-300"
+                className="flex items-center justify-center w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full shadow-lg hover:bg-slate-200 dark:hover:bg-slate-700 transform hover:scale-105 transition-all duration-300"
                 title="Retour à l'accueil"
                 aria-label="Retourner à l'accueil"
             >
@@ -301,7 +301,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                 placeholder="Rechercher..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-black/5 dark:bg-slate-800/60 py-2.5 pl-10 pr-4 rounded-lg border border-transparent focus:bg-white/10 dark:focus:bg-slate-800/80 focus:border-indigo-500/50 focus:outline-none transition-colors text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-500"
+                className="w-full bg-slate-200 dark:bg-slate-800 py-2.5 pl-10 pr-4 rounded-lg border border-transparent focus:bg-white dark:focus:bg-slate-700 focus:border-indigo-500/50 focus:outline-none transition-colors text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-500"
             />
         </div>
 
@@ -315,9 +315,9 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
              {(visibleFolders.length > 0 || ungroupedSessions.length > 0 || isCreatingFolder) ? (
                 <ul className={`space-y-1 rounded-lg transition-colors p-1 ${dragOverUngrouped ? dragFeedbackClass : ''}`}>
                     {isCreatingFolder && (
-                        <li className="p-3 bg-black/5 dark:bg-slate-800 rounded-lg shadow-inner">
+                        <li className="p-3 bg-slate-200 dark:bg-slate-800 rounded-lg shadow-inner">
                             <div className="flex items-center gap-3 mb-3">
-                                <span className="p-1 bg-white/10 dark:bg-black/20 rounded-md text-slate-800 dark:text-slate-200">
+                                <span className="p-1 bg-slate-300 dark:bg-slate-700 rounded-md text-slate-800 dark:text-slate-200">
                                      {React.cloneElement(AVATAR_ICONS[newFolderEmoji], { className: 'w-6 h-6' })}
                                 </span>
                                 <input
@@ -329,7 +329,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                         if (e.key === 'Enter') handleConfirmNewFolder();
                                         if (e.key === 'Escape') handleCancelNewFolder();
                                     }}
-                                    className="flex-grow text-sm font-medium bg-white/20 dark:bg-slate-700/60 focus:outline-none w-full p-2 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-500"
+                                    className="flex-grow text-sm font-medium bg-white dark:bg-slate-700 focus:outline-none w-full p-2 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-500"
                                     placeholder="Nom du dossier..."
                                 />
                             </div>
@@ -366,11 +366,11 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                 className={`rounded-lg transition-colors ${dragOverFolderId === folder.id ? dragFeedbackClass : ''}`}
                             >
                                 {editingId === folder.id ? (
-                                    <div className="p-3 bg-black/5 dark:bg-slate-800 rounded-lg shadow-inner">
+                                    <div className="p-3 bg-slate-200 dark:bg-slate-800 rounded-lg shadow-inner">
                                         <input
                                             ref={inputRef} type="text" value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)}
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') handleCancelEditing(); }}
-                                            className="w-full text-sm font-medium bg-white/20 dark:bg-slate-700/60 focus:outline-none p-2 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-500 mb-3"
+                                            className="w-full text-sm font-medium bg-white dark:bg-slate-700 focus:outline-none p-2 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-500 mb-3"
                                         />
                                         <div className="grid grid-cols-6 sm:grid-cols-8 gap-1 mb-3">
                                             {AVATAR_ICON_KEYS.map(key => (
@@ -388,7 +388,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                     </div>
                                 ) : (
                                     <div 
-                                        className="group w-full flex items-center justify-between text-left p-3 rounded-lg cursor-pointer hover:bg-black/5 dark:hover:bg-slate-800/60"
+                                        className="group w-full flex items-center justify-between text-left p-3 rounded-lg cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800"
                                         onClick={() => toggleFolder(folder.id)}
                                     >
                                         <div className="flex items-center gap-2 flex-grow truncate">
