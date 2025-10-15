@@ -15,6 +15,7 @@ import { SubscriptionView } from './components/SubscriptionView';
 import { ImageGenerationView } from './components/ImageGenerationView';
 import { WelcomeView } from './components/WelcomeView';
 import { ai, Type } from './services/geminiService';
+import { AVATAR_ICONS } from './constants';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder } from './types';
 
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
@@ -49,7 +50,8 @@ const FixedHeader: React.FC<{
     onNavigateSettings: () => void; 
     onNavigateSubscription: () => void;
     subscriptionPlan: SubscriptionPlan;
-}> = ({ onNavigateLogin, onNavigateSettings, onNavigateSubscription, subscriptionPlan }) => (
+    userAvatar: string;
+}> = ({ onNavigateLogin, onNavigateSettings, onNavigateSubscription, subscriptionPlan, userAvatar }) => (
     <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-[100] flex items-center space-x-3">
        {subscriptionPlan !== 'max' && (
         <HeaderButton 
@@ -75,7 +77,7 @@ const FixedHeader: React.FC<{
         ariaLabel="Ouvrir la page de profil"
         isIconOnly={true}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        {React.cloneElement(AVATAR_ICONS[userAvatar] || AVATAR_ICONS['user'], { className: 'h-5 w-5' })}
       </HeaderButton>
     </div>
 );
@@ -160,6 +162,9 @@ const App: React.FC = () => {
     const [user, setUser] = useState<{email: string} | null>(null);
     const [userName, setUserName] = useState<string>(() => {
         return localStorage.getItem('brevet-easy-user-name') || '';
+    });
+    const [userAvatar, setUserAvatar] = useState<string>(() => {
+        return localStorage.getItem('brevet-easy-user-avatar') || 'user';
     });
     
     // Quiz State
@@ -248,6 +253,11 @@ const App: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('brevet-easy-user-name', userName);
     }, [userName]);
+
+    // User Avatar Persistence Effect
+    useEffect(() => {
+        localStorage.setItem('brevet-easy-user-avatar', userAvatar);
+    }, [userAvatar]);
     
     // Subscription Plan Persistence Effect
     useEffect(() => {
@@ -654,6 +664,8 @@ const App: React.FC = () => {
                         subscriptionPlan={subscriptionPlan}
                         userName={userName}
                         onUserNameChange={setUserName}
+                        userAvatar={userAvatar}
+                        onUserAvatarChange={setUserAvatar}
                         defaultAiModel={defaultAiModel}
                         onDefaultAiModelChange={setDefaultAiModel}
                         defaultImageModel={defaultImageModel}
@@ -724,7 +736,7 @@ const App: React.FC = () => {
 
     return (
         <div className={`w-full min-h-full p-4 sm:p-6 lg:p-8 ${view === 'quiz' ? '' : 'flex items-start justify-center'}`}>
-             {showHeader && <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} />}
+             {showHeader && <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
              {view === 'quiz' && quiz && (

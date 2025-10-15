@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { SubscriptionPlan, AiModel, ImageModel } from '../types';
+import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '../constants';
 import { PremiumBadge } from './PremiumBadge';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -115,6 +116,8 @@ interface SettingsViewProps {
     subscriptionPlan: SubscriptionPlan;
     userName: string;
     onUserNameChange: (name: string) => void;
+    userAvatar: string;
+    onUserAvatarChange: (avatar: string) => void;
     defaultAiModel: AiModel;
     onDefaultAiModelChange: (model: AiModel) => void;
     defaultImageModel: ImageModel;
@@ -257,6 +260,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     subscriptionPlan,
     userName,
     onUserNameChange,
+    userAvatar,
+    onUserAvatarChange,
     defaultAiModel,
     onDefaultAiModelChange,
     defaultImageModel,
@@ -332,6 +337,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             className="w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400"
                             placeholder="Entrez votre prénom..."
                         />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Votre avatar
+                        </label>
+                        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
+                             {AVATAR_ICON_KEYS.map(key => (
+                                <button 
+                                    key={key} 
+                                    onClick={() => onUserAvatarChange(key)}
+                                    className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 aspect-square border-2 ${userAvatar === key ? 'bg-indigo-500/80 border-indigo-500 text-white scale-110' : 'bg-white/10 dark:bg-slate-800/60 border-transparent hover:border-indigo-400 text-slate-700 dark:text-slate-300'}`}
+                                    aria-label={`Select icon ${key}`}
+                                >
+                                    {React.cloneElement(AVATAR_ICONS[key], { className: "w-7 h-7" })}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </SettingSection>
 
