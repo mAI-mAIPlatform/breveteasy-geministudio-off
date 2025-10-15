@@ -625,14 +625,16 @@ const App: React.FC = () => {
         return Math.max(0, limit - imageUsage.count);
     };
 
+    if (view === 'loading') {
+        return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} />;
+    }
+    
     const renderContent = () => {
         switch (view) {
             case 'home':
                 return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
-            case 'loading':
-                return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} />;
             case 'quiz':
                 return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} />;
             case 'results':
