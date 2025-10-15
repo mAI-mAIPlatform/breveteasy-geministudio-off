@@ -1,19 +1,23 @@
 // Fix: Provide the implementation for the main App component.
 // Fix: Corrected React import to include necessary hooks.
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { HomeView } from './components/HomeView';
-import { SubjectOptionsView } from './components/SubjectOptionsView';
-import { LoadingView } from './components/LoadingView';
-import { QuizView } from './components/QuizView';
-import { ResultsView } from './components/ResultsView';
-import { ChatView } from './components/ChatView';
-import { HistorySidebar } from './components/HistorySidebar';
-import { SettingsView } from './components/SettingsView';
-import { LoginView } from './components/LoginView';
-import { ExercisesView } from './components/ExercisesView';
-import { SubscriptionView } from './components/SubscriptionView';
-import { ImageGenerationView } from './components/ImageGenerationView';
-import { WelcomeView } from './components/WelcomeView';
+// Fix: Implemented code splitting with React.lazy and Suspense to reduce initial bundle size and improve performance.
+import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
+
+// Lazy load components to split code and improve initial load time.
+const HomeView = lazy(() => import('./components/HomeView').then(module => ({ default: module.HomeView })));
+const SubjectOptionsView = lazy(() => import('./components/SubjectOptionsView').then(module => ({ default: module.SubjectOptionsView })));
+const LoadingView = lazy(() => import('./components/LoadingView').then(module => ({ default: module.LoadingView })));
+const QuizView = lazy(() => import('./components/QuizView').then(module => ({ default: module.QuizView })));
+const ResultsView = lazy(() => import('./components/ResultsView').then(module => ({ default: module.ResultsView })));
+const ChatView = lazy(() => import('./components/ChatView').then(module => ({ default: module.ChatView })));
+const HistorySidebar = lazy(() => import('./components/HistorySidebar').then(module => ({ default: module.HistorySidebar })));
+const SettingsView = lazy(() => import('./components/SettingsView').then(module => ({ default: module.SettingsView })));
+const LoginView = lazy(() => import('./components/LoginView').then(module => ({ default: module.LoginView })));
+const ExercisesView = lazy(() => import('./components/ExercisesView').then(module => ({ default: module.ExercisesView })));
+const SubscriptionView = lazy(() => import('./components/SubscriptionView').then(module => ({ default: module.SubscriptionView })));
+const ImageGenerationView = lazy(() => import('./components/ImageGenerationView').then(module => ({ default: module.ImageGenerationView })));
+const WelcomeView = lazy(() => import('./components/WelcomeView').then(module => ({ default: module.WelcomeView })));
+
 import { ai, Type } from './services/geminiService';
 import { AVATAR_ICONS } from './constants';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder } from './types';
@@ -113,6 +117,12 @@ const ScrollToTopButton: React.FC<{ onClick: () => void; isVisible: boolean }> =
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
             </svg>
         </HeaderButton>
+    </div>
+);
+
+const LoadingFallback: React.FC = () => (
+    <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-16 h-16 rounded-full animate-spin" style={{border: '4px solid rgba(129, 140, 248, 0.2)', borderTopColor: 'rgb(129, 140, 248)'}}></div>
     </div>
 );
 
@@ -659,7 +669,11 @@ const App: React.FC = () => {
     const quizProgress = quiz ? ((currentQuestionIndex + 1) / (quiz.questions.length || 1)) * 100 : 0;
 
     if (view === 'loading') {
-        return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} onCancel={handleBackToHome} />;
+        return (
+            <Suspense fallback={<LoadingFallback />}>
+                <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} onCancel={handleBackToHome} />
+            </Suspense>
+        );
     }
     
     const renderContent = () => {
@@ -764,7 +778,9 @@ const App: React.FC = () => {
                     </div>
                 </div>
              )}
-             {renderContent()}
+            <Suspense fallback={<LoadingFallback />}>
+                {renderContent()}
+            </Suspense>
         </div>
     );
 };
