@@ -46,41 +46,46 @@ const HeaderButton: React.FC<{
 
 
 const FixedHeader: React.FC<{ 
-    onNavigateLogin: () => void; 
     onNavigateSettings: () => void; 
     onNavigateSubscription: () => void;
     subscriptionPlan: SubscriptionPlan;
     userAvatar: string;
-}> = ({ onNavigateLogin, onNavigateSettings, onNavigateSubscription, subscriptionPlan, userAvatar }) => (
-    <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-[100] flex items-center space-x-3">
-       {subscriptionPlan !== 'max' && (
-        <HeaderButton 
-            onClick={onNavigateSubscription} 
-            title="Mettre à niveau"
-            ariaLabel="Mettre à niveau et voir les forfaits d'abonnement"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-            <span className="hidden sm:inline">Mettre à niveau</span>
-        </HeaderButton>
-       )}
-       <HeaderButton
-        onClick={onNavigateSettings} 
-        title="Paramètres"
-        ariaLabel="Ouvrir les paramètres"
-        isIconOnly={true}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>
-      </HeaderButton>
-      <HeaderButton 
-        onClick={onNavigateLogin} 
-        title="Profil"
-        ariaLabel="Ouvrir la page de profil"
-        isIconOnly={true}
-      >
-        {React.cloneElement(AVATAR_ICONS[userAvatar] || AVATAR_ICONS['user'], { className: 'h-5 w-5' })}
-      </HeaderButton>
-    </div>
-);
+    userName: string;
+}> = ({ onNavigateSettings, onNavigateSubscription, subscriptionPlan, userAvatar, userName }) => {
+    const hasName = userName.trim().length > 0;
+    
+    return (
+        <div className="fixed top-4 sm:top-6 lg:top-8 right-4 sm:right-6 lg:right-8 z-[100] flex items-center space-x-3">
+           {subscriptionPlan !== 'max' && (
+            <HeaderButton 
+                onClick={onNavigateSubscription} 
+                title="Mettre à niveau"
+                ariaLabel="Mettre à niveau et voir les forfaits d'abonnement"
+                isIconOnly={true}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+            </HeaderButton>
+           )}
+           <HeaderButton
+            onClick={onNavigateSettings} 
+            title="Paramètres"
+            ariaLabel="Ouvrir les paramètres"
+            isIconOnly={true}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>
+          </HeaderButton>
+          <HeaderButton 
+            onClick={onNavigateSettings} 
+            title="Profil"
+            ariaLabel="Ouvrir les paramètres du profil"
+            isIconOnly={!hasName}
+          >
+            {React.cloneElement(AVATAR_ICONS[userAvatar] || AVATAR_ICONS['user'], { className: 'h-5 w-5' })}
+            {hasName && <span className="hidden sm:inline">{userName}</span>}
+          </HeaderButton>
+        </div>
+    );
+};
 
 const FixedExitButton: React.FC<{ onClick: () => void; position?: 'fixed' | 'absolute' }> = ({ onClick, position = 'fixed' }) => (
     <div className={`${position} top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-[100]`}>
@@ -736,7 +741,7 @@ const App: React.FC = () => {
 
     return (
         <div className={`w-full min-h-full p-4 sm:p-6 lg:p-8 ${view === 'quiz' ? '' : 'flex items-start justify-center'}`}>
-             {showHeader && <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} />}
+             {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
              {view === 'quiz' && quiz && (
