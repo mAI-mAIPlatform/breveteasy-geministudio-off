@@ -1,3 +1,4 @@
+// Fix: Provide the implementation for the HistorySidebar component.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChatSession, Folder } from '../types';
 
@@ -141,6 +142,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const [editingEmoji, setEditingEmoji] = useState('folder');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderEmoji, setNewFolderEmoji] = useState('folder');
@@ -225,7 +227,14 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
 
   const handleStartEditing = (item: ChatSession | Folder) => {
     setEditingId(item.id);
-    setEditingTitle('title' in item ? item.title : item.name);
+    // Fix: Use a required property ('name') for type guarding instead of an optional one ('emoji')
+    // to correctly distinguish between Folder and ChatSession types.
+    if ('name' in item) { // Folder
+        setEditingTitle(item.name);
+        setEditingEmoji(item.emoji || 'folder');
+    } else { // Session
+        setEditingTitle(item.title);
+    }
   };
 
   const handleSaveTitle = () => {
@@ -235,7 +244,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
     }
     const isFolder = editingId.startsWith('folder_');
     if (isFolder) {
-        onUpdateFolder(editingId, { name: editingTitle.trim() });
+        onUpdateFolder(editingId, { name: editingTitle.trim(), emoji: editingEmoji });
     } else {
         onUpdateSession(editingId, { title: editingTitle.trim() });
     }
@@ -245,6 +254,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
   const handleCancelEditing = () => {
     setEditingId(null);
     setEditingTitle('');
+    setEditingEmoji('folder');
   };
   
   const toggleFolder = (folderId: string) => {
@@ -389,34 +399,46 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                 onDrop={(e) => { e.stopPropagation(); handleDrop(e, folder.id); }}
                                 className={`rounded-lg transition-colors ${dragOverFolderId === folder.id ? dragFeedbackClass : ''}`}
                             >
-                                <div 
-                                    className="group w-full flex items-center justify-between text-left p-3 rounded-lg cursor-pointer hover:bg-black/5 dark:hover:bg-slate-800/60"
-                                    onClick={() => toggleFolder(folder.id)}
-                                >
-                                    {editingId === folder.id ? (
+                                {editingId === folder.id ? (
+                                    <div className="p-3 bg-black/5 dark:bg-slate-800 rounded-lg shadow-inner">
                                         <input
-                                            ref={inputRef} type="text" value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)} onBlur={handleSaveTitle}
+                                            ref={inputRef} type="text" value={editingTitle} onChange={(e) => setEditingTitle(e.target.value)}
                                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') handleCancelEditing(); }}
-                                            className="text-sm font-medium bg-transparent focus:outline-none w-full text-indigo-700 dark:text-sky-300"
-                                            onClick={(e) => e.stopPropagation()}
+                                            className="w-full text-sm font-medium bg-white/20 dark:bg-slate-700/60 focus:outline-none p-2 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-500 mb-3"
                                         />
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center gap-2 flex-grow truncate">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                                <span className="w-6 h-6 flex items-center justify-center flex-shrink-0 text-slate-700 dark:text-slate-300">
-                                                    {React.cloneElement(FOLDER_ICONS[folder.emoji || 'folder'], { className: "w-5 h-5" })}
-                                                </span>
-                                                <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{folder.name}</span>
-                                            </div>
-                                            <div className="flex flex-shrink-0">
-                                                <button onClick={(e) => { e.stopPropagation(); handleStartEditing(folder); }} className="ml-2 p-1 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100" title="Renommer"><EditIcon className="h-4 w-4"/></button>
-                                                <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }} className="ml-1 p-1 rounded-full text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-500 opacity-0 group-hover:opacity-100" title="Supprimer"><TrashIcon className="h-4 w-4"/></button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                                {isOpen && (
+                                        <div className="grid grid-cols-6 sm:grid-cols-8 gap-1 mb-3">
+                                            {EMOJI_OPTIONS.map(key => (
+                                                <button key={key} onClick={() => setEditingEmoji(key)}
+                                                    className={`flex items-center justify-center p-1 rounded-lg transition-all duration-200 aspect-square ${editingEmoji === key ? 'bg-indigo-500/80 scale-110 text-white' : 'hover:bg-slate-500/20 text-slate-700 dark:text-slate-300'}`}
+                                                    aria-label={`Select icon ${key}`}>
+                                                    {React.cloneElement(FOLDER_ICONS[key], { className: "w-6 h-6" })}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-end gap-2">
+                                            <button onClick={handleCancelEditing} className="px-3 py-1.5 text-xs font-semibold bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-md hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">Annuler</button>
+                                            <button onClick={handleSaveTitle} className="px-3 py-1.5 text-xs font-semibold bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors disabled:opacity-50" disabled={!editingTitle.trim()}>Enregistrer</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div 
+                                        className="group w-full flex items-center justify-between text-left p-3 rounded-lg cursor-pointer hover:bg-black/5 dark:hover:bg-slate-800/60"
+                                        onClick={() => toggleFolder(folder.id)}
+                                    >
+                                        <div className="flex items-center gap-2 flex-grow truncate">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                            <span className="w-6 h-6 flex items-center justify-center flex-shrink-0 text-slate-700 dark:text-slate-300">
+                                                {React.cloneElement(FOLDER_ICONS[folder.emoji || 'folder'], { className: "w-5 h-5" })}
+                                            </span>
+                                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{folder.name}</span>
+                                        </div>
+                                        <div className="flex flex-shrink-0">
+                                            <button onClick={(e) => { e.stopPropagation(); handleStartEditing(folder); }} className="ml-2 p-1 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100" title="Renommer"><EditIcon className="h-4 w-4"/></button>
+                                            <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }} className="ml-1 p-1 rounded-full text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-500 opacity-0 group-hover:opacity-100" title="Supprimer"><TrashIcon className="h-4 w-4"/></button>
+                                        </div>
+                                    </div>
+                                )}
+                                {isOpen && !editingId && (
                                     <ul className="pl-6 pr-2 py-1 space-y-1">
                                         {folderSessions.length > 0 ? (
                                             folderSessions.map(session => (

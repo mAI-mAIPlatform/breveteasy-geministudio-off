@@ -227,8 +227,8 @@ const App: React.FC = () => {
         if (!container) return;
 
         const handleScroll = () => {
-            // Show button if scrolled more than 80% of the viewport height
-            if (container.scrollTop > window.innerHeight * 0.8) {
+            // Show button if scrolled more than 200px
+            if (container.scrollTop > 200) {
                 setShowScrollTop(true);
             } else {
                 setShowScrollTop(false);

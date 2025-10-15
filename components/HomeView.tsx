@@ -60,7 +60,7 @@ const ImageGenerationCard: React.FC<{
         <div className="w-full bg-white/10 dark:bg-black/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center text-left w-full">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-400 to-red-400 flex-shrink-0 mr-5 sm:mr-6 shadow-lg flex items-center justify-center">
-                   <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                   <svg xmlns="http://www.w.org/2000/svg" className="h-9 w-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </div>
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
@@ -102,5 +102,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartChat
         ))}
       </div>
     </main>
+    <footer className="text-center text-xs text-slate-500 dark:text-slate-400 mt-16 pb-4">
+      26-3.0 &copy; All rights reserved | Brevet' Easy | Official App and Website
+    </footer>
   </div>
 );
