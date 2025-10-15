@@ -42,6 +42,7 @@ export interface Folder {
     id: string;
     name: string;
     createdAt: number;
+    emoji?: string;
 }
 
 export interface ChatSession {

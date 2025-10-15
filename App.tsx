@@ -543,10 +543,11 @@ const App: React.FC = () => {
     };
 
     // Folder Handlers
-    const handleNewFolder = (name: string) => {
+    const handleNewFolder = (name: string, emoji: string) => {
         const newFolder: Folder = {
             id: `folder_${Date.now()}`,
             name,
+            emoji,
             createdAt: Date.now(),
         };
         setFolders(prev => [newFolder, ...prev]);
