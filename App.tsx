@@ -185,13 +185,23 @@ const App: React.FC = () => {
 
     // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
-        const savedSessions = localStorage.getItem('chatSessions');
-        return savedSessions ? JSON.parse(savedSessions) : [];
+        try {
+            const savedSessions = localStorage.getItem('chatSessions');
+            return savedSessions ? JSON.parse(savedSessions) : [];
+        } catch (error) {
+            console.error("Failed to parse chatSessions from localStorage", error);
+            return [];
+        }
     });
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
     const [folders, setFolders] = useState<Folder[]>(() => {
-        const savedFolders = localStorage.getItem('brevet-easy-folders');
-        return savedFolders ? JSON.parse(savedFolders) : [];
+        try {
+            const savedFolders = localStorage.getItem('brevet-easy-folders');
+            return savedFolders ? JSON.parse(savedFolders) : [];
+        } catch (error) {
+            console.error("Failed to parse folders from localStorage", error);
+            return [];
+        }
     });
 
 
@@ -199,14 +209,17 @@ const App: React.FC = () => {
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
     const [imageUsage, setImageUsage] = useState<ImageUsage>(() => {
-        const savedUsage = localStorage.getItem('brevet-easy-image-usage');
         const today = new Date().toISOString().split('T')[0];
-        if (savedUsage) {
-            const usage: ImageUsage = JSON.parse(savedUsage);
-            if (usage.date !== today) {
-                return { count: 0, date: today };
+        try {
+            const savedUsage = localStorage.getItem('brevet-easy-image-usage');
+            if (savedUsage) {
+                const usage: ImageUsage = JSON.parse(savedUsage);
+                if (usage && usage.date === today) {
+                    return usage;
+                }
             }
-            return usage;
+        } catch (error) {
+            console.error("Failed to parse imageUsage from localStorage", error);
         }
         return { count: 0, date: today };
     });

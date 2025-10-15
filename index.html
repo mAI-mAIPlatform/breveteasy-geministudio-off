@@ -41,12 +41,13 @@
       .background-container::before, .background-container::after {
         content: '';
         position: absolute;
-        width: 800px;
-        height: 800px;
+        width: 600px;
+        height: 600px;
         border-radius: 50%;
         mix-blend-mode: screen;
         animation: move 25s infinite alternate;
-        filter: blur(120px);
+        filter: blur(90px);
+        will-change: transform;
       }
       .background-container::before {
         background: radial-gradient(circle, #a5b4fc, transparent 60%); /* indigo-300 */
