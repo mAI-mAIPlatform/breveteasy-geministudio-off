@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { Quiz, Question } from '../types';
 
 interface QuizViewProps {
   quiz: Quiz;
   onSubmit: (answers: (string | null)[]) => void;
+  currentQuestionIndex: number;
+  setCurrentQuestionIndex: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const QuestionDisplay: React.FC<{
@@ -37,17 +39,11 @@ const QuestionDisplay: React.FC<{
   </div>
 );
 
-export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuestionIndex, setCurrentQuestionIndex }) => {
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(quiz.questions.length).fill(null));
-  const [progress, setProgress] = useState(0);
   const [animationClass, setAnimationClass] = useState('animate-fade-in');
   
   const totalQuestions = quiz.questions.length;
-
-  useEffect(() => {
-    setProgress(((currentQuestionIndex + 1) / totalQuestions) * 100);
-  }, [currentQuestionIndex, totalQuestions]);
 
   const handleOptionSelect = (option: string) => {
     const newAnswers = [...answers];
@@ -59,7 +55,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
     if (currentQuestionIndex < totalQuestions - 1) {
       setAnimationClass('animate-slide-out-left');
       setTimeout(() => {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        setCurrentQuestionIndex(prev => prev + 1);
         setAnimationClass('animate-slide-in-right');
       }, 300);
     }
@@ -69,7 +65,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
     if (currentQuestionIndex > 0) {
       setAnimationClass('animate-slide-out-right');
       setTimeout(() => {
-        setCurrentQuestionIndex(currentQuestionIndex - 1);
+        setCurrentQuestionIndex(prev => prev - 1);
         setAnimationClass('animate-slide-in-left');
       }, 300);
     }
@@ -83,13 +79,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit }) => {
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col">
-      <div className="mb-6">
-        <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-2.5">
-          <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%`, boxShadow: '0 0 10px theme(colors.sky.400)' }}></div>
-        </div>
-      </div>
-
-      <div className={`bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center ${animationClass}`}>
+      <div className={`bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center ${animationClass} mt-6`}>
         <QuestionDisplay
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}

@@ -167,6 +167,7 @@ const App: React.FC = () => {
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
     const [score, setScore] = useState(0);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
     // Exercises & HTML Content State
     const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
@@ -306,6 +307,7 @@ const App: React.FC = () => {
         setQuiz(null);
         setQuizAnswers([]);
         setScore(0);
+        setCurrentQuestionIndex(0);
         setGeneratedHtml(null);
         setGeneratedImage(null);
         setView('home');
@@ -353,6 +355,7 @@ const App: React.FC = () => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask('quiz');
+        setCurrentQuestionIndex(0);
         
         const quizSchema = {
             type: Type.OBJECT,
@@ -625,8 +628,10 @@ const App: React.FC = () => {
         return Math.max(0, limit - imageUsage.count);
     };
 
+    const quizProgress = quiz ? ((currentQuestionIndex + 1) / (quiz.questions.length || 1)) * 100 : 0;
+
     if (view === 'loading') {
-        return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} />;
+        return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} onCancel={handleBackToHome} />;
     }
     
     const renderContent = () => {
@@ -636,7 +641,7 @@ const App: React.FC = () => {
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
-                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} />;
+                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} />;
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
             case 'settings':
@@ -718,10 +723,17 @@ const App: React.FC = () => {
     const showExitButton = !['home', 'chat'].includes(view);
 
     return (
-        <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 flex items-start justify-center">
+        <div className={`w-full min-h-full p-4 sm:p-6 lg:p-8 ${view === 'quiz' ? '' : 'flex items-start justify-center'}`}>
              {showHeader && <FixedHeader onNavigateLogin={handleGoToLogin} onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
+             {view === 'quiz' && quiz && (
+                <div className="w-full max-w-4xl mx-auto pt-20">
+                    <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-2.5">
+                        <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${quizProgress}%`, boxShadow: '0 0 10px theme(colors.sky.400)' }}></div>
+                    </div>
+                </div>
+             )}
              {renderContent()}
         </div>
     );

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 interface LoadingViewProps {
   subject: string;
   task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions';
+  onCancel: () => void;
 }
 
 const LoadingSpinner: React.FC = () => (
@@ -60,7 +61,7 @@ const loadingTips = {
     ],
 };
 
-export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
+export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCancel }) => {
   const safeSubject = subject || 'ce sujet';
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
 
@@ -85,6 +86,17 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task }) => {
 
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center text-center bg-[#f0f2f5] dark:bg-black p-4">
+      <button
+        onClick={onCancel}
+        title="Annuler"
+        aria-label="Annuler la génération"
+        className="absolute top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-[210] flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-slate-800 shadow-lg backdrop-blur-lg transition-all duration-300 hover:scale-105 hover:bg-white/20 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800/60 border border-white/20 dark:border-slate-800"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
       <LoadingSpinner />
       <div>
         <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: loadingMessage }}></h2>
