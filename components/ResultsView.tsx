@@ -17,7 +17,7 @@ const TwitterIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" clas
 const FacebookIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.84c0-2.5 1.49-3.89 3.78-3.89 1.1 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z" /></svg>;
 const WhatsAppIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2C6.54 2 2.08 6.46 2.08 11.96c0 1.77.46 3.49 1.32 5l-1.4 5.2 5.3-1.4c1.47.8 3.12 1.24 4.88 1.24h.02c5.5 0 9.96-4.46 9.96-9.96c0-5.5-4.46-9.96-9.96-9.96zM17.1 13.5c-.28-.14-1.65-.81-1.9-.9c-.25-.1-.43-.15-.61.15c-.18.3-.72.9-.88 1.08c-.16.18-.32.2-.6.06c-.28-.14-1.18-.43-2.25-1.39c-.83-.75-1.39-1.66-1.55-1.94c-.16-.28-.02-.43.12-.57c.13-.13.28-.34.42-.51c.14-.17.18-.28.28-.47s.05-.36-.02-.51c-.08-.15-.61-1.47-.83-2.02c-.22-.55-.45-.48-.61-.48c-.16 0-.34-.05-.53-.05c-.18 0-.48.07-.72.37c-.25.3-.95.92-1.22 2.22c-.28 1.3.62 2.72.71 2.92c.1.2 1.2 1.8 2.9 2.54c1.7.74 2.22.95 2.9.83c.68-.12 1.65-.68 1.88-1.32c.23-.64.23-1.18.16-1.32c-.07-.14-.25-.22-.53-.36z"/></svg>;
 const LinkedInIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14zm-11 5H5v10h3V8zm-1.5-2.25a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM18 18h-3v-4.5c0-1.04-.02-2.37-1.45-2.37-1.45 0-1.67 1.13-1.67 2.29V18h-3V8h2.88v1.31h.04c.4-.76 1.38-1.55 2.84-1.55 3.03 0 3.59 1.99 3.59 4.58V18z"/></svg>;
-const RedditIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5,12.01c0-1.48-0.78-2.76-1.94-3.48c-0.2-1.3-0.81-2.48-1.72-3.39c-0.91-0.91-2.09-1.52-3.39-1.72 C14.77,2.78,13.48,2,12.01,2c-1.48,0-2.76,0.78-3.48,1.94c-1.3,0.2-2.48,0.81-3.39,1.72c-0.91-0.91-1.52,2.09-1.72,3.39 C2.78,9.25,2,10.53,2,12.01c0,1.48,0.78,2.76,1.94,3.48c0.2,1.3,0.81,2.48,1.72,3.39c0.91,0.91,2.09,1.52,3.39,1.72 c0.72,1.16,2,1.94,3.48,1.94c1.48,0,2.76-0.78,3.48-1.94c1.3-0.2,2.48-0.81,3.39-1.72c0.91-0.91,1.52-2.09,1.72-3.39 C21.72,14.77,22.5,13.48,22.5,12.01z M7.76,12.72c0-0.83,0.67-1.5,1.5-1.5c0.83,0,1.5,0.67,1.5,1.5s-0.67,1.5-1.5,1.5 C8.42,14.22,7.76,13.55,7.76,12.72z M12.01,17.48c-1.89,0-3.48-1.01-4.22-2.45c-0.12-0.23-0.03-0.53,0.2-0.65 c0.23-0.12,0.53-0.03,0.65,0.2c0.6,1.19,1.9,2,3.37,2c1.47,0,2.77-0.81,3.37-2c0.12-0.23,0.42-0.32,0.65-0.2 c0.23,0.12,0.32,0.42,0.2,0.65C15.49,16.47,13.9,17.48,12.01,17.48z M14.75,14.22c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5,1.5-1.5 c0.83,0,1.5,0.67,1.5,1.5S15.58,14.22,14.75,14.22z"/></svg>;
+const RedditIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5,12.01c0-1.48-0.78-2.76-1.94-3.48c-0.2-1.3-0.81-2.48-1.72-3.39c-0.91-0.91-2.09-1.52-3.39-1.72 C14.77,2.78,13.48,2,12.01,2c-1.48,0-2.76,0.78-3.48,1.94c-1.3,0.2-2.48,0.81-3.39,1.72c-0.91,0.91-1.52,2.09-1.72,3.39 C2.78,9.25,2,10.53,2,12.01c0,1.48,0.78,2.76,1.94,3.48c0.2,1.3,0.81,2.48,1.72,3.39c0.91,0.91,2.09,1.52,3.39,1.72 c0.72,1.16,2,1.94,3.48,1.94c1.48,0,2.76-0.78,3.48-1.94c1.3-0.2,2.48-0.81,3.39-1.72c0.91-0.91,1.52-2.09,1.72-3.39 C21.72,14.77,22.5,13.48,22.5,12.01z M7.76,12.72c0-0.83,0.67-1.5,1.5-1.5c0.83,0,1.5,0.67,1.5,1.5s-0.67,1.5-1.5,1.5 C8.42,14.22,7.76,13.55,7.76,12.72z M12.01,17.48c-1.89,0-3.48-1.01-4.22-2.45c-0.12-0.23-0.03-0.53,0.2-0.65 c0.23-0.12,0.53-0.03,0.65,0.2c0.6,1.19,1.9,2,3.37,2c1.47,0,2.77-0.81,3.37-2c0.12-0.23,0.42-0.32,0.65-0.2 c0.23,0.12,0.32,0.42,0.2,0.65C15.49,16.47,13.9,17.48,12.01,17.48z M14.75,14.22c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5,1.5-1.5 c0.83,0,1.5,0.67,1.5,1.5S15.58,14.22,14.75,14.22z"/></svg>;
 const CopyIcon: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
 const CheckIconSmall: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
 
@@ -109,56 +109,20 @@ const ShareModal: React.FC<{ isOpen: boolean; onClose: () => void; scoreOutOf20:
 export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions, onRestart, quiz, userAnswers }) => {
   const correctionRef = useRef<HTMLDivElement>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
-  // Final values
-  const finalPercentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-  const finalScoreOutOf20 = totalQuestions > 0 ? (score / totalQuestions) * 20 : 0.0;
-
-  // State for animations
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const [animatedPercentage, setAnimatedPercentage] = useState(0);
-
-  useEffect(() => {
-    const animationDuration = 1200; // Animation duration in milliseconds
-    let startTimestamp: number | null = null;
-
-    const step = (timestamp: number) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / animationDuration, 1);
-      
-      const easeOutProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
-
-      setAnimatedScore(easeOutProgress * finalScoreOutOf20);
-      setAnimatedPercentage(easeOutProgress * finalPercentage);
-
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        // Ensure final values are set precisely at the end
-        setAnimatedScore(finalScoreOutOf20);
-        setAnimatedPercentage(finalPercentage);
-      }
-    };
-
-    const animationFrameId = requestAnimationFrame(step);
-
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [score, totalQuestions, finalScoreOutOf20, finalPercentage]);
+  const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+  const scoreOutOf20 = totalQuestions > 0 ? ((score / totalQuestions) * 20).toFixed(1) : "0.0";
 
   const getFeedback = () => {
-    if (finalPercentage >= 80) {
+    if (percentage >= 80) {
       return { message: "Excellent travail !", color: "text-green-500 dark:text-green-400", stroke: "stroke-green-500" };
     }
-    if (finalPercentage >= 50) {
+    if (percentage >= 50) {
       return { message: "Bien joué, continuez comme ça !", color: "text-sky-500 dark:text-sky-400", stroke: "stroke-sky-500" };
     }
     return { message: "Ne baissez pas les bras, la persévérance paie !", color: "text-red-500 dark:text-red-400", stroke: "stroke-red-500" };
   };
 
   const feedback = getFeedback();
-  const displayScore = animatedScore.toFixed(1);
-  const displayPercentage = Math.round(animatedPercentage);
-
 
   const scrollToCorrection = () => {
     correctionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -169,7 +133,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
       <ShareModal 
         isOpen={isShareModalOpen} 
         onClose={() => setIsShareModalOpen(false)} 
-        scoreOutOf20={finalScoreOutOf20.toFixed(1)} 
+        scoreOutOf20={scoreOutOf20} 
         subject={quiz?.subject || ''} 
       />
       <div className="flex flex-col items-center justify-center text-center bg-white/10 dark:bg-black/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl mb-8">
@@ -178,16 +142,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ score, totalQuestions,
           <div className="relative my-6" style={{filter: 'drop-shadow(0 5px 15px rgba(0,0,0,0.1))'}}>
               <svg className="w-48 h-48" viewBox="0 0 36 36">
                   <path className="stroke-black/10 dark:stroke-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" />
-                  <path className={feedback.stroke} strokeDasharray={`${animatedPercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeLinecap="round" />
+                  <path className={feedback.stroke} strokeDasharray={`${percentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.5s ease-in-out' }} />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-5xl font-bold text-slate-900 dark:text-white">{displayScore}</span>
+                  <span className="text-5xl font-bold text-slate-900 dark:text-white">{scoreOutOf20}</span>
                   <span className="text-xl text-slate-600 dark:text-slate-400">/ 20</span>
               </div>
           </div>
 
           <p className={`text-2xl font-semibold ${feedback.color}`}>{feedback.message}</p>
-          <p className="text-lg text-slate-700 dark:text-slate-300 mt-2">Cela correspond à {displayPercentage}% de bonnes réponses.</p>
+          <p className="text-lg text-slate-700 dark:text-slate-300 mt-2">Cela correspond à {percentage}% de bonnes réponses.</p>
           
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-8">
             <button onClick={onRestart} className="px-8 py-4 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all w-full sm:w-auto">
