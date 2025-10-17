@@ -8,7 +8,7 @@ interface ChatViewProps {
     onUpdateSession: (sessionId: string, updates: {
         messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
         title?: string;
-        aiModel?: 'brevetai' | 'brevetai-plus';
+        aiModel?: AiModel;
     }) => void;
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
@@ -28,14 +28,25 @@ const ModelSelectorDropdown: React.FC<{
     aiModel: AiModel;
     onAiModelChange: (model: AiModel) => void;
     isConversationStarted: boolean;
-}> = ({ aiModel, onAiModelChange, isConversationStarted }) => {
+    subscriptionPlan: SubscriptionPlan;
+}> = ({ aiModel, onAiModelChange, isConversationStarted, subscriptionPlan }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const modelDisplayNames = {
+    const modelDisplayNames: Record<AiModel, string> = {
         brevetai: 'BrevetAI',
         'brevetai-plus': 'BrevetAI +',
+        'brevetai-pro': 'BrevetAI Pro',
     };
+    
+    const availableModels = useMemo(() => {
+        const models: AiModel[] = ['brevetai', 'brevetai-plus'];
+        if (subscriptionPlan === 'max') {
+            models.push('brevetai-pro');
+        }
+        return models;
+    }, [subscriptionPlan]);
+
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -71,7 +82,7 @@ const ModelSelectorDropdown: React.FC<{
             </button>
             {isOpen && (
                 <div className="absolute top-full left-0 mt-2 w-full rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-10 p-1">
-                    {(['brevetai', 'brevetai-plus'] as const).map((model) => (
+                    {availableModels.map((model) => (
                         <button
                             key={model}
                             onClick={() => {
@@ -95,7 +106,8 @@ const ChatHeader: React.FC<{
     aiModel: AiModel;
     onAiModelChange: (model: AiModel) => void;
     isConversationStarted: boolean;
-}> = ({ title, onTitleChange, aiModel, onAiModelChange, isConversationStarted }) => {
+    subscriptionPlan: SubscriptionPlan;
+}> = ({ title, onTitleChange, aiModel, onAiModelChange, isConversationStarted, subscriptionPlan }) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editingTitle, setEditingTitle] = useState(title);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -122,6 +134,7 @@ const ChatHeader: React.FC<{
                         aiModel={aiModel}
                         onAiModelChange={onAiModelChange}
                         isConversationStarted={isConversationStarted}
+                        subscriptionPlan={subscriptionPlan}
                     />
                 </div>
                 <div className="flex items-center gap-2 group min-w-0">
@@ -329,13 +342,17 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
              systemInstruction: finalInstruction,
         };
 
+        let geminiModelName: 'gemini-2.5-flash' | 'gemini-2.5-pro' = 'gemini-2.5-flash';
+
         if (modelToUse === 'brevetai') {
             config.thinkingConfig = { thinkingBudget: 0 };
+        } else if (modelToUse === 'brevetai-pro') {
+            geminiModelName = 'gemini-2.5-pro';
         }
-        // For 'brevetai-plus', we omit thinkingConfig to use the default (enabled)
+        // For 'brevetai-plus', we omit thinkingConfig to use the default (enabled) for gemini-2.5-flash
         
         return ai.chats.create({
-            model: 'gemini-2.5-flash',
+            model: geminiModelName,
             history: geminiHistory,
             config,
         });
@@ -515,6 +532,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                     aiModel={session.aiModel}
                     onAiModelChange={(model) => onUpdateSession(session.id, { aiModel: model })}
                     isConversationStarted={isConversationStarted}
+                    subscriptionPlan={subscriptionPlan}
                 />
             </div>
 

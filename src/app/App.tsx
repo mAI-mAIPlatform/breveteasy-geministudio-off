@@ -1,3 +1,4 @@
+
 "use client";
 
 // Fix: Provide the implementation for the main App component.
@@ -260,6 +261,21 @@ const App: React.FC = () => {
         localStorage.setItem('brevet-easy-plan', subscriptionPlan);
     }, [subscriptionPlan]);
 
+    // Effect to handle model downgrades when subscription changes
+    useEffect(() => {
+        if (subscriptionPlan === 'free' && (defaultAiModel === 'brevetai-pro' || defaultAiModel === 'brevetai-max')) {
+            setDefaultAiModel('brevetai');
+        } else if (subscriptionPlan === 'pro' && defaultAiModel === 'brevetai-max') {
+            setDefaultAiModel('brevetai-pro');
+        }
+
+        if (subscriptionPlan === 'free' && (defaultImageModel === 'faceai-pro' || defaultImageModel === 'faceai-max')) {
+            setDefaultImageModel('faceai');
+        } else if (subscriptionPlan === 'pro' && defaultImageModel === 'faceai-max') {
+            setDefaultImageModel('faceai-pro');
+        }
+    }, [subscriptionPlan]);
+
     // Chat Session Persistence Effect
      useEffect(() => {
         localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
@@ -483,9 +499,36 @@ const App: React.FC = () => {
         }
     };
     
-    const handleUpdateSession = (sessionId: string, updates: Partial<ChatSession>) => {
+    const handleUpdateSession = (
+        sessionId: string,
+        updates: {
+            messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
+            title?: string;
+            aiModel?: AiModel;
+            folderId?: string | null;
+        }
+    ) => {
         setChatSessions(prev =>
-            prev.map(s => (s.id === sessionId ? { ...s, ...updates } : s))
+            prev.map(s => {
+                if (s.id === sessionId) {
+                    const newSession = { ...s };
+                    // Handle non-message updates
+                    if (updates.title !== undefined) newSession.title = updates.title;
+                    if (updates.aiModel !== undefined) newSession.aiModel = updates.aiModel;
+                    if (updates.folderId !== undefined) newSession.folderId = updates.folderId;
+
+                    // Handle message updates
+                    if (updates.messages) {
+                        if (typeof updates.messages === 'function') {
+                            newSession.messages = updates.messages(s.messages);
+                        } else {
+                            newSession.messages = updates.messages;
+                        }
+                    }
+                    return newSession;
+                }
+                return s;
+            })
         );
     };
 
@@ -553,8 +596,6 @@ const App: React.FC = () => {
         setGeneratedImage(null);
         
         try {
-            // BUG FIX: The `negativePrompt` argument is received from the component but is NOT passed to the service,
-            // as it's not a supported parameter for the underlying API call.
             const imageData = await generateImage(
                 prompt,
                 model,

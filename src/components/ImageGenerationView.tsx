@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { SubscriptionPlan, ImageModel } from '@/lib/types';
 import { PremiumBadge } from './PremiumBadge';
 
@@ -88,10 +89,12 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [negativePrompt, setNegativePrompt] = useState('');
 
-  const isProFeature = model === 'faceai-plus' && subscriptionPlan !== 'pro' && subscriptionPlan !== 'max';
+  const isModelLocked =
+    (model === 'faceai-pro' && subscriptionPlan === 'free') ||
+    (model === 'faceai-max' && subscriptionPlan !== 'max');
 
   const handleSubmit = () => {
-    if (!prompt.trim() || isGenerating || isProFeature) return;
+    if (!prompt.trim() || isGenerating || isModelLocked) return;
     onGenerate(prompt, model, style, format, aspectRatio, negativePrompt);
   };
   
@@ -100,8 +103,20 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   
   const imageModelDisplayNames: Record<ImageModel, string> = {
     'faceai': 'FaceAI',
-    'faceai-plus': 'FaceAI +',
+    'faceai-pro': 'FaceAI Pro',
+    'faceai-max': 'FaceAI Max',
   };
+  
+  const modelOptions = useMemo(() => {
+    const options: ImageModel[] = ['faceai'];
+    if (subscriptionPlan === 'pro' || subscriptionPlan === 'max') {
+        options.push('faceai-pro');
+    }
+    if (subscriptionPlan === 'max') {
+        options.push('faceai-max');
+    }
+    return options;
+  }, [subscriptionPlan]);
 
   return (
     <div className="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -119,12 +134,12 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                 <div className="relative">
                     <StyledDropdown<ImageModel> 
                         label="Modèle" 
-                        options={['faceai', 'faceai-plus']} 
+                        options={modelOptions} 
                         value={model} 
                         onChange={setModel}
                         renderOption={(option) => imageModelDisplayNames[option]}
                     />
-                    {model === 'faceai-plus' && subscriptionPlan === 'free' && <PremiumBadge requiredPlan="pro" />}
+                    {isModelLocked && <PremiumBadge requiredPlan={model === 'faceai-pro' ? 'pro' : 'max'} />}
                 </div>
 
                 <div className="pt-4 border-t border-slate-300/50 dark:border-slate-700/50">
@@ -156,7 +171,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                     />
                 </div>
                 
-                <button onClick={handleSubmit} disabled={isGenerating || !prompt.trim() || isProFeature}
+                <button onClick={handleSubmit} disabled={isGenerating || !prompt.trim() || isModelLocked}
                     className="w-full py-4 px-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100">
                     {isGenerating ? 'Génération en cours...' : 'Générer l\'image'}
                 </button>

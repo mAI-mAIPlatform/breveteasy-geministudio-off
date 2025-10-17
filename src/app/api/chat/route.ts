@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import type { Chat, Part } from "@google/genai";
 import type { ChatMessage, ChatPart, AiModel, SubscriptionPlan } from "@/lib/types";
@@ -34,13 +35,17 @@ function createChatInstance(history: ChatMessage[], model: AiModel, systemInstru
     const config: { systemInstruction: string; thinkingConfig?: { thinkingBudget: number } } = {
          systemInstruction: finalInstruction,
     };
+    
+    let geminiModelName: 'gemini-2.5-flash' | 'gemini-2.5-pro' = 'gemini-2.5-flash';
 
     if (model === 'brevetai') {
         config.thinkingConfig = { thinkingBudget: 0 };
+    } else if (model === 'brevetai-max') {
+        geminiModelName = 'gemini-2.5-pro';
     }
     
     return ai.chats.create({
-        model: 'gemini-2.5-flash',
+        model: geminiModelName,
         history: geminiHistory,
         config,
     });

@@ -1,3 +1,4 @@
+
 // Fix: Provide the implementation for the main App component.
 import React from 'react';
 
@@ -35,8 +36,8 @@ export interface ChatMessage {
     isGenerating?: boolean;
 }
 
-export type AiModel = 'brevetai' | 'brevetai-plus' | 'brevetai-pro';
-export type ImageModel = 'faceai' | 'faceai-plus';
+export type AiModel = 'brevetai' | 'brevetai-pro' | 'brevetai-max';
+export type ImageModel = 'faceai' | 'faceai-pro' | 'faceai-max';
 
 export interface Folder {
     id: string;

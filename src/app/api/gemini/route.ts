@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextResponse } from 'next/server';
 import type { Quiz, ImageModel } from '@/lib/types';
@@ -58,7 +59,7 @@ async function internalGenerateHtmlContent({ prompt, systemInstruction }: any): 
 }
 
 async function internalGenerateImage({ prompt, model, style, format, aspectRatio, imageGenerationInstruction }: any): Promise<{ data: string; mimeType: string; }> {
-    const qualityPrompt = model === 'faceai-plus'
+    const qualityPrompt = model === 'faceai-pro' || model === 'faceai-max'
         ? 'haute qualité, 4k, hyper-détaillé, photoréaliste'
         : '';
 

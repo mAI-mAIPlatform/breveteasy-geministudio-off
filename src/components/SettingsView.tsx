@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { SubscriptionPlan, AiModel, ImageModel } from '@/lib/types';
 import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '@/lib/constants';
@@ -303,15 +304,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         { value: 'system', label: 'Système', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
     ];
     
-    const aiModelOptions = [
-        { value: 'brevetai', label: 'BrevetAI' },
-        { value: 'brevetai-plus', label: 'BrevetAI +' },
-    ];
+    const aiModelOptions = useMemo(() => {
+        const options: { value: AiModel; label: string }[] = [{ value: 'brevetai', label: 'BrevetAI' }];
+        if (subscriptionPlan === 'pro' || subscriptionPlan === 'max') {
+            options.push({ value: 'brevetai-pro', label: 'BrevetAI Pro' });
+        }
+        if (subscriptionPlan === 'max') {
+            options.push({ value: 'brevetai-max', label: 'BrevetAI Max' });
+        }
+        return options;
+    }, [subscriptionPlan]);
     
-    const imageModelOptions = [
-        { value: 'faceai', label: 'FaceAI' },
-        { value: 'faceai-plus', label: 'FaceAI +' },
-    ];
+    const imageModelOptions = useMemo(() => {
+        const options: { value: ImageModel; label: string }[] = [{ value: 'faceai', label: 'FaceAI' }];
+        if (subscriptionPlan === 'pro' || subscriptionPlan === 'max') {
+            options.push({ value: 'faceai-pro', label: 'FaceAI Pro' });
+        }
+        if (subscriptionPlan === 'max') {
+            options.push({ value: 'faceai-max', label: 'FaceAI Max' });
+        }
+        return options;
+    }, [subscriptionPlan]);
 
     const LEVELS = ['CM2', '6ème', '5ème', '4ème', '3ème', 'Brevet'];
     const DIFFICULTIES = ['Facile', 'Normal', 'Difficile', 'Expert'] as const;
@@ -437,7 +450,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <SettingSection className="z-[20]" title="À propos" description="Informations sur l'application et les mises à jour.">
                     <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">26-3.0</span>
+                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">26-3.5</span>
                         <a 
                             href="https://github.com/mAI-mAIPlatform/breveteasy-geministudio-off/releases/"
                             target="_blank"

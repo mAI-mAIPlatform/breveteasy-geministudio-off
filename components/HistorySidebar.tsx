@@ -1,6 +1,6 @@
 // Fix: Provide the implementation for the HistorySidebar component.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { ChatSession, Folder } from '../types';
+import type { ChatSession, Folder, AiModel, ChatMessage } from '../types';
 import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '../constants';
 
 interface HistorySidebarProps {
@@ -11,7 +11,12 @@ interface HistorySidebarProps {
   onDeleteChat: (chatId: string) => void;
   onDownloadChat: (chatId: string) => void;
   onNewChat: () => void;
-  onUpdateSession: (sessionId: string, updates: Partial<ChatSession>) => void;
+  onUpdateSession: (sessionId: string, updates: {
+      messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
+      title?: string;
+      aiModel?: AiModel;
+      folderId?: string | null;
+  }) => void;
   onNewFolder: (name: string, emoji: string) => void;
   onDeleteFolder: (folderId: string) => void;
   onUpdateFolder: (folderId: string, updates: Partial<Folder>) => void;

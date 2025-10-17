@@ -1,15 +1,13 @@
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '@/lib/types';
-// Note: Direct AI SDK imports are removed from client-side components
-// import { ai, Type } from '@/services/geminiService';
-// import type { Chat, Part } from '@google/genai';
 
 interface ChatViewProps {
     session: ChatSession;
     onUpdateSession: (sessionId: string, updates: {
         messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
         title?: string;
-        aiModel?: 'brevetai' | 'brevetai-plus';
+        aiModel?: AiModel;
     }) => void;
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
@@ -29,14 +27,28 @@ const ModelSelectorDropdown: React.FC<{
     aiModel: AiModel;
     onAiModelChange: (model: AiModel) => void;
     isConversationStarted: boolean;
-}> = ({ aiModel, onAiModelChange, isConversationStarted }) => {
+    subscriptionPlan: SubscriptionPlan;
+}> = ({ aiModel, onAiModelChange, isConversationStarted, subscriptionPlan }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const modelDisplayNames = {
+    const modelDisplayNames: Record<AiModel, string> = {
         brevetai: 'BrevetAI',
-        'brevetai-plus': 'BrevetAI +',
+        'brevetai-pro': 'BrevetAI Pro',
+        'brevetai-max': 'BrevetAI Max',
     };
+    
+    const availableModels = useMemo(() => {
+        const models: AiModel[] = ['brevetai'];
+        if (subscriptionPlan === 'pro' || subscriptionPlan === 'max') {
+            models.push('brevetai-pro');
+        }
+        if (subscriptionPlan === 'max') {
+            models.push('brevetai-max');
+        }
+        return models;
+    }, [subscriptionPlan]);
+
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -72,7 +84,7 @@ const ModelSelectorDropdown: React.FC<{
             </button>
             {isOpen && (
                 <div className="absolute top-full left-0 mt-2 w-full rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-10 p-1">
-                    {(['brevetai', 'brevetai-plus'] as const).map((model) => (
+                    {availableModels.map((model) => (
                         <button
                             key={model}
                             onClick={() => {
@@ -96,7 +108,8 @@ const ChatHeader: React.FC<{
     aiModel: AiModel;
     onAiModelChange: (model: AiModel) => void;
     isConversationStarted: boolean;
-}> = ({ title, onTitleChange, aiModel, onAiModelChange, isConversationStarted }) => {
+    subscriptionPlan: SubscriptionPlan;
+}> = ({ title, onTitleChange, aiModel, onAiModelChange, isConversationStarted, subscriptionPlan }) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editingTitle, setEditingTitle] = useState(title);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -123,6 +136,7 @@ const ChatHeader: React.FC<{
                         aiModel={aiModel}
                         onAiModelChange={onAiModelChange}
                         isConversationStarted={isConversationStarted}
+                        subscriptionPlan={subscriptionPlan}
                     />
                 </div>
                 <div className="flex items-center gap-2 group min-w-0">
@@ -163,7 +177,8 @@ const Message: React.FC<{
     onEdit: (index: number) => void;
     regenMenuIndex: number | null;
     setRegenMenuIndex: (index: number | null) => void;
-}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit, regenMenuIndex, setRegenMenuIndex }) => {
+    subscriptionPlan: SubscriptionPlan;
+}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit, regenMenuIndex, setRegenMenuIndex, subscriptionPlan }) => {
     const isModel = message.role === 'model';
     const isRegenMenuOpen = regenMenuIndex === index;
     const regenMenuRef = useRef<HTMLDivElement>(null);
@@ -187,7 +202,7 @@ const Message: React.FC<{
     
     const actionBarClass = "flex items-center self-center gap-1 p-1 bg-white/60 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200";
     const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
-    const menuItemClass = "w-full text-left px-3 py-1.5 text-sm rounded-md text-slate-800 dark:text-slate-200 hover:bg-indigo-500 hover:text-white transition-colors flex items-center gap-3";
+    const menuItemClass = "w-full text-left px-3 py-1.5 text-sm rounded-md text-slate-800 dark:text-slate-200 hover:bg-indigo-500 hover:text-white transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed";
 
     return (
         <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'justify-end'}`}>
@@ -245,12 +260,13 @@ const Message: React.FC<{
                                 </button>
                                 <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
                                 <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai')}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                                     <span>Régénérer avec BrevetAI</span>
                                 </button>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-plus')}>
-                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                                    <span>Régénérer avec BrevetAI +</span>
+                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-pro')} disabled={subscriptionPlan === 'free'}>
+                                    <span>Régénérer avec BrevetAI Pro</span>
+                                </button>
+                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-max')} disabled={subscriptionPlan !== 'max'}>
+                                    <span>Régénérer avec BrevetAI Max</span>
                                 </button>
                             </div>
                         )}
@@ -287,13 +303,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     };
 
     const messageLimit = useMemo(() => {
-        if (session.aiModel === 'brevetai') {
+        if (session.aiModel === 'brevetai' || session.aiModel === 'brevetai-max') {
             return Infinity;
         }
-        // Logic for 'brevetai-plus'
-        if (subscriptionPlan === 'free') return 15;
-        if (subscriptionPlan === 'pro') return 100;
-        return Infinity; // for 'max' plan
+        if (session.aiModel === 'brevetai-pro') {
+            if (subscriptionPlan === 'pro') return 100;
+            if (subscriptionPlan === 'max') return Infinity;
+        }
+        return 0; // Should not be accessible on free plan
     }, [subscriptionPlan, session.aiModel]);
     
     const isChatLimitReached = session.messages.length >= messageLimit;
@@ -325,48 +342,71 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         }
     }, [onUpdateSession, session.id]);
 
-    const handleSendMessage = async (isRegeneration = false, regenPayload: any = {}) => {
-        const textInput = input.trim();
-        if (!isRegeneration && !textInput && !attachment) return;
-        if (isLoading || isChatLimitReached) return;
-
-        setIsLoading(true);
-        let userParts: ChatPart[] = [];
-        let baseMessages: ChatMessage[] = session.messages;
-
-        if (!isRegeneration) {
-            if (attachment) {
-                try {
-                    const base64Data = await fileToBase64(attachment.file);
-                    userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
-                } catch(error) {
-                    console.error("Error converting file to base64", error);
-                    setIsLoading(false);
-                    return;
-                }
-            }
-            if (textInput) {
-                userParts.push({ text: textInput });
-            }
-
-            const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
-            baseMessages = [...session.messages, userInputMessage];
-            onUpdateSession(session.id, { messages: baseMessages });
-            setInput('');
-            setAttachment(null);
+    const processStream = useCallback(async (response: Response) => {
+        if (!response.ok || !response.body) {
+            throw new Error(`API call failed: ${response.statusText}`);
         }
 
-        const thinkingMessage: ChatMessage = { role: 'model', parts: [], isGenerating: true };
-        onUpdateSession(session.id, { messages: [...baseMessages, thinkingMessage] });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
 
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fullResponse += decoder.decode(value, { stream: true });
+            
+            onUpdateSession(session.id, {
+                messages: (prev) => {
+                    const newMessages = [...prev];
+                    // Replace the last message which is the thinking/previous chunk message
+                    newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }] };
+                    return newMessages;
+                }
+            });
+        }
+    }, [onUpdateSession, session.id]);
+
+    const handleSendMessage = async () => {
+        const textInput = input.trim();
+        if ((!textInput && !attachment) || isLoading || isChatLimitReached) return;
+        
+        setIsLoading(true);
+
+        const userParts: ChatPart[] = [];
+        if (attachment) {
+            try {
+                const base64Data = await fileToBase64(attachment.file);
+                userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
+            } catch(error) {
+                console.error("Error converting file to base64", error);
+                setIsLoading(false);
+                return;
+            }
+        }
+        if (textInput) {
+            userParts.push({ text: textInput });
+        }
+
+        const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
+        
+        // Add user message and thinking indicator using functional updates
+        onUpdateSession(session.id, { messages: (prev) => [...prev, userInputMessage] });
+        onUpdateSession(session.id, { messages: (prev) => [...prev, { role: 'model', parts: [], isGenerating: true }] });
+        
+        const isFirstUserMessage = session.messages.filter(m => m.role === 'user').length === 0;
+        
+        setInput('');
+        setAttachment(null);
+        
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: isRegeneration ? 'regenerate' : 'sendMessage',
-                    payload: isRegeneration ? regenPayload : {
-                        history: session.messages,
+                    action: 'sendMessage',
+                    payload: {
+                        history: session.messages, // Pass current history for context
                         message: { parts: userParts },
                         config: {
                             aiModel: session.aiModel,
@@ -377,32 +417,20 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                     }
                 }),
             });
-
-            if (!response.ok || !response.body) {
-                throw new Error(`API call failed: ${response.statusText}`);
-            }
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let fullResponse = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                fullResponse += decoder.decode(value, { stream: true });
-                const modelMessage: ChatMessage = { role: 'model', parts: [{ text: fullResponse }] };
-                onUpdateSession(session.id, { messages: [...baseMessages, modelMessage] });
-            }
+            await processStream(response);
 
         } catch (error) {
-            console.error("Error during chat:", error);
-            const errorMessage: ChatMessage = { role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] };
-            onUpdateSession(session.id, { messages: prev => [...prev.slice(0, -1), errorMessage] });
+            console.error("Error sending message:", error);
+            onUpdateSession(session.id, { messages: (prev) => {
+                const newMessages = [...prev.slice(0, -1)];
+                newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] });
+                return newMessages;
+            }});
         } finally {
             setIsLoading(false);
         }
-
-        if (!isRegeneration && session.messages.filter(m => m.role === 'user').length === 0) {
+        
+        if (isFirstUserMessage) {
             await generateTitle(textInput || "Discussion avec image");
         }
     };
@@ -421,38 +449,59 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         const textToEdit = messageToEdit.parts.find(p => p.text)?.text || '';
         setInput(textToEdit);
 
-        const newMessages = session.messages.slice(0, index);
-        onUpdateSession(session.id, { messages: newMessages });
+        // Remove the message and all subsequent messages to allow for a clean re-submission
+        onUpdateSession(session.id, { messages: (prev) => prev.slice(0, index) });
     };
 
     const handleRegenerateResponse = async (index: number, modification: 'longer' | 'shorter' | 'change_model', newModel?: AiModel) => {
         if (isLoading || session.messages[index]?.role !== 'model') return;
 
+        setIsLoading(true);
+        // Truncate history to the point right before the response to be regenerated
         const historyForRegen = session.messages.slice(0, index);
         const userPromptMessage = historyForRegen[historyForRegen.length - 1];
 
-        if(userPromptMessage?.role !== 'user') return;
-
-        let messagesForUpdate = [...session.messages];
-        messagesForUpdate.splice(index); // Remove the old model response
-        onUpdateSession(session.id, { messages: messagesForUpdate });
+        if(userPromptMessage?.role !== 'user') {
+            setIsLoading(false);
+            return;
+        }
+        
+        // Update UI with truncated history and a thinking indicator
+        onUpdateSession(session.id, { messages: [...historyForRegen, { role: 'model', parts: [], isGenerating: true }] });
 
         const modelForRegen = modification === 'change_model' && newModel ? newModel : session.aiModel;
-
-        const regenPayload = {
-            history: historyForRegen.slice(0, -1),
-            message: userPromptMessage,
-            config: {
-                aiModel: modelForRegen,
-                systemInstruction,
-                userName,
-                subscriptionPlan,
-            },
-            modification,
-        };
         
-        // Use the existing sendMessage flow for regeneration logic
-        handleSendMessage(true, regenPayload);
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'regenerate',
+                    payload: {
+                        history: historyForRegen.slice(0, -1), // History before the last user prompt
+                        message: userPromptMessage,
+                        config: {
+                            aiModel: modelForRegen,
+                            systemInstruction,
+                            userName,
+                            subscriptionPlan,
+                        },
+                        modification,
+                    }
+                }),
+            });
+            await processStream(response);
+
+        } catch (error) {
+            console.error("Error regenerating response:", error);
+            onUpdateSession(session.id, { messages: (prev) => {
+                const newMessages = [...prev.slice(0, -1)];
+                newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue lors de la regénération." }] });
+                return newMessages;
+            }});
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -476,6 +525,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                     aiModel={session.aiModel}
                     onAiModelChange={(model) => onUpdateSession(session.id, { aiModel: model })}
                     isConversationStarted={isConversationStarted}
+                    subscriptionPlan={subscriptionPlan}
                 />
             </div>
 
@@ -486,7 +536,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                            <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">
-                           {session.aiModel === 'brevetai' ? 'BrevetAI' : 'BrevetAI +'}
+                           {session.aiModel === 'brevetai' ? 'BrevetAI' : session.aiModel === 'brevetai-pro' ? 'BrevetAI Pro' : 'BrevetAI Max' }
                         </h2>
                         <p className="text-slate-700 dark:text-slate-400">Comment puis-je vous aider à réviser ?</p>
                     </div>
@@ -502,11 +552,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         onEdit={handleEditMessage}
                         regenMenuIndex={regenMenuIndex}
                         setRegenMenuIndex={setRegenMenuIndex}
+                        subscriptionPlan={subscriptionPlan}
                     />
                 ))}
                  {isChatLimitReached && (
                     <div className="text-center p-4 bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border border-yellow-500/30 rounded-xl">
-                        Vous avez atteint la limite de {messageLimit} messages pour BrevetAI+ avec votre forfait. Passez à un forfait supérieur pour continuer.
+                        Vous avez atteint la limite de {messageLimit} messages pour ce modèle avec votre forfait. Passez à un forfait supérieur pour continuer.
                     </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -540,13 +591,13 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         rows={1}
                         disabled={isLoading || isChatLimitReached}
                     />
-                    <button onClick={() => handleSendMessage()} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
+                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
                        </svg>
                     </button>
                 </div>
-                {session.aiModel === 'brevetai-plus' && (
+                {session.aiModel === 'brevetai-pro' && (
                     <p className="text-center text-xs text-slate-600 dark:text-slate-400 pt-1">
                         {isFinite(messageLimit) ? `${Math.max(0, messageLimit - session.messages.length)} messages restants avec votre forfait.` : 'Messages illimités.'}
                     </p>

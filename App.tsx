@@ -279,10 +279,17 @@ const App: React.FC = () => {
         localStorage.setItem('brevet-easy-folders', JSON.stringify(folders));
     }, [folders]);
 
-    // Default AI Model Persistence
+    // Default AI Model Logic
+    useEffect(() => {
+        if (subscriptionPlan !== 'max' && defaultAiModel === 'brevetai-pro') {
+            setDefaultAiModel('brevetai-plus');
+        }
+    }, [subscriptionPlan, defaultAiModel]);
+
     useEffect(() => {
         localStorage.setItem('brevet-easy-default-ai-model', defaultAiModel);
     }, [defaultAiModel]);
+
 
     // Image Generation Settings Persistence
     useEffect(() => {
@@ -492,9 +499,36 @@ const App: React.FC = () => {
         }
     };
     
-    const handleUpdateSession = (sessionId: string, updates: Partial<ChatSession>) => {
+    const handleUpdateSession = (
+        sessionId: string,
+        updates: {
+            messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
+            title?: string;
+            aiModel?: AiModel;
+            folderId?: string | null;
+        }
+    ) => {
         setChatSessions(prev =>
-            prev.map(s => (s.id === sessionId ? { ...s, ...updates } : s))
+            prev.map(s => {
+                if (s.id === sessionId) {
+                    const newSession = { ...s };
+                    // Handle non-message updates
+                    if (updates.title !== undefined) newSession.title = updates.title;
+                    if (updates.aiModel !== undefined) newSession.aiModel = updates.aiModel;
+                    if (updates.folderId !== undefined) newSession.folderId = updates.folderId;
+
+                    // Handle message updates
+                    if (updates.messages) {
+                        if (typeof updates.messages === 'function') {
+                            newSession.messages = updates.messages(s.messages);
+                        } else {
+                            newSession.messages = updates.messages;
+                        }
+                    }
+                    return newSession;
+                }
+                return s;
+            })
         );
     };
 
