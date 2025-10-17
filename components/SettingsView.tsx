@@ -39,8 +39,8 @@ const FeedbackModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[110] p-4 animate-fade-in">
-            <div ref={modalRef} className="relative w-full max-w-lg bg-[#f0f2f5] dark:bg-slate-900 rounded-3xl shadow-2xl p-6 sm:p-8">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fade-in">
+            <div ref={modalRef} className="relative w-full max-w-lg bg-[#f0f2f5] dark:bg-slate-900/80 dark:backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-md z-10"
@@ -133,7 +133,7 @@ interface SettingsViewProps {
 }
 
 const SettingSection: React.FC<{ title: string; description: string; children: React.ReactNode; className?: string }> = ({ title, description, children, className }) => (
-    <div className={`relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-lg ${className ?? ''}`}>
+    <div className={`relative bg-white/5 dark:bg-black/40 backdrop-blur-xl border border-white/10 dark:border-slate-800 p-6 rounded-2xl shadow-lg ${className ?? ''}`}>
         <h3 className="text-xl font-bold text-slate-900 dark:text-white">{title}</h3>
         <p className="text-sm text-slate-700 dark:text-slate-400 mt-1 mb-6">{description}</p>
         <div className="space-y-4">
@@ -150,7 +150,7 @@ const RadioGroup: React.FC<{
 }> = ({ options, selectedValue, onChange, name }) => (
     <div className="flex flex-wrap gap-3">
         {options.map(({ value, label, icon }) => (
-            <label key={value} className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${selectedValue === value ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-800 border-transparent hover:border-slate-400/50'}`}>
+            <label key={value} className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-all ${selectedValue === value ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white/20 dark:bg-slate-800/60 border-transparent hover:border-slate-400/50'}`}>
                 <input
                     type="radio"
                     name={name}
@@ -334,7 +334,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             type="text"
                             value={userName}
                             onChange={(e) => onUserNameChange(e.target.value)}
-                            className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400"
+                            className="w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400"
                             placeholder="Entrez votre prénom..."
                         />
                     </div>
@@ -347,7 +347,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                                 <button 
                                     key={key} 
                                     onClick={() => onUserAvatarChange(key)}
-                                    className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 aspect-square border-2 ${userAvatar === key ? 'bg-indigo-500/80 border-indigo-500 text-white scale-110' : 'bg-slate-100 dark:bg-slate-800 border-transparent hover:border-indigo-400 text-slate-700 dark:text-slate-300'}`}
+                                    className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 aspect-square border-2 ${userAvatar === key ? 'bg-indigo-500/80 border-indigo-500 text-white scale-110' : 'bg-white/10 dark:bg-slate-800/60 border-transparent hover:border-indigo-400 text-slate-700 dark:text-slate-300'}`}
                                     aria-label={`Select icon ${key}`}
                                 >
                                     {React.cloneElement(AVATAR_ICONS[key], { className: "w-7 h-7" })}
@@ -367,7 +367,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             rows={4}
                             value={aiSystemInstruction}
                             onChange={(e) => onAiSystemInstructionChange(e.target.value)}
-                            className={`w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`}
+                            className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`}
                             placeholder="Ex: 'Explique les choses de manière très simple, comme si j'avais 10 ans.'"
                             disabled={isFree}
                         />
@@ -421,7 +421,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             rows={3}
                             value={imageGenerationInstruction}
                             onChange={(e) => onImageGenerationInstructionChange(e.target.value)}
-                             className={`w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`}
+                             className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`}
                             placeholder="Ex: 'Toutes les images doivent avoir un style cartoon.'"
                             disabled={isFree}
                         />
@@ -442,7 +442,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             href="https://github.com/mAI-mAIPlatform/breveteasy-geministudio-off/releases/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm"
+                            className="px-4 py-2 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors text-sm"
                         >
                             Notes de version
                         </a>

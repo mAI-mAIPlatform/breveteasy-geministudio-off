@@ -26,7 +26,7 @@ const OptionCard: React.FC<{
         <button
             onClick={onClick}
             disabled={isProFeature}
-            className={`group w-full text-left p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-lg transition-all duration-300 ease-in-out flex items-center space-x-5 ${
+            className={`group w-full text-left p-6 bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg transition-all duration-300 ease-in-out flex items-center space-x-5 ${
                 isProFeature 
                     ? 'opacity-60 cursor-not-allowed' 
                     : 'hover:shadow-2xl hover:-translate-y-1'
@@ -200,7 +200,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
             </h1>
         </div>
         
-        <div className="relative z-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
+        <div className="relative z-10 bg-slate-100/60 dark:bg-black/40 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/50 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
             <div className="mb-6">
                 <label htmlFor="custom-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">
                     Instructions spécifiques (facultatif)
@@ -210,7 +210,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                     rows={3}
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
-                    className="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base text-slate-900 dark:text-slate-100 placeholder-slate-500 transition"
+                    className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base text-slate-900 dark:text-slate-100 placeholder-slate-500 transition"
                     placeholder={`ex: "Concentre-toi sur la Première Guerre mondiale"`}
                 />
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Laissez vide pour un contenu général sur le sujet.</p>

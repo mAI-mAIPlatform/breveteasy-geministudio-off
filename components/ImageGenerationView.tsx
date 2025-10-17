@@ -106,12 +106,12 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   return (
     <div className="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Left column: Controls */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-xl">
+        <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-xl">
              <div className="space-y-6">
                 <div>
                     <label htmlFor="image-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">Votre description</label>
                     <textarea id="image-prompt" rows={4} value={prompt} onChange={(e) => setPrompt(e.target.value)}
-                        className="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500"
+                        className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500"
                         placeholder="Ex: Un astronaute surfant sur une vague cosmique..."
                     />
                 </div>
@@ -127,7 +127,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                     {model === 'faceai-plus' && subscriptionPlan === 'free' && <PremiumBadge requiredPlan="pro" />}
                 </div>
 
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="pt-4 border-t border-slate-300/50 dark:border-slate-700/50">
                     <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Paramètres</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
@@ -151,7 +151,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                 <div>
                     <label htmlFor="negative-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">Prompt négatif (facultatif)</label>
                     <textarea id="negative-prompt" rows={2} value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)}
-                        className="w-full p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500"
+                        className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500"
                         placeholder="Ex: flou, texte, couleurs ternes..."
                     />
                 </div>
@@ -167,7 +167,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
         </div>
 
         {/* Right column: Image display */}
-        <div className="aspect-square bg-slate-100 dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-800 rounded-3xl flex items-center justify-center text-slate-600 dark:text-slate-400 p-4">
+        <div className="aspect-square bg-white/5 dark:bg-slate-900/40 backdrop-blur-xl border-2 border-dashed border-white/20 dark:border-slate-800 rounded-3xl flex items-center justify-center text-slate-600 dark:text-slate-400 p-4">
             {isGenerating ? (
                  <div className="text-center">
                     <div className="w-12 h-12 border-4 border-sky-300 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>

@@ -1,7 +1,9 @@
+// Fix: Provide the implementation for the main App component.
 import React from 'react';
 
 export interface Subject {
   name: string;
+  // Fix: Specify that the icon can accept a className prop for styling via React.cloneElement.
   icon: React.ReactElement<{ className?: string }>;
   color: string;
   bgColor: string;
@@ -53,3 +55,58 @@ export interface ChatSession {
 }
 
 export type SubscriptionPlan = 'free' | 'pro' | 'max';
+
+// Fix: Add missing type definitions for the Evaluation feature.
+export type EvaluationQuestionType = 'qcm' | 'fill-in-the-blank' | 'short-text' | 'long-text';
+
+export interface BaseEvaluationQuestion {
+    questionText: string;
+    points: number;
+    type: EvaluationQuestionType;
+}
+
+export interface QcmEvaluationQuestion extends BaseEvaluationQuestion {
+    type: 'qcm';
+    options: string[];
+    correctAnswer: string;
+}
+
+export interface FillInTheBlankEvaluationQuestion extends BaseEvaluationQuestion {
+    type: 'fill-in-the-blank';
+    questionTextWithBlanks: string;
+    correctAnswers: string[];
+}
+
+export interface ShortTextEvaluationQuestion extends BaseEvaluationQuestion {
+    type: 'short-text';
+    correctAnswer: string;
+}
+
+export interface LongTextEvaluationQuestion extends BaseEvaluationQuestion {
+    type: 'long-text';
+    idealAnswer: string;
+}
+
+export type EvaluationQuestion = QcmEvaluationQuestion | FillInTheBlankEvaluationQuestion | ShortTextEvaluationQuestion | LongTextEvaluationQuestion;
+
+export interface Evaluation {
+    title: string;
+    subject: string;
+    questions: EvaluationQuestion[];
+}
+
+export type EvaluationAnswers = {
+    [questionIndex: number]: string | string[];
+};
+
+export interface GradedQuestionResult {
+    isCorrect: boolean;
+    scoreAwarded: number;
+    feedback: string;
+}
+
+export interface EvaluationResult {
+    totalScore: number;
+    overallFeedback: string;
+    gradedQuestions: GradedQuestionResult[];
+}

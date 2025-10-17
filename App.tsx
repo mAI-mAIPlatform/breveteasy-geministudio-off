@@ -1,24 +1,20 @@
 // Fix: Provide the implementation for the main App component.
 // Fix: Corrected React import to include necessary hooks.
-// Fix: Implemented code splitting with React.lazy and Suspense to reduce initial bundle size and improve performance.
-import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
-
-// Lazy load components to split code and improve initial load time.
-const HomeView = lazy(() => import('./components/HomeView').then(module => ({ default: module.HomeView })));
-const SubjectOptionsView = lazy(() => import('./components/SubjectOptionsView').then(module => ({ default: module.SubjectOptionsView })));
-const LoadingView = lazy(() => import('./components/LoadingView').then(module => ({ default: module.LoadingView })));
-const QuizView = lazy(() => import('./components/QuizView').then(module => ({ default: module.QuizView })));
-const ResultsView = lazy(() => import('./components/ResultsView').then(module => ({ default: module.ResultsView })));
-const ChatView = lazy(() => import('./components/ChatView').then(module => ({ default: module.ChatView })));
-const HistorySidebar = lazy(() => import('./components/HistorySidebar').then(module => ({ default: module.HistorySidebar })));
-const SettingsView = lazy(() => import('./components/SettingsView').then(module => ({ default: module.SettingsView })));
-const LoginView = lazy(() => import('./components/LoginView').then(module => ({ default: module.LoginView })));
-const ExercisesView = lazy(() => import('./components/ExercisesView').then(module => ({ default: module.ExercisesView })));
-const SubscriptionView = lazy(() => import('./components/SubscriptionView').then(module => ({ default: module.SubscriptionView })));
-const ImageGenerationView = lazy(() => import('./components/ImageGenerationView').then(module => ({ default: module.ImageGenerationView })));
-const WelcomeView = lazy(() => import('./components/WelcomeView').then(module => ({ default: module.WelcomeView })));
-
-import { ai, Type } from './services/geminiService';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { HomeView } from './components/HomeView';
+import { SubjectOptionsView } from './components/SubjectOptionsView';
+import { LoadingView } from './components/LoadingView';
+import { QuizView } from './components/QuizView';
+import { ResultsView } from './components/ResultsView';
+import { ChatView } from './components/ChatView';
+import { HistorySidebar } from './components/HistorySidebar';
+import { SettingsView } from './components/SettingsView';
+import { LoginView } from './components/LoginView';
+import { ExercisesView } from './components/ExercisesView';
+import { SubscriptionView } from './components/SubscriptionView';
+import { ImageGenerationView } from './components/ImageGenerationView';
+import { WelcomeView } from './components/WelcomeView';
+import { generateQuiz, generateHtmlContent, generateImage } from './services/geminiService';
 import { AVATAR_ICONS } from './constants';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder } from './types';
 
@@ -40,7 +36,7 @@ const HeaderButton: React.FC<{
 }> = ({ onClick, title, ariaLabel, children, className = '', isIconOnly = false }) => (
     <button 
         onClick={onClick} 
-        className={`flex items-center gap-2 whitespace-nowrap bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm font-semibold ${isIconOnly ? 'rounded-full w-11 h-11 justify-center' : 'px-4 py-2.5 rounded-full'} shadow-lg hover:bg-slate-100 dark:hover:bg-slate-800 transform hover:scale-105 transition-all duration-300 ${className}`}
+        className={`flex items-center gap-2 whitespace-nowrap bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-sm font-semibold ${isIconOnly ? 'rounded-full w-11 h-11 justify-center' : 'px-4 py-2.5 rounded-full'} shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-105 transition-all duration-300 ${className}`}
         title={title}
         aria-label={ariaLabel}
     >
@@ -120,12 +116,6 @@ const ScrollToTopButton: React.FC<{ onClick: () => void; isVisible: boolean }> =
     </div>
 );
 
-const LoadingFallback: React.FC = () => (
-    <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-16 h-16 rounded-full animate-spin" style={{border: '4px solid rgba(129, 140, 248, 0.2)', borderTopColor: 'rgb(129, 140, 248)'}}></div>
-    </div>
-);
-
 
 const App: React.FC = () => {
     // App State
@@ -195,23 +185,13 @@ const App: React.FC = () => {
 
     // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
-        try {
-            const savedSessions = localStorage.getItem('chatSessions');
-            return savedSessions ? JSON.parse(savedSessions) : [];
-        } catch (error) {
-            console.error("Failed to parse chatSessions from localStorage", error);
-            return [];
-        }
+        const savedSessions = localStorage.getItem('chatSessions');
+        return savedSessions ? JSON.parse(savedSessions) : [];
     });
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
     const [folders, setFolders] = useState<Folder[]>(() => {
-        try {
-            const savedFolders = localStorage.getItem('brevet-easy-folders');
-            return savedFolders ? JSON.parse(savedFolders) : [];
-        } catch (error) {
-            console.error("Failed to parse folders from localStorage", error);
-            return [];
-        }
+        const savedFolders = localStorage.getItem('brevet-easy-folders');
+        return savedFolders ? JSON.parse(savedFolders) : [];
     });
 
 
@@ -219,17 +199,14 @@ const App: React.FC = () => {
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
     const [imageUsage, setImageUsage] = useState<ImageUsage>(() => {
+        const savedUsage = localStorage.getItem('brevet-easy-image-usage');
         const today = new Date().toISOString().split('T')[0];
-        try {
-            const savedUsage = localStorage.getItem('brevet-easy-image-usage');
-            if (savedUsage) {
-                const usage: ImageUsage = JSON.parse(savedUsage);
-                if (usage && usage.date === today) {
-                    return usage;
-                }
+        if (savedUsage) {
+            const usage: ImageUsage = JSON.parse(savedUsage);
+            if (usage.date !== today) {
+                return { count: 0, date: today };
             }
-        } catch (error) {
-            console.error("Failed to parse imageUsage from localStorage", error);
+            return usage;
         }
         return { count: 0, date: today };
     });
@@ -395,41 +372,16 @@ const App: React.FC = () => {
         setLoadingTask('quiz');
         setCurrentQuestionIndex(0);
         
-        const quizSchema = {
-            type: Type.OBJECT,
-            properties: {
-                subject: { type: Type.STRING },
-                questions: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            questionText: { type: Type.STRING },
-                            options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                            correctAnswer: { type: Type.STRING },
-                            explanation: { type: Type.STRING }
-                        },
-                        required: ['questionText', 'options', 'correctAnswer', 'explanation']
-                    }
-                }
-            },
-            required: ['subject', 'questions']
-        };
-
         try {
-            const prompt = `Génère un quiz de ${count} questions sur le sujet "${selectedSubject.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. Les questions doivent être des QCM avec 4 options de réponse. Fournis une explication pour chaque bonne réponse.`;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: quizSchema,
-                    systemInstruction: buildSystemInstruction(),
-                }
-            });
-            
-            const generatedQuiz = JSON.parse(response.text);
+            const systemInstruction = buildSystemInstruction();
+            const generatedQuiz = await generateQuiz(
+                selectedSubject.name,
+                count,
+                difficulty,
+                level,
+                customPrompt,
+                systemInstruction
+            );
             setQuiz(generatedQuiz);
             setQuizAnswers(Array(generatedQuiz.questions.length).fill(null));
             setView('quiz');
@@ -454,21 +406,13 @@ const App: React.FC = () => {
         setView('results');
     };
 
-    // Generic HTML Content Generation
-    const handleGenerateHtmlContent = useCallback(async (task: LoadingTask, instructions: string) => {
+    const handleGenericHtmlGeneration = useCallback(async (task: LoadingTask, prompt: string) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask(task);
-
         try {
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: instructions,
-                config: {
-                    systemInstruction: buildSystemInstruction(),
-                }
-            });
-            setGeneratedHtml(response.text);
+            const html = await generateHtmlContent(prompt, buildSystemInstruction());
+            setGeneratedHtml(html);
             setView('exercises');
         } catch (error) {
             console.error(`Error generating ${task}:`, error);
@@ -479,17 +423,17 @@ const App: React.FC = () => {
 
     const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string) => {
         const prompt = `Génère une fiche de ${count} exercices sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
-        handleGenerateHtmlContent('exercises', prompt);
+        handleGenericHtmlGeneration('exercises', prompt);
     };
     
     const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string) => {
         const prompt = `Génère une fiche de cours sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquojte), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
-        handleGenerateHtmlContent('cours', prompt);
+        handleGenericHtmlGeneration('cours', prompt);
     };
     
     const handleGenerateFicheRevisions = (customPrompt: string, count: number, difficulty: string, level: string) => {
         const prompt = `Génère une fiche de révisions synthétique sur le sujet "${selectedSubject?.name}" pour le niveau ${level}. ${customPrompt}. La fiche doit résumer les points essentiels à connaître pour le brevet. La sortie doit être un fichier HTML bien formaté, utilisant des titres, des listes à puces, du gras pour les termes importants, et un code couleur simple pour mettre en évidence les différentes sections. Le contenu doit être concis et aller à l'essentiel.`;
-        handleGenerateHtmlContent('fiche-revisions', prompt);
+        handleGenericHtmlGeneration('fiche-revisions', prompt);
     };
 
     const handleDownloadHtml = () => {
@@ -617,36 +561,19 @@ const App: React.FC = () => {
         setIsGeneratingImage(true);
         setGeneratedImage(null);
         
-        // Amélioration de la compréhension du prompt
-        const qualityPrompt = model === 'faceai-plus' && (subscriptionPlan === 'pro' || subscriptionPlan === 'max')
-            ? 'haute qualité, 4k, hyper-détaillé, photoréaliste'
-            : '';
-
-        const stylePrompt = style !== 'none' ? `style ${style.replace('-', ' ')}` : '';
-        const userInstruction = imageGenerationInstruction.trim();
-
-        // Construction d'un prompt plus structuré
-        const finalPrompt = [
-            prompt,
-            stylePrompt,
-            qualityPrompt,
-            userInstruction
-        ].filter(Boolean).join(', ');
-
         try {
-            const response = await ai.models.generateImages({
-                model: 'imagen-4.0-generate-001',
-                prompt: finalPrompt,
-                config: {
-                    numberOfImages: 1,
-                    outputMimeType: `image/${format}`,
-                    aspectRatio: aspectRatio,
-                    ...(negativePrompt.trim() && { negativePrompt: negativePrompt.trim() }),
-                },
-            });
+            // BUG FIX: The `negativePrompt` argument is received from the component but is NOT passed to the service,
+            // as it's not a supported parameter for the underlying API call.
+            const imageData = await generateImage(
+                prompt,
+                model,
+                style,
+                format,
+                aspectRatio,
+                imageGenerationInstruction
+            );
             
-            const imageBytes = response.generatedImages[0].image.imageBytes;
-            setGeneratedImage({ data: imageBytes, mimeType: `image/${format}`});
+            setGeneratedImage(imageData);
             setImageUsage(prev => ({ ...prev, count: prev.count + 1 }));
 
         } catch (error) {
@@ -669,11 +596,7 @@ const App: React.FC = () => {
     const quizProgress = quiz ? ((currentQuestionIndex + 1) / (quiz.questions.length || 1)) * 100 : 0;
 
     if (view === 'loading') {
-        return (
-            <Suspense fallback={<LoadingFallback />}>
-                <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} onCancel={handleBackToHome} />
-            </Suspense>
-        );
+        return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} onCancel={handleBackToHome} />;
     }
     
     const renderContent = () => {
@@ -773,14 +696,12 @@ const App: React.FC = () => {
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
              {view === 'quiz' && quiz && (
                 <div className="w-full max-w-4xl mx-auto pt-20">
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5">
+                    <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-2.5">
                         <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${quizProgress}%`, boxShadow: '0 0 10px theme(colors.sky.400)' }}></div>
                     </div>
                 </div>
              )}
-            <Suspense fallback={<LoadingFallback />}>
-                {renderContent()}
-            </Suspense>
+             {renderContent()}
         </div>
     );
 };
