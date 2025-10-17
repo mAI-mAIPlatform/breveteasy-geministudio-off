@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '@/lib/types';
-import { ai, Type } from '@/services/geminiService';
-import type { Chat, Part } from '@google/genai';
+// Note: Direct AI SDK imports are removed from client-side components
+// import { ai, Type } from '@/services/geminiService';
+// import type { Chat, Part } from '@google/genai';
 
 interface ChatViewProps {
     session: ChatSession;
@@ -300,47 +301,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
 
     useEffect(scrollToBottom, [session.messages]);
 
-    const createChatInstance = (history: ChatMessage[], modelOverride?: AiModel): Chat => {
-        const geminiHistory: { role: 'user' | 'model'; parts: Part[] }[] = history
-            .filter(m => !m.isGenerating)
-            .map(m => ({
-                role: m.role,
-                parts: m.parts.map(part => {
-                    if (part.image) {
-                        return { inlineData: { data: part.image.data, mimeType: part.image.mimeType } };
-                    }
-                    return { text: part.text || "" };
-                }).filter(p => p.text || p.inlineData)
-            }));
-
-        const baseInstruction = "Tu es BrevetAI, un tuteur IA spécialisé dans l'aide aux révisions pour le Brevet des collèges en France. Tes réponses doivent être pédagogiques, encourageantes et adaptées au niveau d'un élève de 3ème. Sois concis et clair. Tu peux utiliser des listes à puces ou des exemples pour faciliter la compréhension. N'hésite pas à poser des questions pour vérifier la compréhension de l'élève.";
-        
-        let finalInstruction = baseInstruction;
-        if (subscriptionPlan !== 'free' && systemInstruction.trim()) {
-            finalInstruction = `${systemInstruction.trim()}\n\n---\n\n${baseInstruction}`;
-        }
-        if (userName.trim()) {
-            finalInstruction += `\n\nL'utilisateur s'appelle ${userName.trim()}. Adresse-toi à lui par son prénom de manière amicale.`;
-        }
-        
-        const modelToUse = modelOverride || session.aiModel;
-
-        const config: { systemInstruction: string; thinkingConfig?: { thinkingBudget: number } } = {
-             systemInstruction: finalInstruction,
-        };
-
-        if (modelToUse === 'brevetai') {
-            config.thinkingConfig = { thinkingBudget: 0 };
-        }
-        // For 'brevetai-plus', we omit thinkingConfig to use the default (enabled)
-        
-        return ai.chats.create({
-            model: 'gemini-2.5-flash',
-            history: geminiHistory,
-            config,
-        });
-    }
-
     const fileToBase64 = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -352,66 +312,97 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
 
     const generateTitle = useCallback(async (initialPrompt: string) => {
         try {
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: `Génère un titre court et concis (4-5 mots maximum) pour une discussion qui commence par cette question : "${initialPrompt}". Réponds uniquement avec le titre.`,
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'generateTitle', payload: { prompt: initialPrompt } }),
             });
-            onUpdateSession(session.id, { title: response.text.trim().replace(/"/g, '') });
+            if (!response.ok) throw new Error('Failed to generate title');
+            const { title } = await response.json();
+            onUpdateSession(session.id, { title: title.trim().replace(/"/g, '') });
         } catch (error) {
             console.error("Error generating title:", error);
         }
     }, [onUpdateSession, session.id]);
 
-    const handleSendMessage = async () => {
+    const handleSendMessage = async (isRegeneration = false, regenPayload: any = {}) => {
         const textInput = input.trim();
-        if (!textInput && !attachment || isLoading || isChatLimitReached) return;
-        
-        const userParts: ChatPart[] = [];
+        if (!isRegeneration && !textInput && !attachment) return;
+        if (isLoading || isChatLimitReached) return;
+
         setIsLoading(true);
+        let userParts: ChatPart[] = [];
+        let baseMessages: ChatMessage[] = session.messages;
 
-        if (attachment) {
-            try {
-                const base64Data = await fileToBase64(attachment.file);
-                userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
-            } catch(error) {
-                console.error("Error converting file to base64", error);
-                setIsLoading(false);
-                return;
+        if (!isRegeneration) {
+            if (attachment) {
+                try {
+                    const base64Data = await fileToBase64(attachment.file);
+                    userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
+                } catch(error) {
+                    console.error("Error converting file to base64", error);
+                    setIsLoading(false);
+                    return;
+                }
             }
-        }
-        if (textInput) {
-            userParts.push({ text: textInput });
+            if (textInput) {
+                userParts.push({ text: textInput });
+            }
+
+            const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
+            baseMessages = [...session.messages, userInputMessage];
+            onUpdateSession(session.id, { messages: baseMessages });
+            setInput('');
+            setAttachment(null);
         }
 
-        const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
-        const baseMessages = [...session.messages, userInputMessage];
-        onUpdateSession(session.id, { messages: baseMessages });
-        
-        setInput('');
-        setAttachment(null);
+        const thinkingMessage: ChatMessage = { role: 'model', parts: [], isGenerating: true };
+        onUpdateSession(session.id, { messages: [...baseMessages, thinkingMessage] });
 
-        const modelThinkingMessage: ChatMessage = { role: 'model', parts: [], isGenerating: true };
-        onUpdateSession(session.id, { messages: [...baseMessages, modelThinkingMessage] });
-        
         try {
-            const chat = createChatInstance(session.messages);
-            const result = await chat.sendMessageStream({ message: userParts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' }) });
-            
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: isRegeneration ? 'regenerate' : 'sendMessage',
+                    payload: isRegeneration ? regenPayload : {
+                        history: session.messages,
+                        message: { parts: userParts },
+                        config: {
+                            aiModel: session.aiModel,
+                            systemInstruction,
+                            userName,
+                            subscriptionPlan,
+                        }
+                    }
+                }),
+            });
+
+            if (!response.ok || !response.body) {
+                throw new Error(`API call failed: ${response.statusText}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
             let fullResponse = '';
-            for await (const chunk of result) {
-                fullResponse += chunk.text;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                fullResponse += decoder.decode(value, { stream: true });
                 const modelMessage: ChatMessage = { role: 'model', parts: [{ text: fullResponse }] };
                 onUpdateSession(session.id, { messages: [...baseMessages, modelMessage] });
             }
+
         } catch (error) {
-            console.error("Error sending message:", error);
+            console.error("Error during chat:", error);
             const errorMessage: ChatMessage = { role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] };
             onUpdateSession(session.id, { messages: prev => [...prev.slice(0, -1), errorMessage] });
         } finally {
             setIsLoading(false);
         }
-        
-        if (session.messages.filter(m => m.role === 'user').length === 0) {
+
+        if (!isRegeneration && session.messages.filter(m => m.role === 'user').length === 0) {
             await generateTitle(textInput || "Discussion avec image");
         }
     };
@@ -430,7 +421,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         const textToEdit = messageToEdit.parts.find(p => p.text)?.text || '';
         setInput(textToEdit);
 
-        // Remove the message and subsequent messages
         const newMessages = session.messages.slice(0, index);
         onUpdateSession(session.id, { messages: newMessages });
     };
@@ -438,60 +428,31 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     const handleRegenerateResponse = async (index: number, modification: 'longer' | 'shorter' | 'change_model', newModel?: AiModel) => {
         if (isLoading || session.messages[index]?.role !== 'model') return;
 
-        setIsLoading(true);
         const historyForRegen = session.messages.slice(0, index);
         const userPromptMessage = historyForRegen[historyForRegen.length - 1];
 
-        if(userPromptMessage?.role !== 'user') {
-            setIsLoading(false);
-            return;
-        }
-        
+        if(userPromptMessage?.role !== 'user') return;
+
         let messagesForUpdate = [...session.messages];
-        messagesForUpdate[index] = { role: 'model', parts: [], isGenerating: true };
+        messagesForUpdate.splice(index); // Remove the old model response
         onUpdateSession(session.id, { messages: messagesForUpdate });
 
-        const chatHistoryForAi = historyForRegen.slice(0, -1);
         const modelForRegen = modification === 'change_model' && newModel ? newModel : session.aiModel;
-        const chat = createChatInstance(chatHistoryForAi, modelForRegen);
-        
-        const originalUserParts: ChatPart[] = JSON.parse(JSON.stringify(userPromptMessage.parts)); // Deep copy
 
-        if (modification === 'longer' || modification === 'shorter') {
-            const instruction = modification === 'longer' 
-                ? "\n\n(Instruction pour l'IA : Régénère ta réponse précédente, mais en la rendant plus longue et plus détaillée.)"
-                : "\n\n(Instruction pour l'IA : Régénère ta réponse précédente, mais en la rendant plus courte et plus concise.)";
-            
-            let textPartFound = false;
-            for (const part of originalUserParts) {
-                if (part.text) {
-                    part.text += instruction;
-                    textPartFound = true;
-                    break;
-                }
-            }
-            if (!textPartFound) {
-                originalUserParts.push({ text: instruction });
-            }
-        }
+        const regenPayload = {
+            history: historyForRegen.slice(0, -1),
+            message: userPromptMessage,
+            config: {
+                aiModel: modelForRegen,
+                systemInstruction,
+                userName,
+                subscriptionPlan,
+            },
+            modification,
+        };
         
-        const promptForRegenParts: Part[] = originalUserParts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' });
-
-        try {
-            const result = await chat.sendMessageStream({ message: promptForRegenParts });
-            let fullResponse = '';
-            for await (const chunk of result) {
-                fullResponse += chunk.text;
-                messagesForUpdate[index] = { role: 'model', parts: [{ text: fullResponse }] };
-                onUpdateSession(session.id, { messages: [...messagesForUpdate] });
-            }
-        } catch (error) {
-            console.error("Error regenerating response:", error);
-            messagesForUpdate[index] = { role: 'model', parts: [{ text: "Désolé, une erreur est survenue lors de la regénération." }] };
-            onUpdateSession(session.id, { messages: messagesForUpdate });
-        } finally {
-            setIsLoading(false);
-        }
+        // Use the existing sendMessage flow for regeneration logic
+        handleSendMessage(true, regenPayload);
     };
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -579,7 +540,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         rows={1}
                         disabled={isLoading || isChatLimitReached}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
+                    <button onClick={() => handleSendMessage()} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
                        </svg>
