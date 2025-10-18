@@ -143,32 +143,12 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   const [difficulty, setDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>(defaultDifficulty);
   const [level, setLevel] = useState<string>(defaultLevel);
 
-  const ITEM_COUNTS = useMemo(() => {
-    let counts: number[];
-    if (subscriptionPlan === 'max') {
-        counts = [5, 10, 15, 20, 25];
-    } else if (subscriptionPlan === 'pro') {
-        counts = [5, 10, 15, 20];
-    } else {
-        counts = [5];
-    }
-    
-    // For paying users, if their custom default isn't in the standard list,
-    // add it so their preference is respected and available as an option.
-    if (subscriptionPlan !== 'free' && !counts.includes(defaultItemCount)) {
-        counts.push(defaultItemCount);
-        counts.sort((a, b) => a - b);
-    }
-    return counts;
-  }, [subscriptionPlan, defaultItemCount]);
-
-  const [itemCount, setItemCount] = useState<number>(defaultItemCount);
-  
-  useEffect(() => {
-    if (!ITEM_COUNTS.includes(itemCount)) {
-        setItemCount(ITEM_COUNTS[0]);
-    }
-  }, [itemCount, ITEM_COUNTS]);
+  const [itemCount, setItemCount] = useState<number>(() => {
+    const defaultCount = defaultItemCount;
+    if (defaultCount > 10) return 10;
+    if (defaultCount < 1) return 1;
+    return defaultCount;
+  });
 
   const LEVELS = ['CM2', '6ème', '5ème', '4ème', '3ème', 'Brevet'];
   const DIFFICULTIES = ['Facile', 'Normal', 'Difficile', 'Expert'] as const;
@@ -216,14 +196,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Laissez vide pour un contenu général sur le sujet.</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StyledDropdown<number>
-                    label="Nombre"
-                    options={ITEM_COUNTS}
-                    value={itemCount}
-                    onChange={setItemCount}
-                    renderOption={(option) => `${option} éléments`}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <StyledDropdown<string>
                     label="Niveau"
                     options={LEVELS}
@@ -237,6 +210,18 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                     value={currentDifficulty}
                     onChange={setDifficulty}
                     disabled={isFreePlan}
+                />
+            </div>
+             <div className="pt-6">
+                <label htmlFor="item-count-slider" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">Nombre d'éléments ({itemCount})</label>
+                <input
+                    id="item-count-slider"
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={itemCount}
+                    onChange={(e) => setItemCount(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-300/50 dark:bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                 />
             </div>
         </div>

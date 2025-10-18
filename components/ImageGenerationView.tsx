@@ -11,6 +11,10 @@ interface ImageGenerationViewProps {
   subscriptionPlan: SubscriptionPlan;
 }
 
+const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
+const CheckIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
+
+
 interface StyledDropdownProps<T extends string> {
     label: string;
     options: readonly T[];
@@ -87,6 +91,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   const [style, setStyle] = useState('none');
   const [format, setFormat] = useState<'jpeg' | 'png'>('jpeg');
   const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [promptCopied, setPromptCopied] = useState(false);
 
   const isModelLocked =
     (model === 'faceai-pro' && subscriptionPlan === 'free') ||
@@ -97,6 +102,12 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
     onGenerate(prompt, model, style, format, aspectRatio, negativePrompt);
   };
   
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(prompt);
+    setPromptCopied(true);
+    setTimeout(() => setPromptCopied(false), 2000);
+  };
+
   const FORMATS = ['jpeg', 'png'] as const;
   const RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4'] as const;
   
@@ -123,7 +134,13 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
         <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-xl">
              <div className="space-y-6">
                 <div>
-                    <label htmlFor="image-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">Votre description</label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label htmlFor="image-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300">Votre description</label>
+                         <button onClick={handleCopyPrompt} className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors" disabled={!prompt.trim()}>
+                            {promptCopied ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
+                            {promptCopied ? 'Copié' : 'Copier'}
+                        </button>
+                    </div>
                     <textarea id="image-prompt" rows={4} value={prompt} onChange={(e) => setPrompt(e.target.value)}
                         className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500"
                         placeholder="Ex: Un astronaute surfant sur une vague cosmique..."

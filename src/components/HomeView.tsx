@@ -115,7 +115,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartChat
       </div>
     </main>
     <footer className="text-center text-xs text-slate-500 dark:text-slate-400 mt-16 pb-4">
-      26-3.7 &copy; All rights reserved | Brevet' Easy | Official App and Website
+      26-3.8 &copy; All rights reserved | Brevet' Easy | Official App and Website
     </footer>
   </div>
 );

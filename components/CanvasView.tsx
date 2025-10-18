@@ -60,8 +60,7 @@ const ModelSelector: React.FC<{
                                 <button onClick={() => { if (!isLocked) { onModelChange(model.id); setIsOpen(false); }}} disabled={isLocked} className="w-full text-left px-3 py-2 text-sm rounded-lg text-slate-800 dark:text-slate-200 hover:bg-indigo-500/80 hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                                     {modelNames[model.id]}
                                 </button>
-                                {/* Fix: Add a type guard to ensure requiredPlan is not 'free' before passing to PremiumBadge */}
-                                {isLocked && model.requiredPlan !== 'free' && <PremiumBadge requiredPlan={model.requiredPlan} className="rounded-lg" />}
+                                {isLocked && model.requiredPlan !== 'free' && <PremiumBadge requiredPlan={model.requiredPlan} className="rounded-lg" size="small" />}
                             </div>
                         );
                     })}

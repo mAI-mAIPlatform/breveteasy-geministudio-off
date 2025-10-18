@@ -3,7 +3,8 @@ import { SUBJECTS } from '../constants';
 import type { SubscriptionPlan, ConseilsAiModel } from '../types';
 import { PremiumBadge } from './PremiumBadge';
 
-
+const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
+const CheckIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
 const ShareIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" /></svg>;
 
 const ShareConseilsModal: React.FC<{ isOpen: boolean; onClose: () => void; conseils: string; subject: string; }> = ({ isOpen, onClose, conseils, subject }) => {
@@ -174,7 +175,7 @@ const ModelSelector: React.FC<{
                             >
                                 {modelNames[modelInfo.id]}
                             </button>
-                            {isLocked && <PremiumBadge requiredPlan={modelInfo.requiredPlan as 'pro' | 'max'} />}
+                            {isLocked && <PremiumBadge requiredPlan={modelInfo.requiredPlan as 'pro' | 'max'} size="small" />}
                         </div>
                     );
                 })}
@@ -189,6 +190,7 @@ export const ConseilsView: React.FC<ConseilsViewProps> = ({ onGenerate, isLoadin
     const [level, setLevel] = useState('Brevet');
     const [model, setModel] = useState<ConseilsAiModel>(defaultConseilsAiModel);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
     
     const subjectOptions = SUBJECTS.map(s => ({ value: s.name, label: s.name }));
     const levelOptions = LEVELS.map(l => ({ value: l, label: l }));
@@ -200,6 +202,15 @@ export const ConseilsView: React.FC<ConseilsViewProps> = ({ onGenerate, isLoadin
     const stripHtml = (html: string): string => {
         const doc = new DOMParser().parseFromString(html, 'text/html');
         return doc.body.textContent || "";
+    };
+    
+    const handleCopy = () => {
+        if (!conseils) return;
+        const text = stripHtml(conseils);
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
     };
 
     const handleDownload = (format: 'html' | 'txt') => {
@@ -232,28 +243,22 @@ export const ConseilsView: React.FC<ConseilsViewProps> = ({ onGenerate, isLoadin
                         className="prose prose-lg dark:prose-invert max-w-none bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-xl"
                         dangerouslySetInnerHTML={{ __html: conseils }}
                     />
-                    <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <div className="mt-8 flex flex-wrap justify-center items-center gap-4">
                         <button 
                             onClick={onClear} 
-                            className="w-full sm:w-auto px-6 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transform hover:scale-105 transition-all"
+                            className="px-6 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transform hover:scale-105 transition-all"
                         >
                             Nouveaux Conseils
                         </button>
                          <button 
-                            onClick={() => handleDownload('html')} 
-                            className="w-full sm:w-auto px-6 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transform hover:scale-105 transition-all"
+                            onClick={handleCopy} 
+                            className="px-6 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transform hover:scale-105 transition-all flex items-center justify-center gap-2"
                         >
-                            Télécharger (.html)
-                        </button>
-                        <button 
-                            onClick={() => handleDownload('txt')} 
-                            className="w-full sm:w-auto px-6 py-3 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transform hover:scale-105 transition-all"
-                        >
-                           Télécharger (.txt)
+                           {copied ? <CheckIcon className="h-5 w-5 text-green-500"/> : <CopyIcon className="h-5 w-5"/>} {copied ? 'Copié !' : 'Copier le texte'}
                         </button>
                         <button 
                             onClick={() => setIsShareModalOpen(true)}
-                            className="w-full sm:w-auto px-6 py-3 bg-sky-500 text-white font-bold rounded-xl shadow-lg hover:bg-sky-600 transform hover:scale-105 transition-all flex items-center justify-center gap-2"
+                            className="px-6 py-3 bg-sky-500 text-white font-bold rounded-xl shadow-lg hover:bg-sky-600 transform hover:scale-105 transition-all flex items-center justify-center gap-2"
                         >
                            <ShareIcon /> Partager
                         </button>

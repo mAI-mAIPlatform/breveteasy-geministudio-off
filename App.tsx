@@ -18,9 +18,9 @@ import { CanvasView } from './components/CanvasView';
 import { FlashAIView } from './components/FlashAIView';
 import { PlanningView } from './components/PlanningView';
 import { ConseilsView } from './components/ConseilsView';
-import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils } from './services/geminiService';
+import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateContentWithSearch } from './services/geminiService';
 import { AVATAR_ICONS } from './constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatPart } from './types';
 
 // Fix: Add new view types for the new features.
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
@@ -206,7 +206,8 @@ const App: React.FC = () => {
         setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
 
         // Generation settings
-        setDefaultItemCount(parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10));
+        const loadedCount = parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10);
+        setDefaultItemCount(Math.max(1, Math.min(10, loadedCount)));
         const savedDifficulty = localStorage.getItem('brevet-easy-default-difficulty');
         setDefaultDifficulty((savedDifficulty === 'Facile' || savedDifficulty === 'Normal' || savedDifficulty === 'Difficile' || savedDifficulty === 'Expert' ? savedDifficulty : 'Normal'));
         setDefaultLevel(localStorage.getItem('brevet-easy-default-level') || 'Brevet');
@@ -496,6 +497,14 @@ const App: React.FC = () => {
             setIsDownloadingHtml(false);
         }
     };
+    
+    const handleCopyHtml = () => {
+        if (!generatedHtml) return;
+        navigator.clipboard.writeText(generatedHtml).catch(err => {
+            console.error('Failed to copy HTML: ', err);
+            alert("La copie a échoué.");
+        });
+    };
 
     // Chat Flow Handlers
     const handleStartChat = () => {
@@ -695,7 +704,8 @@ const App: React.FC = () => {
     const handleGeneratePlanning = useCallback(async (task: string, dueDate: string, model: PlanningAiModel) => {
         setIsGeneratingPlanning(true);
         try {
-            const generatedPlan = await generatePlanning(task, dueDate, buildSystemInstruction(planningAiSystemInstruction), model);
+            const todayDate = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD in UTC
+            const generatedPlan = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), model);
             setPlanning(generatedPlan);
         } catch (error) {
             console.error("Error generating planning:", error);
@@ -704,6 +714,10 @@ const App: React.FC = () => {
             setIsGeneratingPlanning(false);
         }
     }, [buildSystemInstruction, planningAiSystemInstruction]);
+
+    const handleUpdatePlanning = (updatedPlanning: Planning) => {
+        setPlanning(updatedPlanning);
+    };
 
     const handleGenerateConseils = useCallback(async (subject: string, level: string, model: ConseilsAiModel) => {
         setIsGeneratingConseils(true);
@@ -816,6 +830,7 @@ const App: React.FC = () => {
                                     onNavigateToFlashAI={handleStartFlashAI}
                                     onNavigateToPlanning={handleStartPlanning}
                                     onNavigateToConseils={handleStartConseils}
+                                    generateContentWithSearch={generateContentWithSearch}
                                 />
                             ) : (
                                 <WelcomeView />
@@ -832,7 +847,7 @@ const App: React.FC = () => {
                     'fiche-revisions': { title: "Fiche générée !", description: "Votre fiche de révisions est prête.", buttonText: "Télécharger la fiche" },
                 }[loadingTask] || { title: "Contenu généré !", description: "Votre contenu est prêt.", buttonText: "Télécharger" };
                 
-                return <ExercisesView onDownload={handleDownloadHtml} {...contentConfig} />;
+                return <ExercisesView onDownload={handleDownloadHtml} onCopy={handleCopyHtml} {...contentConfig} />;
             case 'subscription':
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'imageGeneration':
@@ -842,7 +857,7 @@ const App: React.FC = () => {
             case 'flashAI':
                 return <FlashAIView onGenerate={handleGenerateFlashQuestion} isLoading={isGeneratingFlashQuestion} question={flashQuestion} onClear={() => setFlashQuestion(null)} subscriptionPlan={subscriptionPlan} defaultFlashAiModel={defaultFlashAiModel} />;
             case 'planning':
-                return <PlanningView onGenerate={handleGeneratePlanning} isLoading={isGeneratingPlanning} planning={planning} onClear={() => setPlanning(null)} subscriptionPlan={subscriptionPlan} defaultPlanningAiModel={defaultPlanningAiModel}/>;
+                return <PlanningView onGenerate={handleGeneratePlanning} isLoading={isGeneratingPlanning} planning={planning} onClear={() => setPlanning(null)} subscriptionPlan={subscriptionPlan} defaultPlanningAiModel={defaultPlanningAiModel} onUpdate={handleUpdatePlanning}/>;
             case 'conseils':
                 return <ConseilsView onGenerate={handleGenerateConseils} isLoading={isGeneratingConseils} conseils={conseils} onClear={() => setConseils(null)} subscriptionPlan={subscriptionPlan} defaultConseilsAiModel={defaultConseilsAiModel} />;
             default:

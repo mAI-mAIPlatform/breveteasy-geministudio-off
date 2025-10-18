@@ -321,7 +321,7 @@ const RadioGroup: React.FC<{
                     {icon}
                     <span className="font-semibold text-sm">{label}</span>
                 </label>
-                {disabled && requiredPlan && <PremiumBadge requiredPlan={requiredPlan} />}
+                {disabled && requiredPlan && <PremiumBadge requiredPlan={requiredPlan} size="small" />}
             </div>
         ))}
     </div>
@@ -358,7 +358,7 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
     return (
         <div>
             <label className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">{label}</label>
-            <div className={`relative ${isOpen ? 'z-50' : ''}`} ref={dropdownRef}>
+            <div className={`relative`} ref={dropdownRef}>
                 <button type="button" onClick={handleToggle} className={`relative w-full rounded-xl bg-slate-100 dark:bg-slate-900/70 py-3 pl-4 pr-10 text-left shadow-sm border border-slate-300/50 dark:border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-indigo-400 ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`} aria-haspopup="listbox" aria-expanded={isOpen} disabled={disabled} >
                     <span className="block truncate text-slate-900 dark:text-slate-100">{renderOption ? renderOption(value) : value}</span>
                     <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
@@ -392,16 +392,6 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-    const ITEM_COUNT_OPTIONS = useMemo(() => {
-        if (subscriptionPlan === 'max') return [5, 10, 15, 20, 25];
-        return [5, 10, 15, 20];
-    }, [subscriptionPlan]);
-
-    useEffect(() => {
-        if (subscriptionPlan !== 'max' && defaultItemCount > 5) onDefaultItemCountChange(5);
-        else if (!ITEM_COUNT_OPTIONS.includes(defaultItemCount)) onDefaultItemCountChange(ITEM_COUNT_OPTIONS[0]);
-    }, [subscriptionPlan, defaultItemCount, onDefaultItemCountChange, ITEM_COUNT_OPTIONS]);
-
     const themeOptions = [ { value: 'light', label: 'Clair', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg> }, { value: 'dark', label: 'Sombre', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg> }, { value: 'system', label: 'Système', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> }, ];
     const aiModelOptions = useMemo(() => [ { value: 'brevetai', label: 'BrevetAI', disabled: false }, { value: 'brevetai-pro', label: 'BrevetAI Pro', disabled: subscriptionPlan === 'free', requiredPlan: 'pro' as const }, { value: 'brevetai-max', label: 'BrevetAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, ], [subscriptionPlan]);
     const imageModelOptions = useMemo(() => [ { value: 'faceai', label: 'FaceAI', disabled: false }, { value: 'faceai-pro', label: 'FaceAI Pro', disabled: subscriptionPlan === 'free', requiredPlan: 'pro' as const }, { value: 'faceai-max', label: 'FaceAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, ], [subscriptionPlan]);
@@ -417,9 +407,9 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
         <div className="w-full max-w-2xl mx-auto">
             <h1 className="text-4xl font-bold text-center text-slate-900 dark:text-white mb-10">Paramètres</h1>
             <div className="space-y-8">
-                <SettingSection title="Apparence" description="Choisissez le thème visuel de l'application."><RadioGroup name="theme" options={themeOptions} selectedValue={theme} onChange={onThemeChange} /></SettingSection>
+                <SettingSection className="z-[90]" title="Apparence" description="Choisissez le thème visuel de l'application."><RadioGroup name="theme" options={themeOptions} selectedValue={theme} onChange={onThemeChange} /></SettingSection>
                 
-                <SettingSection title="Profil" description="Ces informations permettent de personnaliser votre expérience.">
+                <SettingSection className="z-[80]" title="Profil" description="Ces informations permettent de personnaliser votre expérience.">
                      <div><label htmlFor="user-name" className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Votre prénom</label><input id="user-name" type="text" value={userName} onChange={(e) => onUserNameChange(e.target.value)} className="w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400" placeholder="Entrez votre prénom..." /></div>
                      <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-2">Votre avatar</label>
@@ -427,14 +417,26 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                     </div>
                 </SettingSection>
 
-                <SettingSection title="Paramètres de génération par défaut" description="Choisissez les options par défaut pour la génération de contenu.">
-                    <div className="relative">
-                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><StyledDropdown<string> label="Niveau" options={LEVELS} value={defaultLevel} onChange={onDefaultLevelChange} disabled={subscriptionPlan !== 'max'} /><StyledDropdown<'Facile' | 'Normal' | 'Difficile' | 'Expert'> label="Difficulté" options={DIFFICULTIES} value={defaultDifficulty} onChange={onDefaultDifficultyChange} disabled={subscriptionPlan !== 'max'} /><StyledDropdown<number> label="Nombre d'éléments" options={ITEM_COUNT_OPTIONS} value={defaultItemCount} onChange={onDefaultItemCountChange} renderOption={(option) => `${option} élément${option > 1 ? 's' : ''}`} disabled={subscriptionPlan !== 'max'} /></div>
-                        {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" />}
+                <SettingSection className="z-[70]" title="Paramètres de génération par défaut" description="Choisissez les options par défaut pour la génération de contenu.">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <StyledDropdown<string> label="Niveau" options={LEVELS} value={defaultLevel} onChange={onDefaultLevelChange} />
+                        <StyledDropdown<'Facile' | 'Normal' | 'Difficile' | 'Expert'> label="Difficulté" options={DIFFICULTIES} value={defaultDifficulty} onChange={onDefaultDifficultyChange} />
+                    </div>
+                    <div className="pt-4">
+                        <label htmlFor="default-item-count-slider" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">Nombre d'éléments par défaut ({defaultItemCount})</label>
+                        <input
+                            id="default-item-count-slider"
+                            type="range"
+                            min="1"
+                            max="10"
+                            value={defaultItemCount}
+                            onChange={(e) => onDefaultItemCountChange(Number(e.target.value))}
+                            className="w-full h-2 bg-slate-300/50 dark:bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                        />
                     </div>
                 </SettingSection>
 
-                <SettingSection title="BrevetAI" description="Modifiez le comportement de l'IA pour qu'elle corresponde à vos besoins.">
+                <SettingSection className="z-[60]" title="BrevetAI" description="Modifiez le comportement de l'IA pour qu'elle corresponde à vos besoins.">
                     <div className="relative">
                         <label htmlFor="ai-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Instruction système</label>
                         <textarea id="ai-instruction" rows={4} value={aiSystemInstruction} onChange={(e) => onAiSystemInstructionChange(e.target.value)} className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`} placeholder="Ex: 'Explique les choses de manière très simple, comme si j'avais 10 ans.'" disabled={isFree} />
@@ -443,7 +445,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Modèle par défaut</label><RadioGroup name="aiModel" options={aiModelOptions} selectedValue={defaultAiModel} onChange={onDefaultAiModelChange} /></div>
                 </SettingSection>
                 
-                 <SettingSection title="FaceAI" description="Personnalisez le comportement de FaceAI.">
+                 <SettingSection className="z-[50]" title="FaceAI" description="Personnalisez le comportement de FaceAI.">
                     <div className="relative">
                         <label htmlFor="image-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Instruction de style globale</label>
                         <textarea id="image-instruction" rows={3} value={imageGenerationInstruction} onChange={(e) => onImageGenerationInstructionChange(e.target.value)} className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`} placeholder="Ex: 'Toutes les images doivent avoir un style cartoon.'" disabled={isFree} />
@@ -452,7 +454,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Modèle par défaut</label><RadioGroup name="imageModel" options={imageModelOptions} selectedValue={defaultImageModel} onChange={onDefaultImageModelChange} /></div>
                 </SettingSection>
 
-                <SettingSection title="CanvasAI" description="Personnalisez le comportement de CanvasAI.">
+                <SettingSection className="z-[40]" title="CanvasAI" description="Personnalisez le comportement de CanvasAI.">
                     <div className="relative">
                         <label htmlFor="canvas-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Instruction système</label>
                         <textarea id="canvas-instruction" rows={3} value={canvasSystemInstruction} onChange={(e) => onCanvasSystemInstructionChange(e.target.value)} className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${subscriptionPlan !== 'max' ? 'opacity-60' : ''}`} placeholder="Ex: 'Toutes les pages doivent avoir un thème sombre et des polices modernes.'" disabled={subscriptionPlan !== 'max'} />
@@ -461,7 +463,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Modèle par défaut</label><RadioGroup name="canvasModel" options={canvasModelOptions} selectedValue={defaultCanvasModel} onChange={onDefaultCanvasModelChange} /></div>
                 </SettingSection>
 
-                <SettingSection title="FlashAI" description="Personnalisez le comportement de FlashAI.">
+                <SettingSection className="z-[30]" title="FlashAI" description="Personnalisez le comportement de FlashAI.">
                     <div className="relative">
                         <label htmlFor="flashai-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Instruction système</label>
                         <textarea id="flashai-instruction" rows={3} value={flashAiSystemInstruction} onChange={(e) => onFlashAiSystemInstructionChange(e.target.value)} className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`} placeholder="Ex: 'Génère des questions amusantes.'" disabled={isFree} />
@@ -470,7 +472,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Modèle par défaut</label><RadioGroup name="flashAiModel" options={flashAiModelOptions} selectedValue={defaultFlashAiModel} onChange={onDefaultFlashAiModelChange} /></div>
                 </SettingSection>
 
-                <SettingSection title="PlanningAI" description="Personnalisez le comportement de PlanningAI.">
+                <SettingSection className="z-[20]" title="PlanningAI" description="Personnalisez le comportement de PlanningAI.">
                     <div className="relative">
                         <label htmlFor="planningai-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Instruction système</label>
                         <textarea id="planningai-instruction" rows={3} value={planningAiSystemInstruction} onChange={(e) => onPlanningAiSystemInstructionChange(e.target.value)} className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`} placeholder="Ex: 'Sois très encourageant dans tes descriptions.'" disabled={isFree} />
@@ -479,7 +481,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Modèle par défaut</label><RadioGroup name="planningAiModel" options={planningAiModelOptions} selectedValue={defaultPlanningAiModel} onChange={onDefaultPlanningAiModelChange} /></div>
                 </SettingSection>
 
-                 <SettingSection title="ConseilsAI" description="Personnalisez le comportement de ConseilsAI.">
+                 <SettingSection className="z-[10]" title="ConseilsAI" description="Personnalisez le comportement de ConseilsAI.">
                     <div className="relative">
                         <label htmlFor="conseilsai-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">Instruction système</label>
                         <textarea id="conseilsai-instruction" rows={3} value={conseilsAiSystemInstruction} onChange={(e) => onConseilsAiSystemInstructionChange(e.target.value)} className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`} placeholder="Ex: 'Utilise un ton très formel.'" disabled={isFree} />
@@ -490,7 +492,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
 
                 <SettingSection title="À propos" description="Informations sur l'application et les mises à jour.">
                     <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">26-3.7</span>
+                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">26-3.9</span>
                         <a href="https://github.com/mAI-mAIPlatform/breveteasy-geministudio-off/releases/" target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors text-sm">Notes de version</a>
                     </div>
                 </SettingSection>

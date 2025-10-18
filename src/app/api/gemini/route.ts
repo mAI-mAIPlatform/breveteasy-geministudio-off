@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextResponse } from 'next/server';
-import type { Quiz, ImageModel, Question, Planning, CanvasModel, FlashAiModel, PlanningAiModel } from '@/lib/types';
+import type { Quiz, ImageModel, Question, Planning, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart } from '@/lib/types';
 
 if (!process.env.API_KEY) {
   throw new Error("Missing API_KEY environment variable");
@@ -48,7 +48,7 @@ async function internalGenerateQuiz({ subjectName, count, difficulty, level, cus
 
 async function internalGenerateHtmlContent({ prompt, systemInstruction, model }: any): Promise<string> {
     // Fix: Use the provided model to select the correct Gemini model, making the function more flexible.
-    const geminiModel = (model === 'canvasai' || model === 'conseilsai') ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    const geminiModel = (model === 'canvasai' || model === 'conseilsai' || !model) ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     const response = await ai.models.generateContent({
         model: geminiModel,
         contents: prompt,
@@ -124,7 +124,8 @@ async function internalGenerateFlashQuestion({ level, systemInstruction, model }
 }
 
 // Fix: Add implementation for generating a planning schedule.
-async function internalGeneratePlanning({ task, dueDate, systemInstruction, model }: { task: string; dueDate: string; systemInstruction: string; model: PlanningAiModel }): Promise<Planning> {
+// FIX: Add `todayDate` to the function parameters and use it to construct a more context-aware prompt.
+async function internalGeneratePlanning({ task, dueDate, todayDate, systemInstruction, model }: { task: string; dueDate: string; todayDate: string; systemInstruction: string; model: PlanningAiModel }): Promise<Planning> {
     const planningSchema = {
         type: Type.OBJECT,
         properties: {
@@ -144,7 +145,8 @@ async function internalGeneratePlanning({ task, dueDate, systemInstruction, mode
         required: ['title', 'schedule']
     };
 
-    const prompt = `Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles. Le planning doit être réaliste.`;
+    // FIX: Update the prompt to include today's date for better context and scheduling logic.
+    const prompt = `La date d'aujourd'hui est le ${new Date(todayDate + 'T00:00:00Z').toLocaleDateString('fr-FR', { timeZone: 'UTC' })}. Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Le planning doit commencer à partir d'aujourd'hui ou d'un jour futur, jamais dans le passé. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles jusqu'à la date limite. Le planning doit être réaliste. Assure-toi que les dates dans le JSON sont au format YYYY-MM-DD.`;
 
     const geminiModel = model === 'planningai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     
@@ -159,6 +161,47 @@ async function internalGeneratePlanning({ task, dueDate, systemInstruction, mode
     });
     
     return JSON.parse(response.text);
+}
+
+async function internalGenerateConseils({ subject, level, systemInstruction, model }: { subject: string; level: string; systemInstruction: string; model: ConseilsAiModel }): Promise<string> {
+    const prompt = `Génère des conseils et des stratégies de révision pour la matière "${subject}" au niveau "${level}". La réponse doit être formatée en HTML simple (<h1>, <h2>, <p>, <ul>, <li>, <strong>) pour être affichée directement. Fournis des conseils pratiques et actionnables.`;
+    const geminiModel = model === 'conseilsai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+            systemInstruction: systemInstruction || "Tu es un conseiller pédagogique expert qui aide les élèves à optimiser leurs révisions.",
+        }
+    });
+    return response.text;
+}
+
+async function internalGenerateWithSearch({ history, currentParts }: { history: ChatMessage[], currentParts: ChatPart[] }) {
+    const contents = history.map(m => ({
+        role: m.role,
+        parts: m.parts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}}))
+    }));
+
+    contents.push({
+        role: 'user',
+        parts: currentParts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}}))
+    });
+    
+    const response = await ai.models.generateContent({
+       model: "gemini-2.5-flash",
+       // @ts-ignore
+       contents: contents,
+       config: {
+         tools: [{googleSearch: {}}],
+       },
+    });
+    
+    // We need to return the full response object, not just text, to get grounding metadata
+    return {
+        text: response.text,
+        candidates: response.candidates,
+    };
 }
 
 
@@ -179,7 +222,6 @@ export async function POST(req: Request) {
                 const image = await internalGenerateImage(payload);
                 return NextResponse.json(image);
             
-            // Fix: Add handlers for new actions to the API route.
             case 'generateFlashQuestion':
                 const question = await internalGenerateFlashQuestion(payload);
                 return NextResponse.json(question);
@@ -187,6 +229,14 @@ export async function POST(req: Request) {
             case 'generatePlanning':
                 const planning = await internalGeneratePlanning(payload);
                 return NextResponse.json(planning);
+
+            case 'generateConseils':
+                const conseils = await internalGenerateConseils(payload);
+                return NextResponse.json({ html: conseils });
+
+            case 'generateWithSearch':
+                const searchResult = await internalGenerateWithSearch(payload);
+                return NextResponse.json(searchResult);
 
             default:
                 return NextResponse.json({ message: 'Invalid action' }, { status: 400 });

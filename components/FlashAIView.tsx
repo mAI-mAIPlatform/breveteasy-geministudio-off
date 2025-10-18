@@ -129,7 +129,7 @@ const ModelSelector: React.FC<{
                     {((models.find(m => m.id === option)?.requiredPlan === 'pro' && subscriptionPlan === 'free') ||
                      (models.find(m => m.id === option)?.requiredPlan === 'max' && subscriptionPlan !== 'max')) && (
                         <span className="text-xs opacity-70">
-                            <PremiumBadge requiredPlan={models.find(m => m.id === option)!.requiredPlan as 'pro' | 'max'} />
+                            <PremiumBadge requiredPlan={models.find(m => m.id === option)!.requiredPlan as 'pro' | 'max'} size="small" />
                         </span>
                     )}
                 </div>

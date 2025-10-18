@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel } from '../types';
+import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart } from '../types';
+import type { GenerateContentResponse } from '@google/genai';
 
 // ===================================================================================
 // IMPORTANT SECURITY WARNING:
@@ -216,6 +217,7 @@ export const generateFlashQuestion = async (
  * Generates a study plan.
  * @param task - The task to be planned.
  * @param dueDate - The deadline for the task.
+ * @param todayDate - The current date.
  * @param systemInstruction - System-level instructions for the AI.
  * @param model - The planning AI model to use.
  * @returns A promise resolving to a Planning object.
@@ -223,6 +225,7 @@ export const generateFlashQuestion = async (
 export const generatePlanning = async (
     task: string,
     dueDate: string,
+    todayDate: string,
     systemInstruction: string,
     model: PlanningAiModel,
 ): Promise<Planning> => {
@@ -245,7 +248,7 @@ export const generatePlanning = async (
         required: ['title', 'schedule']
     };
 
-    const prompt = `Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles. Le planning doit être réaliste.`;
+    const prompt = `La date d'aujourd'hui est le ${new Date(todayDate + 'T00:00:00Z').toLocaleDateString('fr-FR', { timeZone: 'UTC' })}. Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Le planning doit commencer à partir d'aujourd'hui ou d'un jour futur, jamais dans le passé. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles jusqu'à la date limite. Le planning doit être réaliste. Assure-toi que les dates dans le JSON sont au format YYYY-MM-DD.`;
 
     const geminiModel = model === 'planningai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     
@@ -289,4 +292,27 @@ export const generateConseils = async (
         }
     });
     return response.text;
+};
+
+export const generateContentWithSearch = async (history: ChatMessage[], currentParts: ChatPart[]): Promise<GenerateContentResponse> => {
+    const contents = history.map(m => ({
+        role: m.role,
+        parts: m.parts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}}))
+    }));
+
+    contents.push({
+        role: 'user',
+        parts: currentParts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}}))
+    });
+
+    const response = await ai.models.generateContent({
+       model: "gemini-2.5-flash",
+       // @ts-ignore
+       contents: contents,
+       config: {
+         tools: [{googleSearch: {}}],
+       },
+    });
+
+    return response;
 };

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '@/lib/types';
+import { generateContentWithSearch } from '@/services/geminiService';
+import type { GenerateContentResponse } from '@google/genai';
 import { PremiumBadge } from './PremiumBadge';
 
 interface ChatViewProps {
@@ -12,7 +14,6 @@ interface ChatViewProps {
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
     userName: string;
-    // Fix: Add missing navigation properties to the interface to match props passed in App.tsx.
     onNavigateToImageGeneration: () => void;
     onNavigateToCanvas: () => void;
     onNavigateToFlashAI: () => void;
@@ -27,7 +28,6 @@ const RegenerateIcon: React.FC<{ className?: string }> = ({ className }) =>
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor">
         <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
     </svg>;
-
 
 const ModelSelectorDropdown: React.FC<{
     aiModel: AiModel;
@@ -184,36 +184,13 @@ const Message: React.FC<{
     index: number;
     copiedIndex: number | null;
     onCopy: (parts: ChatPart[], index: number) => void;
-    onRegenerate: (index: number, modification: 'longer' | 'shorter' | 'change_model', newModel?: AiModel) => void;
+    onRegenerate: (index: number) => void;
     onEdit: (index: number) => void;
-    regenMenuIndex: number | null;
-    setRegenMenuIndex: (index: number | null) => void;
-    subscriptionPlan: SubscriptionPlan;
-}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit, regenMenuIndex, setRegenMenuIndex, subscriptionPlan }) => {
+}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit }) => {
     const isModel = message.role === 'model';
-    const isRegenMenuOpen = regenMenuIndex === index;
-    const regenMenuRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (regenMenuRef.current && !regenMenuRef.current.contains(event.target as Node)) {
-                setRegenMenuIndex(null);
-            }
-        };
-        if (isRegenMenuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isRegenMenuOpen, setRegenMenuIndex]);
-
-    const handleRegenOptionClick = (mod: 'longer' | 'shorter' | 'change_model', model?: AiModel) => {
-        onRegenerate(index, mod, model);
-        setRegenMenuIndex(null);
-    };
     
     const actionBarClass = "flex items-center self-center gap-1 p-1 bg-white/60 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200";
     const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
-    const menuItemClass = "w-full text-left px-3 py-1.5 text-sm rounded-md text-slate-800 dark:text-slate-200 hover:bg-indigo-500 hover:text-white transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed";
 
     return (
         <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'justify-end'}`}>
@@ -255,33 +232,9 @@ const Message: React.FC<{
                     <button onClick={() => onCopy(message.parts, index)} title="Copier" className={actionButtonClass}>
                         {copiedIndex === index ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
                     </button>
-                    <div className="relative" ref={regenMenuRef}>
-                        <button onClick={() => setRegenMenuIndex(isRegenMenuOpen ? null : index)} title="Regénérer" className={actionButtonClass}>
-                            <RegenerateIcon className="h-4 w-4" />
-                        </button>
-                        {isRegenMenuOpen && (
-                            <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-20 p-2 space-y-1">
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('longer')}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" /></svg>
-                                    <span>Plus long</span>
-                                </button>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('shorter')}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h4" /></svg>
-                                    <span>Plus court</span>
-                                </button>
-                                <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai')}>
-                                    <span>Régénérer avec BrevetAI</span>
-                                </button>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-pro')} disabled={subscriptionPlan === 'free'}>
-                                    <span>Régénérer avec BrevetAI Pro</span>
-                                </button>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-max')} disabled={subscriptionPlan !== 'max'}>
-                                    <span>Régénérer avec BrevetAI Max</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    <button onClick={() => onRegenerate(index)} title="Regénérer" className={actionButtonClass}>
+                        <RegenerateIcon className="h-4 w-4" />
+                    </button>
                 </div>
             )}
         </div>
@@ -293,7 +246,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [attachment, setAttachment] = useState<{ file: File, previewUrl: string } | null>(null);
-    const [regenMenuIndex, setRegenMenuIndex] = useState<number | null>(null);
+    const [useWebSearch, setUseWebSearch] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -301,7 +254,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     useEffect(() => {
         const textarea = textareaRef.current;
         if (textarea) {
-            textarea.style.height = 'auto'; // Reset to calculate new scrollHeight
+            textarea.style.height = 'auto';
             const maxHeight = 192; // 12rem
             const newHeight = Math.min(textarea.scrollHeight, maxHeight);
             textarea.style.height = `${newHeight}px`;
@@ -313,20 +266,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    const messageLimit = useMemo(() => {
-        if (session.aiModel === 'brevetai' || session.aiModel === 'brevetai-max') {
-            return Infinity;
-        }
-        if (session.aiModel === 'brevetai-pro') {
-            if (subscriptionPlan === 'pro') return 100;
-            if (subscriptionPlan === 'max') return Infinity;
-        }
-        return 0; // Should not be accessible on free plan
-    }, [subscriptionPlan, session.aiModel]);
-    
-    const isChatLimitReached = session.messages.length >= messageLimit;
-    const isConversationStarted = session.messages.length > 0;
-
     useEffect(scrollToBottom, [session.messages]);
 
     const fileToBase64 = (file: File): Promise<string> => {
@@ -337,7 +276,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             reader.onerror = error => reject(error);
         });
     };
-
+    
     const generateTitle = useCallback(async (initialPrompt: string) => {
         try {
             const response = await fetch('/api/chat', {
@@ -353,98 +292,111 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         }
     }, [onUpdateSession, session.id]);
 
-    const processStream = useCallback(async (response: Response) => {
+     const processStream = useCallback(async (response: Response) => {
         if (!response.ok || !response.body) {
             throw new Error(`API call failed: ${response.statusText}`);
         }
-
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullResponse = '';
-
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             fullResponse += decoder.decode(value, { stream: true });
-            
             onUpdateSession(session.id, {
                 messages: (prev) => {
                     const newMessages = [...prev];
-                    // Replace the last message which is the thinking/previous chunk message
-                    newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }] };
+                    newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
                     return newMessages;
                 }
             });
         }
+        onUpdateSession(session.id, {
+            messages: (prev) => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: false };
+                return newMessages;
+            }
+        });
     }, [onUpdateSession, session.id]);
 
-    const handleSendMessage = async () => {
+    const handleSendMessage = useCallback(async () => {
         const textInput = input.trim();
-        if ((!textInput && !attachment) || isLoading || isChatLimitReached) return;
-        
-        setIsLoading(true);
+        if ((!textInput && !attachment) || isLoading) return;
 
+        setIsLoading(true);
         const userParts: ChatPart[] = [];
         if (attachment) {
-            try {
-                const base64Data = await fileToBase64(attachment.file);
-                userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
-            } catch(error) {
-                console.error("Error converting file to base64", error);
-                setIsLoading(false);
-                return;
-            }
+          try {
+            const base64Data = await fileToBase64(attachment.file);
+            userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
+          } catch (error) {
+            console.error("Error converting file to base64", error);
+            alert("Erreur lors du traitement de l'image.");
+            setIsLoading(false);
+            return;
+          }
         }
         if (textInput) {
-            userParts.push({ text: textInput });
+          userParts.push({ text: textInput });
         }
 
+        const currentHistory = session.messages;
         const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
         
-        // Add user message and thinking indicator using functional updates
-        onUpdateSession(session.id, { messages: (prev) => [...prev, userInputMessage] });
-        onUpdateSession(session.id, { messages: (prev) => [...prev, { role: 'model', parts: [], isGenerating: true }] });
-        
-        const isFirstUserMessage = session.messages.filter(m => m.role === 'user').length === 0;
+        onUpdateSession(session.id, {
+          messages: (prev) => [...prev, userInputMessage, { role: 'model', parts: [], isGenerating: true }],
+        });
+
+        const isFirstUserMessage = currentHistory.filter(m => m.role === 'user').length === 0;
         
         setInput('');
         setAttachment(null);
         
         try {
+          if (useWebSearch) {
+            const response = await generateContentWithSearch(currentHistory, userParts) as any;
+            const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+            onUpdateSession(session.id, {
+              messages: (prev) => {
+                const newMessages = [...prev.slice(0, -1)];
+                newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata });
+                return newMessages;
+              },
+            });
+          } else {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'sendMessage',
                     payload: {
-                        history: session.messages, // Pass current history for context
+                        history: currentHistory,
                         message: { parts: userParts },
-                        config: {
-                            aiModel: session.aiModel,
-                            systemInstruction,
-                            userName,
-                            subscriptionPlan,
-                        }
+                        config: { aiModel: session.aiModel, systemInstruction, userName, subscriptionPlan }
                     }
                 }),
             });
             await processStream(response);
+          }
 
-        } catch (error) {
-            console.error("Error sending message:", error);
-            onUpdateSession(session.id, { messages: (prev) => {
-                const newMessages = [...prev.slice(0, -1)];
-                newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] });
-                return newMessages;
-            }});
-        } finally {
-            setIsLoading(false);
-        }
-        
-        if (isFirstUserMessage) {
+          if (isFirstUserMessage && (textInput || attachment)) {
             await generateTitle(textInput || "Discussion avec image");
+          }
+        } catch (error) {
+          console.error("Error sending message:", error);
+          onUpdateSession(session.id, {
+            messages: (prev) => {
+              const newMessages = [...prev.slice(0, -1)];
+              newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] });
+              return newMessages;
+            },
+          });
+        } finally {
+          setIsLoading(false);
         }
-    };
+    }, [input, attachment, isLoading, onUpdateSession, session.id, session.messages, generateTitle, useWebSearch, systemInstruction, userName, subscriptionPlan, session.aiModel, processStream]);
+
 
     const handleCopy = (parts: ChatPart[], index: number) => {
         const textToCopy = parts.map(p => p.text).filter(Boolean).join('\n');
@@ -460,71 +412,59 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         const textToEdit = messageToEdit.parts.find(p => p.text)?.text || '';
         setInput(textToEdit);
 
-        // Remove the message and all subsequent messages to allow for a clean re-submission
         onUpdateSession(session.id, { messages: (prev) => prev.slice(0, index) });
     };
 
-    const handleRegenerateResponse = async (index: number, modification: 'longer' | 'shorter' | 'change_model', newModel?: AiModel) => {
+    const handleRegenerateResponse = useCallback(async (index: number) => {
         if (isLoading || session.messages[index]?.role !== 'model') return;
 
         setIsLoading(true);
-        // Truncate history to the point right before the response to be regenerated
         const historyForRegen = session.messages.slice(0, index);
-        const userPromptMessage = historyForRegen[historyForRegen.length - 1];
-
-        if(userPromptMessage?.role !== 'user') {
+        const lastUserMessage = historyForRegen[historyForRegen.length - 1];
+        if (lastUserMessage?.role !== 'user') {
             setIsLoading(false);
             return;
         }
-        
-        // Update UI with truncated history and a thinking indicator
+
         onUpdateSession(session.id, { messages: [...historyForRegen, { role: 'model', parts: [], isGenerating: true }] });
 
-        const modelForRegen = modification === 'change_model' && newModel ? newModel : session.aiModel;
-        
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'regenerate',
+                    action: 'sendMessage', // Use send message with truncated history for regen
                     payload: {
-                        history: historyForRegen.slice(0, -1), // History before the last user prompt
-                        message: userPromptMessage,
-                        config: {
-                            aiModel: modelForRegen,
-                            systemInstruction,
-                            userName,
-                            subscriptionPlan,
-                        },
-                        modification,
+                        history: historyForRegen.slice(0, -1),
+                        message: lastUserMessage,
+                        config: { aiModel: session.aiModel, systemInstruction, userName, subscriptionPlan }
                     }
                 }),
             });
             await processStream(response);
-
         } catch (error) {
             console.error("Error regenerating response:", error);
-            onUpdateSession(session.id, { messages: (prev) => {
-                const newMessages = [...prev.slice(0, -1)];
-                newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue lors de la regénération." }] });
-                return newMessages;
-            }});
+            onUpdateSession(session.id, {
+                messages: (prev) => [...prev.slice(0, -1), { role: 'model', parts: [{ text: "Désolé, la regénération a échoué." }] }],
+            });
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [isLoading, session.messages, onUpdateSession, session.id, systemInstruction, userName, subscriptionPlan, session.aiModel, processStream]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             setAttachment({ file, previewUrl: URL.createObjectURL(file) });
         }
+        event.target.value = ''; // Reset input
     };
     
     const handleTitleChange = (newTitle: string) => {
         onUpdateSession(session.id, { title: newTitle });
     };
+
+    const isConversationStarted = session.messages.length > 0;
 
     return (
         <div className="w-full h-full flex flex-col bg-white/10 dark:bg-slate-900/60">
@@ -561,16 +501,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         onCopy={handleCopy}
                         onRegenerate={handleRegenerateResponse}
                         onEdit={handleEditMessage}
-                        regenMenuIndex={regenMenuIndex}
-                        setRegenMenuIndex={setRegenMenuIndex}
-                        subscriptionPlan={subscriptionPlan}
                     />
                 ))}
-                 {isChatLimitReached && (
-                    <div className="text-center p-4 bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border border-yellow-500/30 rounded-xl">
-                        Vous avez atteint la limite de {messageLimit} messages pour ce modèle avec votre forfait. Passez à un forfait supérieur pour continuer.
-                    </div>
-                )}
                 <div ref={messagesEndRef} />
             </main>
 
@@ -584,7 +516,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                     </div>
                 )}
                 <div className="flex items-end bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-2xl p-1 shadow-inner pr-2 border border-white/20 dark:border-slate-700">
-                    <button onClick={() => fileInputRef.current?.click()} disabled={isChatLimitReached} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-1">
+                    <button onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-1">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                     </button>
                     <textarea
@@ -597,22 +529,26 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                                 handleSendMessage();
                             }
                         }}
-                        placeholder={isChatLimitReached ? "Limite de messages atteinte." : "Poser une question à BrevetAI..."}
+                        placeholder={"Poser une question à BrevetAI..."}
                         className="flex-grow bg-transparent p-2 text-slate-900 dark:text-slate-100 placeholder-slate-600 dark:placeholder-slate-500 focus:outline-none resize-none leading-tight"
                         rows={1}
-                        disabled={isLoading || isChatLimitReached}
+                        disabled={isLoading}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
+                    <button onClick={handleSendMessage} disabled={isLoading || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
                        </svg>
                     </button>
                 </div>
-                {session.aiModel === 'brevetai-pro' && (
-                    <p className="text-center text-xs text-slate-600 dark:text-slate-400 pt-1">
-                        {isFinite(messageLimit) ? `${Math.max(0, messageLimit - session.messages.length)} messages restants avec votre forfait.` : 'Messages illimités.'}
-                    </p>
-                )}
+                 <div className="flex justify-center items-center gap-2 pt-1">
+                    <div className="relative">
+                      <button onClick={() => setUseWebSearch(s => !s)} disabled={subscriptionPlan !== 'max'} className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1.5 ${useWebSearch ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'} disabled:opacity-50 disabled:cursor-not-allowed`}>
+                        <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        Avec le Web
+                      </button>
+                       {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" size="small" />}
+                    </div>
+                </div>
             </footer>
         </div>
     );

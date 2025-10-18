@@ -22,9 +22,9 @@ import { CanvasView } from '@/components/CanvasView';
 import { FlashAIView } from '@/components/FlashAIView';
 import { PlanningView } from '@/components/PlanningView';
 import { ConseilsView } from '@/components/ConseilsView';
-import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils } from '@/services/geminiService';
+import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateContentWithSearch } from '@/services/geminiService';
 import { AVATAR_ICONS } from '@/lib/constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel } from '@/lib/types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatPart } from '@/lib/types';
 
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
 type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
@@ -208,7 +208,8 @@ const App: React.FC = () => {
         setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
 
         // Generation settings
-        setDefaultItemCount(parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10));
+        const loadedCount = parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10);
+        setDefaultItemCount(Math.max(1, Math.min(10, loadedCount)));
         const savedDifficulty = localStorage.getItem('brevet-easy-default-difficulty');
         setDefaultDifficulty((savedDifficulty === 'Facile' || savedDifficulty === 'Normal' || savedDifficulty === 'Difficile' || savedDifficulty === 'Expert' ? savedDifficulty : 'Normal'));
         setDefaultLevel(localStorage.getItem('brevet-easy-default-level') || 'Brevet');
@@ -280,7 +281,6 @@ const App: React.FC = () => {
         if (!container) return;
 
         const handleScroll = () => {
-            // Show button if scrolled more than 200px
             if (container.scrollTop > 200) {
                 setShowScrollTop(true);
             } else {
@@ -290,7 +290,7 @@ const App: React.FC = () => {
 
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
-    }, []); // Runs once on mount
+    }, []);
     
     // Persistence effects for all settings
     useEffect(() => { localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction); }, [aiSystemInstruction]);
@@ -499,6 +499,14 @@ const App: React.FC = () => {
             setIsDownloadingHtml(false);
         }
     };
+    
+    const handleCopyHtml = () => {
+        if (!generatedHtml) return;
+        navigator.clipboard.writeText(generatedHtml).catch(err => {
+            console.error('Failed to copy HTML: ', err);
+            alert("La copie a échoué.");
+        });
+    };
 
     // Chat Flow Handlers
     const handleStartChat = () => {
@@ -528,7 +536,6 @@ const App: React.FC = () => {
         setChatSessions(prev => prev.filter(s => s.id !== sessionId));
         if (activeChatSessionId === sessionId) {
             setActiveChatSessionId(null);
-            // Optional: select the most recent chat after deletion
             const remainingSessions = chatSessions.filter(s => s.id !== sessionId);
             if(remainingSessions.length > 0) {
                  const sorted = [...remainingSessions].sort((a,b) => b.createdAt - a.createdAt);
@@ -550,12 +557,10 @@ const App: React.FC = () => {
             prev.map(s => {
                 if (s.id === sessionId) {
                     const newSession = { ...s };
-                    // Handle non-message updates
                     if (updates.title !== undefined) newSession.title = updates.title;
                     if (updates.aiModel !== undefined) newSession.aiModel = updates.aiModel;
                     if (updates.folderId !== undefined) newSession.folderId = updates.folderId;
 
-                    // Handle message updates
                     if (updates.messages) {
                         if (typeof updates.messages === 'function') {
                             newSession.messages = updates.messages(s.messages);
@@ -612,7 +617,6 @@ const App: React.FC = () => {
     
     const handleDeleteFolder = (folderId: string) => {
         setFolders(prev => prev.filter(f => f.id !== folderId));
-        // Un-assign sessions from the deleted folder
         setChatSessions(prev => prev.map(s => s.folderId === folderId ? {...s, folderId: null} : s));
     };
 
@@ -686,7 +690,6 @@ const App: React.FC = () => {
         }
     }, [buildSystemInstruction, canvasSystemInstruction]);
 
-    // Fix: Update `handleGenerateFlashQuestion` to accept the model as an argument and remove `defaultFlashAiModel` from the dependency array.
     const handleGenerateFlashQuestion = useCallback(async (level: string, model: FlashAiModel) => {
         setIsGeneratingFlashQuestion(true);
         try {
@@ -704,7 +707,9 @@ const App: React.FC = () => {
     const handleGeneratePlanning = useCallback(async (task: string, dueDate: string, model: PlanningAiModel) => {
         setIsGeneratingPlanning(true);
         try {
-            const generatedPlan = await generatePlanning(task, dueDate, buildSystemInstruction(planningAiSystemInstruction), model);
+            // FIX: Add today's date to the generatePlanning call, as it's required for context.
+            const todayDate = new Date().toISOString().split('T')[0];
+            const generatedPlan = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), model);
             setPlanning(generatedPlan);
         } catch (error) {
             console.error("Error generating planning:", error);
@@ -714,7 +719,10 @@ const App: React.FC = () => {
         }
     }, [buildSystemInstruction, planningAiSystemInstruction]);
 
-    // Fix: Update `handleGenerateConseils` to accept the model as an argument and remove `defaultConseilsAiModel` from the dependency array.
+    const handleUpdatePlanning = (updatedPlanning: Planning) => {
+        setPlanning(updatedPlanning);
+    };
+
     const handleGenerateConseils = useCallback(async (subject: string, level: string, model: ConseilsAiModel) => {
         setIsGeneratingConseils(true);
         try {
@@ -826,6 +834,7 @@ const App: React.FC = () => {
                                     onNavigateToFlashAI={handleStartFlashAI}
                                     onNavigateToPlanning={handleStartPlanning}
                                     onNavigateToConseils={handleStartConseils}
+                                    generateContentWithSearch={generateContentWithSearch}
                                 />
                             ) : (
                                 <WelcomeView />
@@ -842,20 +851,17 @@ const App: React.FC = () => {
                     'fiche-revisions': { title: "Fiche générée !", description: "Votre fiche de révisions est prête.", buttonText: "Télécharger la fiche" },
                 }[loadingTask] || { title: "Contenu généré !", description: "Votre contenu est prêt.", buttonText: "Télécharger" };
                 
-                return <ExercisesView onDownload={handleDownloadHtml} {...contentConfig} />;
+                return <ExercisesView onDownload={handleDownloadHtml} onCopy={handleCopyHtml} {...contentConfig} />;
             case 'subscription':
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'imageGeneration':
                  return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
             case 'canvas':
                 return <CanvasView versions={canvasVersions} activeVersionId={activeCanvasVersionId} onGenerate={handleGenerateCanvas} onSelectVersion={setActiveCanvasVersionId} isGenerating={isGeneratingCanvas} subscriptionPlan={subscriptionPlan} defaultCanvasModel={defaultCanvasModel} />;
-            // Fix: Pass the missing `subscriptionPlan` and `defaultFlashAiModel` props to the FlashAIView component.
             case 'flashAI':
                 return <FlashAIView onGenerate={handleGenerateFlashQuestion} isLoading={isGeneratingFlashQuestion} question={flashQuestion} onClear={() => setFlashQuestion(null)} subscriptionPlan={subscriptionPlan} defaultFlashAiModel={defaultFlashAiModel} />;
-            // Fix: Pass the missing `subscriptionPlan` and `defaultPlanningAiModel` props to the PlanningView component.
             case 'planning':
-                return <PlanningView onGenerate={handleGeneratePlanning} isLoading={isGeneratingPlanning} planning={planning} onClear={() => setPlanning(null)} subscriptionPlan={subscriptionPlan} defaultPlanningAiModel={defaultPlanningAiModel}/>;
-            // Fix: Pass the missing `subscriptionPlan` and `defaultConseilsAiModel` props to the ConseilsView component.
+                return <PlanningView onGenerate={handleGeneratePlanning} isLoading={isGeneratingPlanning} planning={planning} onClear={() => setPlanning(null)} subscriptionPlan={subscriptionPlan} defaultPlanningAiModel={defaultPlanningAiModel} onUpdate={handleUpdatePlanning}/>;
             case 'conseils':
                 return <ConseilsView onGenerate={handleGenerateConseils} isLoading={isGeneratingConseils} conseils={conseils} onClear={() => setConseils(null)} subscriptionPlan={subscriptionPlan} defaultConseilsAiModel={defaultConseilsAiModel} />;
             default:
@@ -867,9 +873,8 @@ const App: React.FC = () => {
     const showExitButton = !['home', 'chat'].includes(view);
     const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils'].includes(view);
 
-
     return (
-        <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-start justify-center'}`}>
+        <div id="root-scroll-container" className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-start justify-center'}`}>
              {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />

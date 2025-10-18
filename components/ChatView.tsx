@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '../types';
 import { ai, Type } from '../services/geminiService';
-import type { Chat, Part } from '@google/genai';
+import type { Chat, Part, GenerateContentResponse } from '@google/genai';
 import { PremiumBadge } from './PremiumBadge';
+
+type PromptModifier = 'long' | 'short' | 'web';
 
 interface ChatViewProps {
     session: ChatSession;
@@ -14,12 +16,12 @@ interface ChatViewProps {
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
     userName: string;
-    // Fix: Add missing navigation properties to the interface to match props passed in App.tsx.
     onNavigateToImageGeneration: () => void;
     onNavigateToCanvas: () => void;
     onNavigateToFlashAI: () => void;
     onNavigateToPlanning: () => void;
     onNavigateToConseils: () => void;
+    generateContentWithSearch: (history: ChatMessage[], currentParts: ChatPart[]) => Promise<GenerateContentResponse>;
 }
 
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
@@ -29,6 +31,85 @@ const RegenerateIcon: React.FC<{ className?: string }> = ({ className }) =>
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor">
         <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
     </svg>;
+const ShareIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" /></svg>;
+const TwitterIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>;
+const FacebookIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.84c0-2.5 1.49-3.89 3.78-3.89 1.1 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z" /></svg>;
+const WhatsAppIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2C6.54 2 2.08 6.46 2.08 11.96c0 1.77.46 3.49 1.32 5l-1.4 5.2 5.3-1.4c1.47.8 3.12 1.24 4.88 1.24h.02c5.5 0 9.96-4.46 9.96-9.96c0-5.5-4.46-9.96-9.96-9.96zM17.1 13.5c-.28-.14-1.65-.81-1.9-.9c-.25-.1-.43-.15-.61.15c-.18.3-.72.9-.88 1.08c-.16.18-.32.2-.6.06c-.28-.14-1.18-.43-2.25-1.39c-.83-.75-1.39-1.66-1.55-1.94c-.16-.28-.02-.43.12-.57c.13-.13.28-.34.42-.51c.14-.17.18-.28.28-.47s.05-.36-.02-.51c-.08-.15-.61-1.47-.83-2.02c-.22-.55-.45-.48-.61-.48c-.16 0-.34-.05-.53-.05c-.18 0-.48.07-.72.37c-.25.3-.95.92-1.22 2.22c-.28 1.3.62 2.72.71 2.92c.1.2 1.2 1.8 2.9 2.54c1.7.74 2.22.95 2.9.83c.68-.12 1.65-.68 1.88-1.32c.23-.64.23-1.18.16-1.32c-.07-.14-.25-.22-.53-.36z"/></svg>;
+const LinkedInIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14zm-11 5H5v10h3V8zm-1.5-2.25a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM18 18h-3v-4.5c0-1.04-.02-2.37-1.45-2.37-1.45 0-1.67 1.13-1.67 2.29V18h-3V8h2.88v1.31h.04c.4-.76 1.38-1.55 2.84-1.55 3.03 0 3.59 1.99 3.59 4.58V18z"/></svg>;
+const RedditIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5,12.01c0-1.48-0.78-2.76-1.94-3.48c-0.2-1.3-0.81-2.48-1.72-3.39c-0.91-0.91-2.09-1.52-3.39-1.72 C14.77,2.78,13.48,2,12.01,2c-1.48,0-2.76,0.78-3.48,1.94c-1.3,0.2-2.48,0.81-3.39,1.72c-0.91-0.91-1.52,2.09-1.72,3.39 C2.78,9.25,2,10.53,2,12.01c0,1.48,0.78,2.76,1.94,3.48c0.2,1.3,0.81,2.48,1.72,3.39c0.91,0.91,2.09,1.52,3.39,1.72 c0.72,1.16,2,1.94,3.48,1.94c1.48,0,2.76-0.78,3.48-1.94c1.3-0.2,2.48-0.81,3.39-1.72c0.91-0.91,1.52-2.09,1.72-3.39 C21.72,14.77,22.5,13.48,22.5,12.01z M7.76,12.72c0-0.83,0.67-1.5,1.5-1.5c0.83,0,1.5,0.67,1.5,1.5s-0.67,1.5-1.5,1.5 C8.42,14.22,7.76,13.55,7.76,12.72z M12.01,17.48c-1.89,0-3.48-1.01-4.22-2.45c-0.12-0.23-0.03-0.53,0.2-0.65 c0.23-0.12,0.53-0.03,0.65,0.2c0.6,1.19,1.9,2,3.37,2c1.47,0,2.77-0.81,3.37-2c0.12-0.23,0.42-0.32,0.65-0.2 c0.23,0.12,0.32,0.42,0.2,0.65C15.49,16.47,13.9,17.48,12.01,17.48z M14.75,14.22c-0.83,0-1.5-0.67-1.5-1.5s0.67-1.5,1.5-1.5 c0.83,0,1.5,0.67,1.5,1.5S15.58,14.22,14.75,14.22z"/></svg>;
+const CheckIconSmall: React.FC<{className?: string}> = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
+
+const ShareMessageModal: React.FC<{ isOpen: boolean; onClose: () => void; parts: ChatPart[]; }> = ({ isOpen, onClose, parts }) => {
+    const modalRef = useRef<HTMLDivElement>(null);
+    const [copied, setCopied] = useState(false);
+    
+    const messageText = parts.map(p => p.text).filter(Boolean).join('\n\n');
+    const shareText = `Message de Brevet' Easy 🚀:\n\n"${messageText}"\n\n#Brevet2025 #Révisions #IA`;
+    const encodedShareText = encodeURIComponent(shareText);
+    const shareUrl = "https://gemini.google.com/studio";
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const shareTitle = `Message de Brevet' Easy`;
+    const encodedTitle = encodeURIComponent(shareTitle);
+
+    const shareLinks = {
+        twitter: `https://twitter.com/intent/tweet?text=${encodedShareText}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedShareText}`,
+        linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}&summary=${encodedShareText}`,
+        reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`,
+        whatsapp: `https://api.whatsapp.com/send?text=${encodedShareText}`,
+    };
+    
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+        const handleClickOutside = (event: MouseEvent) => { if (modalRef.current && !modalRef.current.contains(event.target as Node)) onClose(); };
+        window.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen, onClose]);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(shareText).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fade-in" aria-modal="true" role="dialog">
+            <div ref={modalRef} className="relative w-full max-w-md bg-[#f0f2f5] dark:bg-slate-900/80 dark:backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8">
+                <button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-md z-10" aria-label="Fermer">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-6">Partager le message</h2>
+                
+                <div className="p-4 bg-white/50 dark:bg-slate-800/60 rounded-xl mb-6 max-h-40 overflow-y-auto">
+                    <p className="text-slate-800 dark:text-slate-300 text-sm whitespace-pre-wrap">{messageText}</p>
+                </div>
+
+                <div className="flex items-center gap-3 mb-6">
+                    <button onClick={handleCopy} className="w-full flex items-center justify-center p-3 border-2 border-slate-300 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-200/50 dark:hover:bg-slate-700/60 transition-colors">
+                        {copied ? <CheckIconSmall className="w-5 h-5 text-green-500 mr-2"/> : <CopyIcon className="w-5 h-5 mr-2"/>}
+                        {copied ? 'Copié !' : 'Copier'}
+                    </button>
+                </div>
+                
+                <div className="flex justify-center items-center gap-4">
+                     <a href={shareLinks.twitter} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-black/80 text-white rounded-full hover:bg-black/100 transition-colors" title="Partager sur X"><TwitterIcon /></a>
+                    <a href={shareLinks.facebook} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-[#1877F2] text-white rounded-full hover:bg-[#166fe5] transition-colors" title="Partager sur Facebook"><FacebookIcon /></a>
+                    <a href={shareLinks.linkedin} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-[#0A66C2] text-white rounded-full hover:bg-[#0077B5] transition-colors" title="Partager sur LinkedIn"><LinkedInIcon /></a>
+                    <a href={shareLinks.reddit} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-[#FF4500] text-white rounded-full hover:bg-[#ff5700] transition-colors" title="Partager sur Reddit"><RedditIcon /></a>
+                    <a href={shareLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center bg-[#25D366] text-white rounded-full hover:bg-[#1ebe59] transition-colors" title="Partager sur WhatsApp"><WhatsAppIcon /></a>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 
 const ModelSelectorDropdown: React.FC<{
@@ -186,36 +267,13 @@ const Message: React.FC<{
     index: number;
     copiedIndex: number | null;
     onCopy: (parts: ChatPart[], index: number) => void;
-    onRegenerate: (index: number, modification: 'longer' | 'shorter' | 'change_model', newModel?: AiModel) => void;
+    onRegenerate: (index: number) => void;
     onEdit: (index: number) => void;
-    regenMenuIndex: number | null;
-    setRegenMenuIndex: (index: number | null) => void;
-    subscriptionPlan: SubscriptionPlan;
-}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit, regenMenuIndex, setRegenMenuIndex, subscriptionPlan }) => {
+}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit }) => {
     const isModel = message.role === 'model';
-    const isRegenMenuOpen = regenMenuIndex === index;
-    const regenMenuRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (regenMenuRef.current && !regenMenuRef.current.contains(event.target as Node)) {
-                setRegenMenuIndex(null);
-            }
-        };
-        if (isRegenMenuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isRegenMenuOpen, setRegenMenuIndex]);
-
-    const handleRegenOptionClick = (mod: 'longer' | 'shorter' | 'change_model', model?: AiModel) => {
-        onRegenerate(index, mod, model);
-        setRegenMenuIndex(null);
-    };
     
     const actionBarClass = "flex items-center self-center gap-1 p-1 bg-white/60 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200";
     const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
-    const menuItemClass = "w-full text-left px-3 py-1.5 text-sm rounded-md text-slate-800 dark:text-slate-200 hover:bg-indigo-500 hover:text-white transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed";
 
     return (
         <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'justify-end'}`}>
@@ -257,45 +315,21 @@ const Message: React.FC<{
                     <button onClick={() => onCopy(message.parts, index)} title="Copier" className={actionButtonClass}>
                         {copiedIndex === index ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
                     </button>
-                    <div className="relative" ref={regenMenuRef}>
-                        <button onClick={() => setRegenMenuIndex(isRegenMenuOpen ? null : index)} title="Regénérer" className={actionButtonClass}>
-                            <RegenerateIcon className="h-4 w-4" />
-                        </button>
-                        {isRegenMenuOpen && (
-                            <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-20 p-2 space-y-1">
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('longer')}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" /></svg>
-                                    <span>Plus long</span>
-                                </button>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('shorter')}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h4" /></svg>
-                                    <span>Plus court</span>
-                                </button>
-                                <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai')}>
-                                    <span>Régénérer avec BrevetAI</span>
-                                </button>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-pro')} disabled={subscriptionPlan === 'free'}>
-                                    <span>Régénérer avec BrevetAI Pro</span>
-                                </button>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-max')} disabled={subscriptionPlan !== 'max'}>
-                                    <span>Régénérer avec BrevetAI Max</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    <button onClick={() => onRegenerate(index)} title="Regénérer" className={actionButtonClass}>
+                        <RegenerateIcon className="h-4 w-4" />
+                    </button>
                 </div>
             )}
         </div>
     );
 };
 
-export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, systemInstruction, subscriptionPlan, userName, onNavigateToImageGeneration, onNavigateToCanvas, onNavigateToFlashAI, onNavigateToPlanning, onNavigateToConseils }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, systemInstruction, subscriptionPlan, userName, onNavigateToImageGeneration, onNavigateToCanvas, onNavigateToFlashAI, onNavigateToPlanning, onNavigateToConseils, generateContentWithSearch }) => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [attachment, setAttachment] = useState<{ file: File, previewUrl: string } | null>(null);
-    const [regenMenuIndex, setRegenMenuIndex] = useState<number | null>(null);
+    const [promptModifier, setPromptModifier] = useState<PromptModifier | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -303,7 +337,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     useEffect(() => {
         const textarea = textareaRef.current;
         if (textarea) {
-            textarea.style.height = 'auto'; // Reset to calculate new scrollHeight
+            textarea.style.height = 'auto';
             const maxHeight = 192; // 12rem
             const newHeight = Math.min(textarea.scrollHeight, maxHeight);
             textarea.style.height = `${newHeight}px`;
@@ -315,23 +349,18 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    const messageLimit = useMemo(() => {
-        if (session.aiModel === 'brevetai' || session.aiModel === 'brevetai-max') {
-            return Infinity;
-        }
-        if (session.aiModel === 'brevetai-pro') {
-            if (subscriptionPlan === 'pro') return 100;
-            if (subscriptionPlan === 'max') return Infinity;
-        }
-        return 0; // Not accessible for free plan
-    }, [subscriptionPlan, session.aiModel]);
-    
-    const isChatLimitReached = session.messages.length >= messageLimit;
-    const isConversationStarted = session.messages.length > 0;
-
     useEffect(scrollToBottom, [session.messages]);
 
-    const createChatInstance = (history: ChatMessage[], modelOverride?: AiModel): Chat => {
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve((reader.result as string).split(',')[1]);
+            reader.onerror = error => reject(error);
+        });
+    };
+    
+    const createChatInstance = useCallback((history: ChatMessage[]) => {
         const geminiHistory: { role: 'user' | 'model'; parts: Part[] }[] = history
             .filter(m => !m.isGenerating)
             .map(m => ({
@@ -354,36 +383,18 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             finalInstruction += `\n\nL'utilisateur s'appelle ${userName.trim()}. Adresse-toi à lui par son prénom de manière amicale.`;
         }
         
-        const modelToUse = modelOverride || session.aiModel;
-
-        const config: { systemInstruction: string; thinkingConfig?: { thinkingBudget: number } } = {
-             systemInstruction: finalInstruction,
-        };
-
         let geminiModelName: 'gemini-2.5-flash' | 'gemini-2.5-pro' = 'gemini-2.5-flash';
-
-        if (modelToUse === 'brevetai') {
-            config.thinkingConfig = { thinkingBudget: 0 };
-        } else if (modelToUse === 'brevetai-max') {
+        if (session.aiModel === 'brevetai-max') {
             geminiModelName = 'gemini-2.5-pro';
         }
         
         return ai.chats.create({
             model: geminiModelName,
             history: geminiHistory,
-            config,
+            config: { systemInstruction: finalInstruction },
         });
-    }
-
-    const fileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve((reader.result as string).split(',')[1]);
-            reader.onerror = error => reject(error);
-        });
-    };
-
+    }, [session.aiModel, systemInstruction, userName, subscriptionPlan]);
+    
     const generateTitle = useCallback(async (initialPrompt: string) => {
         try {
             const response = await ai.models.generateContent({
@@ -396,59 +407,86 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         }
     }, [onUpdateSession, session.id]);
 
-    const handleSendMessage = async () => {
+    const handleSendMessage = useCallback(async () => {
         const textInput = input.trim();
-        if (!textInput && !attachment || isLoading || isChatLimitReached) return;
-        
-        const userParts: ChatPart[] = [];
-        setIsLoading(true);
+        if ((!textInput && !attachment) || isLoading) return;
 
+        setIsLoading(true);
+        const userParts: ChatPart[] = [];
         if (attachment) {
-            try {
-                const base64Data = await fileToBase64(attachment.file);
-                userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
-            } catch(error) {
-                console.error("Error converting file to base64", error);
-                setIsLoading(false);
-                return;
-            }
+          try {
+            const base64Data = await fileToBase64(attachment.file);
+            userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
+          } catch (error) {
+            console.error("Error converting file to base64", error);
+            alert("Erreur lors du traitement de l'image.");
+            setIsLoading(false);
+            return;
+          }
         }
         if (textInput) {
-            userParts.push({ text: textInput });
+          userParts.push({ text: textInput });
         }
 
+        const currentHistory = session.messages;
         const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
-        const baseMessages = [...session.messages, userInputMessage];
-        onUpdateSession(session.id, { messages: baseMessages });
+        
+        onUpdateSession(session.id, {
+          messages: (prev) => [...prev, userInputMessage, { role: 'model', parts: [], isGenerating: true }],
+        });
+
+        const isFirstUserMessage = currentHistory.filter(m => m.role === 'user').length === 0;
         
         setInput('');
         setAttachment(null);
-
-        const modelThinkingMessage: ChatMessage = { role: 'model', parts: [], isGenerating: true };
-        onUpdateSession(session.id, { messages: [...baseMessages, modelThinkingMessage] });
+        setPromptModifier(null);
         
         try {
-            const chat = createChatInstance(session.messages);
-            const result = await chat.sendMessageStream({ message: userParts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' }) });
+          if (promptModifier === 'web') {
+            const response = await generateContentWithSearch(currentHistory, userParts);
+            const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+            onUpdateSession(session.id, {
+              messages: (prev) => {
+                const newMessages = [...prev.slice(0, -1)];
+                newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata });
+                return newMessages;
+              },
+            });
+          } else {
+            // Streaming logic
+            const chat = createChatInstance(currentHistory);
+            const result = await chat.sendMessageStream({ message: userParts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}})) });
             
-            let fullResponse = '';
+            let accumulatedText = "";
             for await (const chunk of result) {
-                fullResponse += chunk.text;
-                const modelMessage: ChatMessage = { role: 'model', parts: [{ text: fullResponse }] };
-                onUpdateSession(session.id, { messages: [...baseMessages, modelMessage] });
+                accumulatedText += chunk.text;
+                onUpdateSession(session.id, {
+                    messages: (prev) => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: accumulatedText }] };
+                        return newMessages;
+                    }
+                });
             }
-        } catch (error) {
-            console.error("Error sending message:", error);
-            const errorMessage: ChatMessage = { role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] };
-            onUpdateSession(session.id, { messages: prev => [...prev.slice(0, -1), errorMessage] });
-        } finally {
-            setIsLoading(false);
-        }
-        
-        if (session.messages.filter(m => m.role === 'user').length === 0) {
+          }
+
+          if (isFirstUserMessage) {
             await generateTitle(textInput || "Discussion avec image");
+          }
+        } catch (error) {
+          console.error("Error sending message:", error);
+          onUpdateSession(session.id, {
+            messages: (prev) => {
+              const newMessages = [...prev.slice(0, -1)];
+              newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] });
+              return newMessages;
+            },
+          });
+        } finally {
+          setIsLoading(false);
         }
-    };
+    }, [input, attachment, isLoading, onUpdateSession, session.id, session.messages, generateTitle, promptModifier, generateContentWithSearch, createChatInstance]);
+
 
     const handleCopy = (parts: ChatPart[], index: number) => {
         const textToCopy = parts.map(p => p.text).filter(Boolean).join('\n');
@@ -464,86 +502,56 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         const textToEdit = messageToEdit.parts.find(p => p.text)?.text || '';
         setInput(textToEdit);
 
-        // Remove the message and subsequent messages
-        const newMessages = session.messages.slice(0, index);
-        onUpdateSession(session.id, { messages: newMessages });
+        onUpdateSession(session.id, { messages: (prev) => prev.slice(0, index) });
     };
 
-    const handleRegenerateResponse = async (index: number, modification: 'longer' | 'shorter' | 'change_model', newModel?: AiModel) => {
+    const handleRegenerateResponse = useCallback(async (index: number) => {
         if (isLoading || session.messages[index]?.role !== 'model') return;
 
         setIsLoading(true);
         const historyForRegen = session.messages.slice(0, index);
-        const userPromptMessage = historyForRegen[historyForRegen.length - 1];
-
-        if(userPromptMessage?.role !== 'user') {
-            setIsLoading(false);
-            return;
-        }
         
-        let messagesForUpdate = [...session.messages];
-        messagesForUpdate[index] = { role: 'model', parts: [], isGenerating: true };
-        onUpdateSession(session.id, { messages: messagesForUpdate });
-
-        const chatHistoryForAi = historyForRegen.slice(0, -1);
-        const modelForRegen = modification === 'change_model' && newModel ? newModel : session.aiModel;
-        const chat = createChatInstance(chatHistoryForAi, modelForRegen);
-        
-        const originalUserParts: ChatPart[] = JSON.parse(JSON.stringify(userPromptMessage.parts)); // Deep copy
-
-        if (modification === 'longer' || modification === 'shorter') {
-            const instruction = modification === 'longer' 
-                ? "\n\n(Instruction pour l'IA : Régénère ta réponse précédente, mais en la rendant plus longue et plus détaillée.)"
-                : "\n\n(Instruction pour l'IA : Régénère ta réponse précédente, mais en la rendant plus courte et plus concise.)";
-            
-            let textPartFound = false;
-            for (const part of originalUserParts) {
-                if (part.text) {
-                    part.text += instruction;
-                    textPartFound = true;
-                    break;
-                }
-            }
-            if (!textPartFound) {
-                originalUserParts.push({ text: instruction });
-            }
-        }
-        
-        const promptForRegenParts: Part[] = originalUserParts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' });
+        onUpdateSession(session.id, { messages: [...historyForRegen, { role: 'model', parts: [], isGenerating: true }] });
 
         try {
-            const result = await chat.sendMessageStream({ message: promptForRegenParts });
-            let fullResponse = '';
+            const chat = createChatInstance(historyForRegen);
+            const lastUserMessage = historyForRegen[historyForRegen.length - 1];
+            const result = await chat.sendMessageStream({ message: lastUserMessage.parts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}})) });
+            
+            let accumulatedText = "";
             for await (const chunk of result) {
-                fullResponse += chunk.text;
-                messagesForUpdate[index] = { role: 'model', parts: [{ text: fullResponse }] };
-                onUpdateSession(session.id, { messages: [...messagesForUpdate] });
+                accumulatedText += chunk.text;
+                onUpdateSession(session.id, {
+                    messages: (prev) => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: accumulatedText }] };
+                        return newMessages;
+                    }
+                });
             }
         } catch (error) {
             console.error("Error regenerating response:", error);
-            messagesForUpdate[index] = { role: 'model', parts: [{ text: "Désolé, une erreur est survenue lors de la regénération." }] };
-            onUpdateSession(session.id, { messages: messagesForUpdate });
+            onUpdateSession(session.id, {
+                messages: (prev) => [...prev.slice(0, -1), { role: 'model', parts: [{ text: "Désolé, la regénération a échoué." }] }],
+            });
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [isLoading, session.messages, onUpdateSession, session.id, createChatInstance]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             setAttachment({ file, previewUrl: URL.createObjectURL(file) });
         }
+        event.target.value = ''; // Reset input
     };
     
     const handleTitleChange = (newTitle: string) => {
         onUpdateSession(session.id, { title: newTitle });
     };
 
-    const modelDisplayNames: Record<AiModel, string> = {
-        brevetai: 'BrevetAI',
-        'brevetai-pro': 'BrevetAI Pro',
-        'brevetai-max': 'BrevetAI Max',
-    };
+    const isConversationStarted = session.messages.length > 0;
 
     return (
         <div className="w-full h-full flex flex-col bg-white/10 dark:bg-slate-900/60">
@@ -566,7 +574,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                            <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">
-                           {modelDisplayNames[session.aiModel] || 'BrevetAI'}
+                           {session.aiModel === 'brevetai' ? 'BrevetAI' : session.aiModel === 'brevetai-pro' ? 'BrevetAI Pro' : 'BrevetAI Max' }
                         </h2>
                         <p className="text-slate-700 dark:text-slate-400">Comment puis-je vous aider à réviser ?</p>
                     </div>
@@ -580,16 +588,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         onCopy={handleCopy}
                         onRegenerate={handleRegenerateResponse}
                         onEdit={handleEditMessage}
-                        regenMenuIndex={regenMenuIndex}
-                        setRegenMenuIndex={setRegenMenuIndex}
-                        subscriptionPlan={subscriptionPlan}
                     />
                 ))}
-                 {isChatLimitReached && (
-                    <div className="text-center p-4 bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border border-yellow-500/30 rounded-xl">
-                        Vous avez atteint la limite de {messageLimit} messages pour ce modèle avec votre forfait. Passez à un forfait supérieur pour continuer.
-                    </div>
-                )}
                 <div ref={messagesEndRef} />
             </main>
 
@@ -603,7 +603,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                     </div>
                 )}
                 <div className="flex items-end bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-2xl p-1 shadow-inner pr-2 border border-white/20 dark:border-slate-700">
-                    <button onClick={() => fileInputRef.current?.click()} disabled={isChatLimitReached} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-1">
+                    <button onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-1">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                     </button>
                     <textarea
@@ -616,22 +616,28 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                                 handleSendMessage();
                             }
                         }}
-                        placeholder={isChatLimitReached ? "Limite de messages atteinte." : "Poser une question à BrevetAI..."}
+                        placeholder={"Poser une question à BrevetAI..."}
                         className="flex-grow bg-transparent p-2 text-slate-900 dark:text-slate-100 placeholder-slate-600 dark:placeholder-slate-500 focus:outline-none resize-none leading-tight"
                         rows={1}
-                        disabled={isLoading || isChatLimitReached}
+                        disabled={isLoading}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || isChatLimitReached || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
+                    <button onClick={handleSendMessage} disabled={isLoading || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
                        </svg>
                     </button>
                 </div>
-                {session.aiModel === 'brevetai-pro' && (
-                    <p className="text-center text-xs text-slate-600 dark:text-slate-400 pt-1">
-                        {isFinite(messageLimit) ? `${Math.max(0, messageLimit - session.messages.length)} messages restants avec votre forfait.` : 'Messages illimités.'}
-                    </p>
-                )}
+                 <div className="flex justify-center items-center gap-2 pt-1">
+                    <button onClick={() => setPromptModifier(m => m === 'long' ? null : 'long')} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors ${promptModifier === 'long' ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'}`}>Plus long</button>
+                    <button onClick={() => setPromptModifier(m => m === 'short' ? null : 'short')} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors ${promptModifier === 'short' ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'}`}>Plus court</button>
+                    <div className="relative">
+                      <button onClick={() => setPromptModifier(m => m === 'web' ? null : 'web')} disabled={subscriptionPlan !== 'max'} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1 ${promptModifier === 'web' ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'} disabled:opacity-50 disabled:cursor-not-allowed`}>
+                        <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        Avec le Web
+                      </button>
+                       {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" size="small" />}
+                    </div>
+                </div>
             </footer>
         </div>
     );
