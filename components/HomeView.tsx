@@ -50,6 +50,7 @@ const CompactFeatureCard: React.FC<{
 
 interface HomeViewProps {
   onSubjectSelect: (subject: Subject) => void;
+  onStartDrawing: () => void;
   onStartChat: () => void;
   onStartImageGeneration: () => void;
   onStartCanvas: () => void;
@@ -59,7 +60,7 @@ interface HomeViewProps {
   subscriptionPlan: SubscriptionPlan;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils }) => (
+export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils }) => (
   <div className="w-full">
     <Header />
     <main>
@@ -110,12 +111,18 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartChat
 
       <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {SUBJECTS.map((subject) => (
-          <SubjectCard key={subject.name} subject={subject} onSelect={() => onSubjectSelect(subject)} />
+          <SubjectCard 
+            key={subject.name} 
+            subject={subject} 
+            onSelect={() => {
+              if (subject.name === 'Arts') onStartDrawing();
+              else onSubjectSelect(subject);
+            }} />
         ))}
       </div>
     </main>
     <footer className="text-center text-xs text-slate-500 dark:text-slate-400 mt-16 pb-4">
-      26-3.9 © 2025 - All rights reserved | Brevet' Easy | Propulsé par l'IA Gemini
+      26-3.8 © 2025 - All rights reserved | Brevet' Easy | Propulsé par mAI
     </footer>
   </div>
 );

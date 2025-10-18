@@ -1,35 +1,6 @@
 import React, { useState } from 'react';
 import type { Quiz, Question } from '../types';
 
-interface ConfettiParticle {
-  id: number;
-  x: number;
-  y: number;
-  color: string;
-  endX: number;
-  endY: number;
-}
-
-const Confetti: React.FC<{ particles: ConfettiParticle[] }> = ({ particles }) => (
-  <div className="fixed inset-0 pointer-events-none z-[9999]">
-    {particles.map(p => (
-      <div
-        key={p.id}
-        className="confetti"
-        style={{
-          left: `${p.x}px`,
-          top: `${p.y}px`,
-          backgroundColor: p.color,
-          // @ts-ignore
-          '--x-end': `${p.endX}px`,
-          '--y-end': `${p.endY}px`,
-        }}
-      />
-    ))}
-  </div>
-);
-
-
 interface QuizViewProps {
   quiz: Quiz;
   onSubmit: (answers: (string | null)[]) => void;
@@ -42,7 +13,7 @@ const QuestionDisplay: React.FC<{
   questionNumber: number;
   totalQuestions: number;
   selectedOption: string | null;
-  onOptionSelect: (option: string, e: React.MouseEvent<HTMLButtonElement>) => void;
+  onOptionSelect: (option: string) => void;
 }> = ({ question, questionNumber, totalQuestions, selectedOption, onOptionSelect }) => (
   <div className="w-full">
     <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Question {questionNumber} / {totalQuestions}</p>
@@ -53,7 +24,7 @@ const QuestionDisplay: React.FC<{
         return (
           <button
             key={index}
-            onClick={(e) => onOptionSelect(option, e)}
+            onClick={() => onOptionSelect(option)}
             className={`p-4 rounded-2xl text-left text-lg transition-all duration-300 border ${
               isSelected
                 ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-[0_0_20px_rgba(167,139,250,0.5)] scale-105'
@@ -71,38 +42,13 @@ const QuestionDisplay: React.FC<{
 export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuestionIndex, setCurrentQuestionIndex }) => {
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(quiz.questions.length).fill(null));
   const [animationClass, setAnimationClass] = useState('animate-fade-in');
-  const [confetti, setConfetti] = useState<ConfettiParticle[]>([]);
   
   const totalQuestions = quiz.questions.length;
 
-  const triggerConfetti = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    
-    const newParticles: ConfettiParticle[] = Array.from({ length: 40 }).map((_, i) => {
-      const angle = Math.random() * 2 * Math.PI;
-      const velocity = Math.random() * 80 + 50;
-      return {
-        id: Date.now() + i,
-        x: rect.left + Math.random() * rect.width, // X aléatoire à l'intérieur du bouton
-        y: rect.top + Math.random() * rect.height,  // Y aléatoire à l'intérieur du bouton
-        color: ['#a5b4fc', '#7dd3fc', '#f472b6', '#4ade80'][Math.floor(Math.random() * 4)],
-        endX: Math.cos(angle) * velocity,
-        endY: Math.sin(angle) * velocity + 100, // Ajoute un peu de gravité
-      }
-    });
-
-    setConfetti(prev => [...prev, ...newParticles]);
-
-    setTimeout(() => {
-        setConfetti(prev => prev.filter(p => !newParticles.some(np => np.id === p.id)));
-    }, 2000);
-  };
-
-  const handleOptionSelect = (option: string, e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleOptionSelect = (option: string) => {
     const newAnswers = [...answers];
     newAnswers[currentQuestionIndex] = option;
     setAnswers(newAnswers);
-    triggerConfetti(e);
   };
 
   const handleNext = () => {
@@ -133,7 +79,6 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col relative">
-      <Confetti particles={confetti} />
       <div className={`bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center ${animationClass} mt-6`}>
         <QuestionDisplay
           question={currentQuestion}

@@ -29,7 +29,7 @@ export const SUBJECTS: Subject[] = [
   },
   {
     name: "Espagnol",
-    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 22V12"/><path d="M4 12h16"/></svg>,
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1"/><path d="M12 8v5"/><path d="M15.5 11.5L18 13l-3.5 1.5"/><path d="M8.5 11.5L6 13l3.5 1.5"/><path d="M12 13v5l-3 3"/><path d="M15 21l-3-3"/></svg>,
     color: "text-orange-500 dark:text-orange-300",
     bgColor: "bg-orange-500/20",
   },
@@ -58,6 +58,18 @@ export const SUBJECTS: Subject[] = [
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>,
     color: "text-slate-500 dark:text-slate-300",
     bgColor: "bg-slate-500/20",
+  },
+  {
+    name: "Arts",
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M7 7c2-2 5-2 7 0M7 17c2 2 5 2 7 0"/></svg>,
+    color: "text-pink-500 dark:text-pink-300",
+    bgColor: "bg-pink-500/20",
+  },
+  {
+    name: "Éducation musicale",
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>,
+    color: "text-indigo-500 dark:text-indigo-300",
+    bgColor: "bg-indigo-500/20",
   },
 ];
 

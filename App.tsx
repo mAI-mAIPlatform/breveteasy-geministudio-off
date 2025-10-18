@@ -18,12 +18,49 @@ import { CanvasView } from './components/CanvasView';
 import { FlashAIView } from './components/FlashAIView';
 import { PlanningView } from './components/PlanningView';
 import { ConseilsView } from './components/ConseilsView';
+import { DrawingView } from './components/DrawingView';
 import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateContentWithSearch } from './services/geminiService';
 import { AVATAR_ICONS } from './constants';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatPart } from './types';
 
+// Confetti and success message components
+interface ConfettiParticle {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  endX: number;
+  endY: number;
+}
+
+const Confetti: React.FC<{ particles: ConfettiParticle[] }> = ({ particles }) => (
+  <div className="fixed inset-0 pointer-events-none z-[9999]">
+    {particles.map(p => (
+      <div
+        key={p.id}
+        className="confetti"
+        style={{
+          left: `${p.x}px`,
+          top: `${p.y}px`,
+          backgroundColor: p.color,
+          // @ts-ignore
+          '--x-end': `${p.endX}px`,
+          '--y-end': `${p.endY}px`,
+        }}
+      />
+    ))}
+  </div>
+);
+
+const UpgradeSuccessNotification: React.FC<{ message: string }> = ({ message }) => (
+    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-white/30 dark:bg-slate-800/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl text-center animate-fade-in">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{message}</h2>
+    </div>
+);
+
+
 // Fix: Add new view types for the new features.
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing';
 // Fix: Add new loading task types for the new features.
 type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
 
@@ -132,6 +169,8 @@ const App: React.FC = () => {
     const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>('free');
     const [showScrollTop, setShowScrollTop] = useState(false);
     const rootRef = useRef<HTMLElement | null>(null);
+    const [upgradeSuccess, setUpgradeSuccess] = useState<string | null>(null);
+    const [confetti, setConfetti] = useState<ConfettiParticle[]>([]);
 
     // Generation default settings
     const [defaultItemCount, setDefaultItemCount] = useState<number>(5);
@@ -366,6 +405,7 @@ const App: React.FC = () => {
     const handleStartCanvas = () => {
         setView('canvas');
     };
+    const handleStartDrawing = () => setView('drawing');
     const handleStartFlashAI = () => {
         setFlashQuestion(null);
         setView('flashAI');
@@ -382,19 +422,43 @@ const App: React.FC = () => {
         rootRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const triggerFullScreenConfetti = () => {
+        const newParticles: ConfettiParticle[] = Array.from({ length: 200 }).map((_, i) => {
+          return {
+            id: Date.now() + i,
+            x: Math.random() * window.innerWidth,
+            y: window.innerHeight + 20,
+            color: ['#a5b4fc', '#7dd3fc', '#f472b6', '#4ade80', '#facc15'][Math.floor(Math.random() * 5)],
+            endX: (Math.random() - 0.5) * (Math.random() * 500),
+            endY: -(Math.random() * window.innerHeight * 1.5),
+          }
+        });
+        setConfetti(newParticles);
+        setTimeout(() => setConfetti([]), 4000);
+    };
+
     // Subscription Handler
     const handleUpgradePlan = (code: string) => {
         const upperCaseCode = code.toUpperCase();
+        let planName: string | null = null;
         if (upperCaseCode === 'BVTPRO') {
             setSubscriptionPlan('pro');
-            alert('Félicitations ! Vous avez activé le forfait Brevet Pro.');
-            return true;
+            planName = 'Brevet Pro';
         }
         if (upperCaseCode === 'BVTMAX') {
             setSubscriptionPlan('max');
-            alert('Félicitations ! Vous avez activé le forfait Brevet Max.');
+            planName = 'Brevet Max';
+        }
+
+        if (planName) {
+            setUpgradeSuccess(`Félicitations ! Vous avez activé le forfait ${planName}.`);
+            triggerFullScreenConfetti();
+            setTimeout(() => {
+                setUpgradeSuccess(null);
+            }, 4000);
             return true;
         }
+
         alert('Code invalide. Veuillez réessayer.');
         return false;
     };
@@ -749,7 +813,7 @@ const App: React.FC = () => {
     const renderContent = () => {
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartDrawing={handleStartDrawing} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
@@ -860,17 +924,21 @@ const App: React.FC = () => {
                 return <PlanningView onGenerate={handleGeneratePlanning} isLoading={isGeneratingPlanning} planning={planning} onClear={() => setPlanning(null)} subscriptionPlan={subscriptionPlan} defaultPlanningAiModel={defaultPlanningAiModel} onUpdate={handleUpdatePlanning}/>;
             case 'conseils':
                 return <ConseilsView onGenerate={handleGenerateConseils} isLoading={isGeneratingConseils} conseils={conseils} onClear={() => setConseils(null)} subscriptionPlan={subscriptionPlan} defaultConseilsAiModel={defaultConseilsAiModel} />;
+            case 'drawing':
+                return <DrawingView />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartDrawing={handleStartDrawing} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
         }
     };
     
     const showHeader = !['chat'].includes(view);
     const showExitButton = !['home', 'chat'].includes(view);
-    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils'].includes(view);
+    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing'].includes(view);
 
     return (
         <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-start justify-center'}`}>
+             <Confetti particles={confetti} />
+             {upgradeSuccess && <UpgradeSuccessNotification message={upgradeSuccess} />}
              {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />

@@ -408,8 +408,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     }, [onUpdateSession, session.id]);
 
     const handleSendMessage = useCallback(async () => {
-        const textInput = input.trim();
+        let textInput = input.trim();
         if ((!textInput && !attachment) || isLoading) return;
+
+        if (promptModifier === 'long') {
+            textInput += "\n\n(Instruction : Rends ta réponse plus longue et plus détaillée.)";
+        } else if (promptModifier === 'short') {
+            textInput += "\n\n(Instruction : Rends ta réponse plus courte et plus concise.)";
+        }
 
         setIsLoading(true);
         const userParts: ChatPart[] = [];
