@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 interface LoadingViewProps {
   subject: string;
-  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions';
+  // Fix: Broaden the task type to include all possible loading tasks from the main App component.
+  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
   onCancel: () => void;
 }
 
@@ -59,6 +60,31 @@ const loadingTips = {
         "Mise en évidence des mots-clés...",
         "Votre fiche de révisions est bientôt prête !"
     ],
+    // Fix: Add loading tips for new generation types.
+    canvas: [
+        "L'IA prépare votre toile numérique...",
+        "Génération du code HTML, CSS, et JavaScript...",
+        "Création d'une page interactive...",
+        "Votre page web est presque prête !",
+    ],
+    flashAI: [
+        "Recherche d'une question pertinente...",
+        "Génération d'un défi rapide...",
+        "Préparation de votre question flash...",
+        "C'est presque prêt !",
+    ],
+    planning: [
+        "Analyse de votre tâche et de l'échéance...",
+        "Décomposition du travail en étapes...",
+        "Organisation de votre calendrier...",
+        "Votre planning de révision est en cours de création...",
+    ],
+    conseils: [
+        "Consultation de stratégies d'experts...",
+        "Synthèse des meilleures techniques...",
+        "Rédaction de conseils personnalisés...",
+        "Vos conseils sur mesure arrivent !",
+    ],
 };
 
 export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCancel }) => {
@@ -70,6 +96,11 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCance
     exercises: 'des exercices',
     cours: 'du cours',
     'fiche-revisions': 'de la fiche de révisions',
+    // Fix: Add title text for new generation types.
+    canvas: 'de la page interactive',
+    flashAI: 'de la question flash',
+    planning: 'du planning',
+    conseils: 'des conseils',
   };
   const titleText = titleTextMap[task] || 'du contenu';
 

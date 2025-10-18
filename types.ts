@@ -1,9 +1,7 @@
-// Fix: Provide the implementation for the main App component.
 import React from 'react';
 
 export interface Subject {
   name: string;
-  // Fix: Specify that the icon can accept a className prop for styling via React.cloneElement.
   icon: React.ReactElement<{ className?: string }>;
   color: string;
   bgColor: string;
@@ -33,10 +31,18 @@ export interface ChatMessage {
     role: 'user' | 'model';
     parts: ChatPart[];
     isGenerating?: boolean;
+    groundingMetadata?: {
+        groundingChunks: { web: { uri: string; title: string; } }[] 
+    };
 }
 
-export type AiModel = 'brevetai' | 'brevetai-plus' | 'brevetai-pro';
-export type ImageModel = 'faceai' | 'faceai-plus';
+export type AiModel = 'brevetai' | 'brevetai-pro' | 'brevetai-max';
+export type ImageModel = 'faceai' | 'faceai-pro' | 'faceai-max';
+export type CanvasModel = 'canvasai' | 'canvasai-pro' | 'canvasai-max';
+export type FlashAiModel = 'flashai' | 'flashai-pro' | 'flashai-max';
+export type PlanningAiModel = 'planningai' | 'planningai-pro' | 'planningai-max';
+export type ConseilsAiModel = 'conseilsai' | 'conseilsai-pro' | 'conseilsai-max';
+
 
 export interface Folder {
     id: string;
@@ -56,7 +62,18 @@ export interface ChatSession {
 
 export type SubscriptionPlan = 'free' | 'pro' | 'max';
 
-// Fix: Add missing type definitions for the Evaluation feature.
+export interface CustomAiModel {
+    id: string;
+    name: string;
+    icon: string;
+    version: string;
+    description: string;
+    baseModel: AiModel;
+    instructions: string;
+    createdAt: number;
+}
+
+
 export type EvaluationQuestionType = 'qcm' | 'fill-in-the-blank' | 'short-text' | 'long-text';
 
 export interface BaseEvaluationQuestion {
@@ -109,4 +126,21 @@ export interface EvaluationResult {
     totalScore: number;
     overallFeedback: string;
     gradedQuestions: GradedQuestionResult[];
+}
+
+export interface CanvasVersion {
+  id: string;
+  htmlContent: string;
+  prompt: string;
+  createdAt: number;
+}
+
+export interface PlanningTask {
+    date: string; // e.g., "2025-10-27"
+    tasks: string[]; // List of tasks for the day
+}
+
+export interface Planning {
+    title: string;
+    schedule: PlanningTask[];
 }

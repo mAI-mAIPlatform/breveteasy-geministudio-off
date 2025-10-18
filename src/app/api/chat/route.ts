@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI } from "@google/genai";
 import type { Chat, Part } from "@google/genai";
 import type { ChatMessage, ChatPart, AiModel, SubscriptionPlan } from "@/lib/types";
@@ -76,33 +77,43 @@ export async function POST(req: Request) {
         }
 
         if (action === 'sendMessage' || action === 'regenerate') {
-            const { history, message, config, modification } = payload;
-            
-            const chat = createChatInstance(history, config.aiModel, config.systemInstruction, config.userName, config.subscriptionPlan);
+            const { history, message, config, modification, useWebSearch } = payload;
             
             let parts: ChatPart[] = message.parts;
+            const messageForApi = parts.map((p: any) => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' });
 
+            if (useWebSearch) {
+                const fullHistory = history.map((m: ChatMessage) => ({ role: m.role, parts: m.parts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}})) }));
+                
+                const response = await ai.models.generateContent({
+                   model: "gemini-2.5-flash",
+                   contents: [...fullHistory, { role: 'user', parts: messageForApi }],
+                   config: {
+                     tools: [{googleSearch: {}}],
+                   },
+                });
+
+                const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+                return new Response(JSON.stringify({ text: response.text, groundingMetadata }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            }
+
+            const chat = createChatInstance(history, config.aiModel, config.systemInstruction, config.userName, config.subscriptionPlan);
+            
             if (action === 'regenerate') {
                  if (modification === 'longer' || modification === 'shorter') {
                     const instruction = modification === 'longer' 
                         ? "\n\n(Instruction pour l'IA : Régénère ta réponse précédente, mais en la rendant plus longue et plus détaillée.)"
                         : "\n\n(Instruction pour l'IA : Régénère ta réponse précédente, mais en la rendant plus courte et plus concise.)";
                     
-                    let textPartFound = false;
-                    for (const part of parts) {
-                        if (part.text) {
-                            part.text += instruction;
-                            textPartFound = true;
-                            break;
-                        }
-                    }
-                    if (!textPartFound) {
-                        parts.push({ text: instruction });
+                    let textPart = messageForApi.find((p: Part) => 'text' in p);
+                    if (textPart && 'text' in textPart) {
+                        textPart.text += instruction;
+                    } else {
+                        messageForApi.push({ text: instruction });
                     }
                 }
             }
 
-            const messageForApi = parts.map((p: any) => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' });
 
             const result = await chat.sendMessageStream({ message: messageForApi });
             

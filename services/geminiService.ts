@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { Quiz, ImageModel } from '../types';
+import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel } from '../types';
 
 // ===================================================================================
 // IMPORTANT SECURITY WARNING:
@@ -98,15 +98,17 @@ export const generateHtmlContent = async (
     return response.text;
 };
 
+// Fix: Add missing generateImage export
 /**
- * Generates an image using the Imagen API.
- * @param prompt - The text description of the image to generate.
- * @param model - The image generation model to use.
- * @param style - The artistic style for the image.
+ * Generates an image using the Gemini API (Imagen model).
+ * @param prompt - The text prompt for image generation.
+ * @param model - The specific image model to use.
+ * @param style - A style modifier for the image.
  * @param format - The output image format ('jpeg' or 'png').
- * @param aspectRatio - The aspect ratio of the image.
- * @param imageGenerationInstruction - Global style instructions for the image AI.
- * @returns A promise that resolves to the generated image data (base64) and mimeType.
+ * @param aspectRatio - The desired aspect ratio.
+ * @param imageGenerationInstruction - Additional system-level instructions for style.
+ * @param negativePrompt - Elements to exclude from the image.
+ * @returns A promise that resolves to the image data.
  */
 export const generateImage = async (
     prompt: string,
@@ -115,20 +117,17 @@ export const generateImage = async (
     format: 'jpeg' | 'png',
     aspectRatio: string,
     imageGenerationInstruction: string,
+    negativePrompt: string
 ): Promise<{ data: string; mimeType: string; }> => {
-    const qualityPrompt = model === 'faceai-plus'
+    const qualityPrompt = model === 'faceai-pro' || model === 'faceai-max'
         ? 'haute qualité, 4k, hyper-détaillé, photoréaliste'
         : '';
-
     const stylePrompt = style !== 'none' ? `style ${style.replace('-', ' ')}` : '';
     const userInstruction = imageGenerationInstruction.trim();
 
-    const finalPrompt = [
-        prompt,
-        stylePrompt,
-        qualityPrompt,
-        userInstruction
-    ].filter(Boolean).join(', ');
+    const mainPrompt = [prompt, stylePrompt, qualityPrompt, userInstruction].filter(Boolean).join(', ');
+    
+    const finalPrompt = negativePrompt?.trim() ? `${mainPrompt}, negative_prompt: [${negativePrompt.trim()}]` : mainPrompt;
     
     const response = await ai.models.generateImages({
         model: 'imagen-4.0-generate-001',
@@ -137,10 +136,157 @@ export const generateImage = async (
           numberOfImages: 1,
           outputMimeType: `image/${format}`,
           aspectRatio: aspectRatio,
-          // BUG FIX: negativePrompt is not a supported parameter and has been removed.
         },
     });
     
     const imageBytes = response.generatedImages[0].image.imageBytes;
     return { data: imageBytes, mimeType: `image/${format}`};
+};
+
+// Fix: Add missing generateInteractivePage export
+/**
+ * Generates an interactive HTML page using the Gemini API.
+ * @param prompt - The prompt describing the page to create.
+ * @param model - The canvas model to use.
+ * @param systemInstruction - System-level instructions for the AI.
+ * @returns A promise resolving to the HTML content string.
+ */
+export const generateInteractivePage = async (
+    prompt: string,
+    model: CanvasModel,
+    systemInstruction: string,
+): Promise<string> => {
+    const geminiModel = model === 'canvasai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    
+    const fullPrompt = `${prompt}. La sortie doit être un fichier HTML unique, complet et valide, incluant le CSS dans une balise <style> et le JavaScript dans une balise <script>. Ne pas utiliser de bibliothèques externes. Le code doit être autonome.`;
+
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: fullPrompt,
+        config: {
+            systemInstruction: systemInstruction || "Tu es un développeur web expert qui crée des pages web interactives à partir de descriptions. Ton code doit être propre, efficace et contenu dans un seul fichier HTML.",
+        }
+    });
+    return response.text;
+};
+
+// Fix: Add missing generateFlashQuestion export
+/**
+ * Generates a single flash question (MCQ).
+ * @param level - The educational level for the question.
+ * @param systemInstruction - System-level instructions for the AI.
+ * @param model - The flash AI model to use.
+ * @returns A promise resolving to a Question object.
+ */
+export const generateFlashQuestion = async (
+    level: string,
+    systemInstruction: string,
+    model: FlashAiModel
+): Promise<Question> => {
+    const questionSchema = {
+        type: Type.OBJECT,
+        properties: {
+            questionText: { type: Type.STRING },
+            options: { type: Type.ARRAY, items: { type: Type.STRING }, minItems: 4, maxItems: 4 },
+            correctAnswer: { type: Type.STRING },
+            explanation: { type: Type.STRING }
+        },
+        required: ['questionText', 'options', 'correctAnswer', 'explanation']
+    };
+
+    const prompt = `Génère une seule question flash de type QCM (avec exactement 4 options) pour le niveau ${level}. Le sujet peut être n'importe quelle matière du Brevet des collèges. Fournis une explication pour la bonne réponse.`;
+    
+    const geminiModel = model === 'flashai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: questionSchema,
+            systemInstruction: systemInstruction,
+        }
+    });
+    
+    return JSON.parse(response.text);
+};
+
+// Fix: Add missing generatePlanning export
+/**
+ * Generates a study plan.
+ * @param task - The task to be planned.
+ * @param dueDate - The deadline for the task.
+ * @param systemInstruction - System-level instructions for the AI.
+ * @param model - The planning AI model to use.
+ * @returns A promise resolving to a Planning object.
+ */
+export const generatePlanning = async (
+    task: string,
+    dueDate: string,
+    systemInstruction: string,
+    model: PlanningAiModel,
+): Promise<Planning> => {
+    const planningSchema = {
+        type: Type.OBJECT,
+        properties: {
+            title: { type: Type.STRING },
+            schedule: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        date: { type: Type.STRING, description: "Date au format YYYY-MM-DD" },
+                        tasks: { type: Type.ARRAY, items: { type: Type.STRING } }
+                    },
+                    required: ['date', 'tasks']
+                }
+            }
+        },
+        required: ['title', 'schedule']
+    };
+
+    const prompt = `Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles. Le planning doit être réaliste.`;
+
+    const geminiModel = model === 'planningai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: planningSchema,
+            systemInstruction: systemInstruction,
+        }
+    });
+    
+    return JSON.parse(response.text);
+};
+
+// Fix: Add missing generateConseils export
+/**
+ * Generates study advice.
+ * @param subject - The subject for which advice is needed.
+ * @param level - The educational level.
+ * @param systemInstruction - System-level instructions for the AI.
+ * @param model - The advice AI model to use.
+ * @returns A promise resolving to an HTML string with advice.
+ */
+export const generateConseils = async (
+    subject: string,
+    level: string,
+    systemInstruction: string,
+    model: ConseilsAiModel,
+): Promise<string> => {
+    const prompt = `Génère des conseils et des stratégies de révision pour la matière "${subject}" au niveau "${level}". La réponse doit être formatée en HTML simple (<h1>, <h2>, <p>, <ul>, <li>, <strong>) pour être affichée directement. Fournis des conseils pratiques et actionnables.`;
+
+    const geminiModel = model === 'conseilsai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+            systemInstruction: systemInstruction || "Tu es un conseiller pédagogique expert qui aide les élèves à optimiser leurs révisions.",
+        }
+    });
+    return response.text;
 };

@@ -6,16 +6,16 @@ interface SubscriptionViewProps {
   onUpgrade: (code: string) => boolean;
 }
 
-const CheckIcon: React.FC<{ className?: string }> = ({ className = "h-6 w-6" }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+const CheckIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5 text-green-400" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
     </svg>
 );
 
 const PlanFeature: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <li className="flex items-start">
-        <CheckIcon className="h-6 w-6 text-green-400 mr-3 flex-shrink-0" />
-        <span className="text-slate-300">{children}</span>
+    <li className="flex items-start gap-3">
+        <CheckIcon className="h-5 w-5 mt-1 flex-shrink-0" />
+        <span className="text-slate-800 dark:text-slate-200">{children}</span>
     </li>
 );
 
@@ -41,17 +41,20 @@ const PlanCard: React.FC<PlanCardProps> = ({ planName, planKey, features, isReco
         }
     };
 
-    const cardBg = "bg-slate-800";
+    const cardBg = "bg-white/5 dark:bg-slate-900/60";
     const isFree = planKey === 'free';
+    
+    const borderColor = isRecommended ? 'border-indigo-500' : 'border-white/20 dark:border-slate-700/80';
+    const textColor = planKey === 'pro' ? 'text-slate-900 dark:text-cyan-300' : planKey === 'max' ? 'text-slate-900 dark:text-purple-300' : 'text-slate-900 dark:text-white';
 
     return (
-        <div className={`relative flex flex-col p-8 ${cardBg} rounded-3xl border border-slate-700 shadow-2xl`}>
+        <div className={`relative flex flex-col p-8 ${cardBg} rounded-3xl border-2 ${borderColor} shadow-2xl backdrop-blur-lg`}>
             {isRecommended && (
                 <div className="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-indigo-500 text-white text-sm font-bold rounded-full shadow-lg">
                     Recommandé
                 </div>
             )}
-            <h3 className={`text-3xl font-bold mb-6 text-center ${planKey === 'pro' ? 'text-cyan-300' : planKey === 'max' ? 'text-purple-300' : 'text-white'}`}>{planName}</h3>
+            <h3 className={`text-3xl font-bold mb-6 text-center ${textColor}`}>{planName}</h3>
             <ul className="space-y-4 mb-8 flex-grow">
                 {features.map((feature, index) => (
                     <PlanFeature key={index}>{feature}</PlanFeature>
@@ -59,7 +62,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ planName, planKey, features, isReco
             </ul>
             <div className="mt-auto">
                 {isCurrent ? (
-                    <div className="text-center font-bold py-3 px-6 rounded-xl border-2 border-green-500 text-green-400">
+                    <div className="text-center font-bold py-3 px-6 rounded-xl border-2 border-green-500 text-green-500 dark:text-green-400">
                         Votre forfait actuel
                     </div>
                 ) : isFree ? null : (
@@ -68,7 +71,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ planName, planKey, features, isReco
                             type="text"
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
-                            className="w-full text-center px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base text-slate-100 placeholder-slate-500 transition"
+                            className="w-full text-center px-4 py-3 bg-white/20 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-base text-slate-900 dark:text-slate-100 placeholder-slate-500 transition"
                             placeholder="Code d'activation"
                         />
                         <button
@@ -76,7 +79,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ planName, planKey, features, isReco
                             className="w-full py-3 px-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all disabled:opacity-50"
                             disabled={!code.trim()}
                         >
-                            Entrer le code
+                            Activer
                         </button>
                     </form>
                 )}
@@ -85,53 +88,59 @@ const PlanCard: React.FC<PlanCardProps> = ({ planName, planKey, features, isReco
     );
 };
 
+
 export const SubscriptionView: React.FC<SubscriptionViewProps> = ({ currentPlan, onUpgrade }) => {
+    
     const plans = {
         free: {
             name: 'Gratuit',
             features: [
-                "Générations (Quiz, Exercices) : 5 / jour",
-                "Max 5 questions/exercices par génération",
-                "Chat avec BrevetAI+ : 15 messages / jour",
-                "Génération d'images : 2 / jour"
+                "Chat avec BrevetAI (Standard)",
+                "5 Générations / jour (Quiz, Exercices)",
+                "Max 5 éléments par génération",
+                "2 FaceAI / jour (Images Standard)",
+                "CanvasAI (Modèle Standard)",
+                "FlashAI (Questions aléatoires)",
             ]
         },
         pro: {
             name: 'Brevet Pro',
             recommended: true,
             features: [
-                "Tous les avantages du forfait Gratuit, et...",
-                "Générations (Quiz, Exercices) : 50 / jour",
-                "Max 20 questions/exercices par génération",
-                "Génération de cours & fiches de révision",
-                "Accès à tous les niveaux & difficultés",
-                "Chat avec BrevetAI+ : 100 messages / jour",
-                "Instructions personnalisées pour l'IA",
-                "Génération d'images : 5 / jour"
+                "Tous les avantages du forfait Gratuit",
+                "Accès à BrevetAI Pro (plus intelligent)",
+                "50 Générations / jour",
+                "Max 20 éléments par génération",
+                "Génération de Cours & Fiches",
+                "5 FaceAI Pro / jour (Images HD)",
+                "Personnalisation de l'IA (Instructions)",
             ]
         },
         max: {
             name: 'Brevet Max',
             features: [
                 "Tous les avantages du forfait Pro",
-                "Générations illimitées (Quiz, Exercices, Cours...)",
-                "Chat & Génération d'images illimités",
-                "Support prioritaire"
+                "Accès illimité à BrevetAI Max",
+                "Générations & Images Illimitées",
+                "Max 25 éléments par génération",
+                "Accès à CanvasAI Pro & Max",
+                "Personnalisation avancée des générations",
+                "Support prioritaire",
             ]
         }
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto">
+        <div className="w-full max-w-6xl mx-auto">
             <header className="text-center mb-12">
                 <h2 className="text-5xl font-extrabold text-slate-900 dark:text-white">Brevet' Easy</h2>
                 <p className="text-xl text-slate-700 dark:text-slate-300 mt-2">
-                    Choisissez le forfait qui vous convient le mieux pour réussir votre brevet.
+                    La meilleure expérience pour réussir votre brevet.
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <PlanCard
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+                 <PlanCard
                     planName={plans.free.name}
                     planKey="free"
                     features={plans.free.features}

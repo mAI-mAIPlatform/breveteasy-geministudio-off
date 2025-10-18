@@ -1,8 +1,121 @@
 // Fix: Provide the implementation for the HistorySidebar component.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { ChatSession, Folder, AiModel, ChatMessage } from '../types';
+// FIX: Added 'ChatMessage' to imports to correctly type the 'onUpdateSession' prop.
+import type { ChatSession, Folder, AiModel, CustomAiModel, SubscriptionPlan, ChatMessage } from '../types';
 import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '../constants';
+import { PremiumBadge } from './PremiumBadge';
 
+// --- Custom Model Creator Modal ---
+interface CustomModelCreatorProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (modelData: Omit<CustomAiModel, 'id' | 'createdAt'>) => void;
+}
+
+const CustomModelCreator: React.FC<CustomModelCreatorProps> = ({ isOpen, onClose, onSave }) => {
+    const [name, setName] = useState('');
+    const [icon, setIcon] = useState('brain');
+    const [version, setVersion] = useState('1.0');
+    const [description, setDescription] = useState('');
+    const [baseModel, setBaseModel] = useState<AiModel>('brevetai-pro');
+    const [instructions, setInstructions] = useState('');
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    const resetForm = () => {
+        setName('');
+        setIcon('brain');
+        setVersion('1.0');
+        setDescription('');
+        setBaseModel('brevetai-pro');
+        setInstructions('');
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        const handleClickOutside = (event: MouseEvent) => {
+            if (modalRef.current && !modalRef.current.contains(event.target as Node)) onClose();
+        };
+        if (isOpen) {
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen, onClose]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name.trim() || !instructions.trim()) {
+            alert("Le nom et les instructions sont obligatoires.");
+            return;
+        }
+        onSave({ name, icon, version, description, baseModel, instructions });
+        resetForm();
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fade-in">
+            <div ref={modalRef} className="relative w-full max-w-2xl bg-[#f0f2f5] dark:bg-slate-900/80 dark:backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8">
+                <button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-md z-10" aria-label="Fermer">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-6">Créer un Modèle d'IA Personnalisé</h2>
+                <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="model-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nom du modèle</label>
+                            <input id="model-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Assistant de Maths" required className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg"/>
+                        </div>
+                        <div>
+                             <label htmlFor="model-version" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Version</label>
+                            <input id="model-version" type="text" value={version} onChange={e => setVersion(e.target.value)} placeholder="Ex: 1.0.0" className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg"/>
+                        </div>
+                    </div>
+                     <div>
+                        <label htmlFor="model-desc" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+                        <textarea id="model-desc" value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Une brève description du rôle de ce modèle." className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg resize-y"/>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Icône</label>
+                        <div className="grid grid-cols-8 sm:grid-cols-12 gap-2">
+                             {AVATAR_ICON_KEYS.map(key => (
+                                <button type="button" key={key} onClick={() => setIcon(key)} className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 aspect-square border-2 ${icon === key ? 'bg-indigo-500/80 border-indigo-500 text-white scale-110' : 'bg-white/10 dark:bg-slate-800/60 border-transparent hover:border-indigo-400 text-slate-700 dark:text-slate-300'}`} aria-label={`Select icon ${key}`}>
+                                    {React.cloneElement(AVATAR_ICONS[key], { className: "w-6 h-6" })}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="model-base" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Modèle de base</label>
+                        <select id="model-base" value={baseModel} onChange={e => setBaseModel(e.target.value as AiModel)} className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg">
+                            <option value="brevetai">BrevetAI (Rapide)</option>
+                            <option value="brevetai-pro">BrevetAI Pro (Intelligent)</option>
+                            <option value="brevetai-max">BrevetAI Max (Le plus puissant)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="model-instructions" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Instructions personnalisées</label>
+                        <textarea id="model-instructions" value={instructions} onChange={e => setInstructions(e.target.value)} rows={5} placeholder="Ex: Tu es un expert en histoire-géographie. Tes réponses sont toujours structurées avec une introduction, un développement en deux parties et une conclusion." required className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg resize-y"/>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700">Annuler</button>
+                        <button type="submit" className="px-4 py-2 text-sm font-semibold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50" disabled={!name.trim() || !instructions.trim()}>Créer le modèle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
+// --- History Sidebar ---
 interface HistorySidebarProps {
   sessions: ChatSession[];
   folders: Folder[];
@@ -12,15 +125,17 @@ interface HistorySidebarProps {
   onDownloadChat: (chatId: string) => void;
   onNewChat: () => void;
   onUpdateSession: (sessionId: string, updates: {
-      messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
-      title?: string;
-      aiModel?: AiModel;
-      folderId?: string | null;
+    messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
+    title?: string;
+    aiModel?: AiModel;
+    folderId?: string | null;
   }) => void;
   onNewFolder: (name: string, emoji: string) => void;
   onDeleteFolder: (folderId: string) => void;
   onUpdateFolder: (folderId: string, updates: Partial<Folder>) => void;
   onExitChat: () => void;
+  subscriptionPlan: SubscriptionPlan;
+  onNewCustomModel: (modelData: Omit<CustomAiModel, 'id' | 'createdAt'>) => void;
 }
 
 const EditIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>;
@@ -109,7 +224,7 @@ const SessionItem: React.FC<{
 };
 
 export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
-  const { sessions, folders, activeSessionId, onSelectChat, onDeleteChat, onDownloadChat, onNewChat, onUpdateSession, onNewFolder, onDeleteFolder, onUpdateFolder, onExitChat } = props;
+  const { sessions, folders, activeSessionId, onSelectChat, onDeleteChat, onDownloadChat, onNewChat, onUpdateSession, onNewFolder, onDeleteFolder, onUpdateFolder, onExitChat, subscriptionPlan, onNewCustomModel } = props;
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -122,6 +237,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
   const [openFolderIds, setOpenFolderIds] = useState<Set<string>>(new Set());
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [dragOverUngrouped, setDragOverUngrouped] = useState(false);
+  const [isCreatorOpen, setIsCreatorOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
@@ -198,8 +314,6 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
 
   const handleStartEditing = (item: ChatSession | Folder) => {
     setEditingId(item.id);
-    // Fix: Use a required property ('name') for type guarding instead of an optional one ('emoji')
-    // to correctly distinguish between Folder and ChatSession types.
     if ('name' in item) { // Folder
         setEditingTitle(item.name);
         setEditingEmoji(item.emoji || 'folder');
@@ -271,6 +385,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
   const dragFeedbackClass = 'bg-indigo-500/20 border-2 border-dashed border-indigo-400';
 
   return (
+    <>
     <aside className="w-80 h-full flex-shrink-0 bg-white/5 dark:bg-slate-900/40 p-4 flex flex-col gap-2 border-r border-white/10 dark:border-slate-800">
         <div className="flex justify-between items-center mb-2">
             <button 
@@ -282,21 +397,36 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
-        <div className="flex items-stretch gap-3">
+        <div className="flex flex-col items-stretch gap-2">
             <button
                 onClick={onNewChat}
-                className="flex-grow flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-colors"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
-                Discussion
+                + Discussion
             </button>
-            <button
-                onClick={() => setIsCreatingFolder(true)}
-                className="flex-shrink-0 w-12 flex items-center justify-center bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
-                title="Nouveau dossier"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
-            </button>
+            <div className="flex gap-2">
+                <div className="flex-1 relative">
+                    <button
+                        onClick={() => { if (subscriptionPlan === 'max') setIsCreatorOpen(true) }}
+                        disabled={subscriptionPlan !== 'max'}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                        title="Créer un modèle personnalisé (Forfait Max)"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM12 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" /></svg>
+                        + Modèle
+                    </button>
+                    {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" size="small" />}
+                </div>
+                <button
+                    onClick={() => setIsCreatingFolder(true)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-xs"
+                    title="Nouveau dossier"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+                    + Dossier
+                </button>
+            </div>
         </div>
         
         <div className="relative my-2">
@@ -456,5 +586,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
             )}
         </div>
     </aside>
+    <CustomModelCreator isOpen={isCreatorOpen} onClose={() => setIsCreatorOpen(false)} onSave={onNewCustomModel} />
+    </>
   );
 };

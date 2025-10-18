@@ -1,4 +1,5 @@
 
+
 "use client";
 
 // Fix: Provide the implementation for the main App component.
@@ -17,12 +18,16 @@ import { ExercisesView } from '@/components/ExercisesView';
 import { SubscriptionView } from '@/components/SubscriptionView';
 import { ImageGenerationView } from '@/components/ImageGenerationView';
 import { WelcomeView } from '@/components/WelcomeView';
-import { generateQuiz, generateHtmlContent, generateImage } from '@/services/geminiService';
+import { CanvasView } from '@/components/CanvasView';
+import { FlashAIView } from '@/components/FlashAIView';
+import { PlanningView } from '@/components/PlanningView';
+import { ConseilsView } from '@/components/ConseilsView';
+import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils } from '@/services/geminiService';
 import { AVATAR_ICONS } from '@/lib/constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder } from '@/lib/types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel } from '@/lib/types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
-type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
+type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
 
 interface ImageUsage {
     count: number;
@@ -127,9 +132,6 @@ const App: React.FC = () => {
     const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
     const [aiSystemInstruction, setAiSystemInstruction] = useState<string>('');
     const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>('free');
-    const [defaultAiModel, setDefaultAiModel] = useState<AiModel>('brevetai');
-     const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>('faceai');
-    const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>('');
     const [showScrollTop, setShowScrollTop] = useState(false);
     const rootRef = useRef<HTMLElement | null>(null);
 
@@ -137,6 +139,19 @@ const App: React.FC = () => {
     const [defaultItemCount, setDefaultItemCount] = useState<number>(5);
     const [defaultDifficulty, setDefaultDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>('Normal');
     const [defaultLevel, setDefaultLevel] = useState<string>('Brevet');
+    
+    // Default Models & Instructions
+    const [defaultAiModel, setDefaultAiModel] = useState<AiModel>('brevetai');
+    const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>('faceai');
+    const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>('');
+    const [defaultCanvasModel, setDefaultCanvasModel] = useState<CanvasModel>('canvasai');
+    const [canvasSystemInstruction, setCanvasSystemInstruction] = useState<string>('');
+    const [defaultFlashAiModel, setDefaultFlashAiModel] = useState<FlashAiModel>('flashai');
+    const [flashAiSystemInstruction, setFlashAiSystemInstruction] = useState<string>('');
+    const [defaultPlanningAiModel, setDefaultPlanningAiModel] = useState<PlanningAiModel>('planningai');
+    const [planningAiSystemInstruction, setPlanningAiSystemInstruction] = useState<string>('');
+    const [defaultConseilsAiModel, setDefaultConseilsAiModel] = useState<ConseilsAiModel>('conseilsai');
+    const [conseilsAiSystemInstruction, setConseilsAiSystemInstruction] = useState<string>('');
 
 
     // User/Profile State
@@ -159,33 +174,69 @@ const App: React.FC = () => {
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
     const [folders, setFolders] = useState<Folder[]>([]);
+    const [customAiModels, setCustomAiModels] = useState<CustomAiModel[]>([]);
 
 
     // Image Generation State
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
     const [imageUsage, setImageUsage] = useState<ImageUsage>({ count: 0, date: new Date().toISOString().split('T')[0] });
+
+    // Canvas State
+    const [canvasVersions, setCanvasVersions] = useState<CanvasVersion[]>([]);
+    const [activeCanvasVersionId, setActiveCanvasVersionId] = useState<string | null>(null);
+    const [isGeneratingCanvas, setIsGeneratingCanvas] = useState(false);
+
+    // FlashAI State
+    const [flashQuestion, setFlashQuestion] = useState<Question | null>(null);
+    const [isGeneratingFlashQuestion, setIsGeneratingFlashQuestion] = useState(false);
     
+    // Planning State
+    const [planning, setPlanning] = useState<Planning | null>(null);
+    const [isGeneratingPlanning, setIsGeneratingPlanning] = useState(false);
+
+    // Conseils State
+    const [conseils, setConseils] = useState<string | null>(null);
+    const [isGeneratingConseils, setIsGeneratingConseils] = useState(false);
+
+
     // Load state from localStorage on initial mount
     useEffect(() => {
         setTheme((localStorage.getItem('brevet-easy-theme') as any) || 'system');
-        setAiSystemInstruction(localStorage.getItem('brevet-easy-ai-instruction') || '');
         setSubscriptionPlan((localStorage.getItem('brevet-easy-plan') as SubscriptionPlan) || 'free');
-        setDefaultAiModel((localStorage.getItem('brevet-easy-default-ai-model') as AiModel) || 'brevetai');
-        setDefaultImageModel((localStorage.getItem('brevet-easy-default-image-model') as ImageModel) || 'faceai');
-        setImageGenerationInstruction(localStorage.getItem('brevet-easy-image-instruction') || '');
+        setUserName(localStorage.getItem('brevet-easy-user-name') || '');
+        setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
+
+        // Generation settings
         setDefaultItemCount(parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10));
         const savedDifficulty = localStorage.getItem('brevet-easy-default-difficulty');
         setDefaultDifficulty((savedDifficulty === 'Facile' || savedDifficulty === 'Normal' || savedDifficulty === 'Difficile' || savedDifficulty === 'Expert' ? savedDifficulty : 'Normal'));
         setDefaultLevel(localStorage.getItem('brevet-easy-default-level') || 'Brevet');
-        setUserName(localStorage.getItem('brevet-easy-user-name') || '');
-        setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
+        
+        // AI Models & Instructions
+        setAiSystemInstruction(localStorage.getItem('brevet-easy-ai-instruction') || '');
+        setDefaultAiModel((localStorage.getItem('brevet-easy-default-ai-model') as AiModel) || 'brevetai');
+        setImageGenerationInstruction(localStorage.getItem('brevet-easy-image-instruction') || '');
+        setDefaultImageModel((localStorage.getItem('brevet-easy-default-image-model') as ImageModel) || 'faceai');
+        setCanvasSystemInstruction(localStorage.getItem('brevet-easy-canvas-instruction') || '');
+        setDefaultCanvasModel((localStorage.getItem('brevet-easy-default-canvas-model') as CanvasModel) || 'canvasai');
+        setFlashAiSystemInstruction(localStorage.getItem('brevet-easy-flashai-instruction') || '');
+        setDefaultFlashAiModel((localStorage.getItem('brevet-easy-default-flashai-model') as FlashAiModel) || 'flashai');
+        setPlanningAiSystemInstruction(localStorage.getItem('brevet-easy-planningai-instruction') || '');
+        setDefaultPlanningAiModel((localStorage.getItem('brevet-easy-default-planningai-model') as PlanningAiModel) || 'planningai');
+        setConseilsAiSystemInstruction(localStorage.getItem('brevet-easy-conseilsai-instruction') || '');
+        setDefaultConseilsAiModel((localStorage.getItem('brevet-easy-default-conseilsai-model') as ConseilsAiModel) || 'conseilsai');
 
         const savedSessions = localStorage.getItem('chatSessions');
         setChatSessions(savedSessions ? JSON.parse(savedSessions) : []);
+        const savedCanvasVersions = localStorage.getItem('canvasVersions');
+        setCanvasVersions(savedCanvasVersions ? JSON.parse(savedCanvasVersions) : []);
         
         const savedFolders = localStorage.getItem('brevet-easy-folders');
         setFolders(savedFolders ? JSON.parse(savedFolders) : []);
+        
+        const savedCustomModels = localStorage.getItem('brevet-easy-custom-models');
+        setCustomAiModels(savedCustomModels ? JSON.parse(savedCustomModels) : []);
 
         const savedUsage = localStorage.getItem('brevet-easy-image-usage');
         const today = new Date().toISOString().split('T')[0];
@@ -241,82 +292,51 @@ const App: React.FC = () => {
         return () => container.removeEventListener('scroll', handleScroll);
     }, []); // Runs once on mount
     
-    // AI Instruction Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction);
-    }, [aiSystemInstruction]);
+    // Persistence effects for all settings
+    useEffect(() => { localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction); }, [aiSystemInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-user-name', userName); }, [userName]);
+    useEffect(() => { localStorage.setItem('brevet-easy-user-avatar', userAvatar); }, [userAvatar]);
+    useEffect(() => { localStorage.setItem('brevet-easy-plan', subscriptionPlan); }, [subscriptionPlan]);
+    useEffect(() => { localStorage.setItem('chatSessions', JSON.stringify(chatSessions)); }, [chatSessions]);
+    useEffect(() => { localStorage.setItem('brevet-easy-folders', JSON.stringify(folders)); }, [folders]);
+    useEffect(() => { localStorage.setItem('brevet-easy-custom-models', JSON.stringify(customAiModels)); }, [customAiModels]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-ai-model', defaultAiModel); }, [defaultAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-image-model', defaultImageModel); }, [defaultImageModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-image-instruction', imageGenerationInstruction); }, [imageGenerationInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-image-usage', JSON.stringify(imageUsage)); }, [imageUsage]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-item-count', String(defaultItemCount)); }, [defaultItemCount]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-difficulty', defaultDifficulty); }, [defaultDifficulty]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-level', defaultLevel); }, [defaultLevel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-canvas-model', defaultCanvasModel); }, [defaultCanvasModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-canvas-instruction', canvasSystemInstruction); }, [canvasSystemInstruction]);
+    useEffect(() => { localStorage.setItem('canvasVersions', JSON.stringify(canvasVersions)); }, [canvasVersions]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-flashai-model', defaultFlashAiModel); }, [defaultFlashAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-flashai-instruction', flashAiSystemInstruction); }, [flashAiSystemInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-planningai-model', defaultPlanningAiModel); }, [defaultPlanningAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-planningai-instruction', planningAiSystemInstruction); }, [planningAiSystemInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-conseilsai-model', defaultConseilsAiModel); }, [defaultConseilsAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-conseilsai-instruction', conseilsAiSystemInstruction); }, [conseilsAiSystemInstruction]);
     
-    // User Name Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-user-name', userName);
-    }, [userName]);
-
-    // User Avatar Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-user-avatar', userAvatar);
-    }, [userAvatar]);
-    
-    // Subscription Plan Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-plan', subscriptionPlan);
-    }, [subscriptionPlan]);
 
     // Effect to handle model downgrades when subscription changes
     useEffect(() => {
-        if (subscriptionPlan === 'free' && (defaultAiModel === 'brevetai-pro' || defaultAiModel === 'brevetai-max')) {
-            setDefaultAiModel('brevetai');
-        } else if (subscriptionPlan === 'pro' && defaultAiModel === 'brevetai-max') {
-            setDefaultAiModel('brevetai-pro');
+        if (subscriptionPlan === 'free') {
+            if (defaultAiModel !== 'brevetai') setDefaultAiModel('brevetai');
+            if (defaultImageModel !== 'faceai') setDefaultImageModel('faceai');
+            if (defaultCanvasModel !== 'canvasai') setDefaultCanvasModel('canvasai');
+            if (defaultFlashAiModel !== 'flashai') setDefaultFlashAiModel('flashai');
+            if (defaultPlanningAiModel !== 'planningai') setDefaultPlanningAiModel('planningai');
+            if (defaultConseilsAiModel !== 'conseilsai') setDefaultConseilsAiModel('conseilsai');
+        } else if (subscriptionPlan === 'pro') {
+            if (defaultAiModel === 'brevetai-max') setDefaultAiModel('brevetai-pro');
+            if (defaultImageModel === 'faceai-max') setDefaultImageModel('faceai-pro');
+            if (defaultCanvasModel === 'canvasai-max') setDefaultCanvasModel('canvasai-pro');
+            if (defaultFlashAiModel === 'flashai-max') setDefaultFlashAiModel('flashai-pro');
+            if (defaultPlanningAiModel === 'planningai-max') setDefaultPlanningAiModel('planningai-pro');
+            if (defaultConseilsAiModel === 'conseilsai-max') setDefaultConseilsAiModel('conseilsai-pro');
         }
+    }, [subscriptionPlan, defaultAiModel, defaultImageModel, defaultCanvasModel, defaultFlashAiModel, defaultPlanningAiModel, defaultConseilsAiModel]);
 
-        if (subscriptionPlan === 'free' && (defaultImageModel === 'faceai-pro' || defaultImageModel === 'faceai-max')) {
-            setDefaultImageModel('faceai');
-        } else if (subscriptionPlan === 'pro' && defaultImageModel === 'faceai-max') {
-            setDefaultImageModel('faceai-pro');
-        }
-    }, [subscriptionPlan]);
-
-    // Chat Session Persistence Effect
-     useEffect(() => {
-        localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
-    }, [chatSessions]);
-    
-    // Folders Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-folders', JSON.stringify(folders));
-    }, [folders]);
-
-    // Default AI Model Persistence
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-ai-model', defaultAiModel);
-    }, [defaultAiModel]);
-
-    // Image Generation Settings Persistence
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-image-model', defaultImageModel);
-    }, [defaultImageModel]);
-    
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-image-instruction', imageGenerationInstruction);
-    }, [imageGenerationInstruction]);
-
-    // Image Usage Persistence
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-image-usage', JSON.stringify(imageUsage));
-    }, [imageUsage]);
-    
-    // Default Generation Settings Persistence
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-item-count', String(defaultItemCount));
-    }, [defaultItemCount]);
-
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-difficulty', defaultDifficulty);
-    }, [defaultDifficulty]);
-
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-level', defaultLevel);
-    }, [defaultLevel]);
 
     // Navigation Handlers
     const handleSubjectSelect = (subject: Subject) => {
@@ -332,6 +352,9 @@ const App: React.FC = () => {
         setCurrentQuestionIndex(0);
         setGeneratedHtml(null);
         setGeneratedImage(null);
+        setFlashQuestion(null);
+        setPlanning(null);
+        setConseils(null);
         setView('home');
     };
     
@@ -341,6 +364,21 @@ const App: React.FC = () => {
     const handleGoToImageGeneration = () => {
         setGeneratedImage(null);
         setView('imageGeneration');
+    };
+    const handleStartCanvas = () => {
+        setView('canvas');
+    };
+    const handleStartFlashAI = () => {
+        setFlashQuestion(null);
+        setView('flashAI');
+    };
+    const handleStartPlanning = () => {
+        setPlanning(null);
+        setView('planning');
+    }
+    const handleStartConseils = () => {
+        setConseils(null);
+        setView('conseils');
     };
     const handleScrollToTop = () => {
         rootRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -364,13 +402,13 @@ const App: React.FC = () => {
     };
 
     // AI Instruction Builder
-    const buildSystemInstruction = useCallback(() => {
-        let finalInstruction = aiSystemInstruction.trim();
+    const buildSystemInstruction = useCallback((baseInstruction: string) => {
+        let finalInstruction = baseInstruction.trim();
         if (userName.trim()) {
             finalInstruction += `\nL'utilisateur s'appelle ${userName.trim()}. Adresse-toi à lui par son prénom.`;
         }
         return finalInstruction;
-    }, [aiSystemInstruction, userName]);
+    }, [userName]);
 
     // Quiz Flow Handlers
     const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
@@ -380,7 +418,7 @@ const App: React.FC = () => {
         setCurrentQuestionIndex(0);
         
         try {
-            const systemInstruction = buildSystemInstruction();
+            const systemInstruction = buildSystemInstruction(aiSystemInstruction);
             const generatedQuiz = await generateQuiz(
                 selectedSubject.name,
                 count,
@@ -398,7 +436,7 @@ const App: React.FC = () => {
             alert("Une erreur est survenue lors de la génération du quiz. Veuillez réessayer.");
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction]);
 
     const handleQuizSubmit = (answers: (string | null)[]) => {
         if (!quiz) return;
@@ -418,7 +456,7 @@ const App: React.FC = () => {
         setView('loading');
         setLoadingTask(task);
         try {
-            const html = await generateHtmlContent(prompt, buildSystemInstruction());
+            const html = await generateHtmlContent(prompt, buildSystemInstruction(aiSystemInstruction));
             setGeneratedHtml(html);
             setView('exercises');
         } catch (error) {
@@ -426,7 +464,7 @@ const App: React.FC = () => {
             alert(`Une erreur est survenue lors de la génération. Veuillez réessayer.`);
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction]);
 
     const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string) => {
         const prompt = `Génère une fiche de ${count} exercices sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
@@ -584,6 +622,16 @@ const App: React.FC = () => {
         );
     };
 
+    // Custom Model Handlers
+    const handleAddNewCustomModel = (modelData: Omit<CustomAiModel, 'id' | 'createdAt'>) => {
+        const newModel: CustomAiModel = {
+            ...modelData,
+            id: `custom_${Date.now()}`,
+            createdAt: Date.now(),
+        };
+        setCustomAiModels(prev => [newModel, ...prev]);
+    };
+
     // Image Generation Handlers
     const handleGenerateImage = useCallback(async (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png', aspectRatio: string, negativePrompt: string) => {
         const generationLimit = subscriptionPlan === 'free' ? 2 : subscriptionPlan === 'pro' ? 5 : Infinity;
@@ -602,7 +650,8 @@ const App: React.FC = () => {
                 style,
                 format,
                 aspectRatio,
-                imageGenerationInstruction
+                imageGenerationInstruction,
+                negativePrompt
             );
             
             setGeneratedImage(imageData);
@@ -615,8 +664,70 @@ const App: React.FC = () => {
             setIsGeneratingImage(false);
         }
     }, [imageUsage, subscriptionPlan, imageGenerationInstruction]);
-    
 
+    // Canvas, FlashAI, Planning & Conseils Handlers
+    const handleGenerateCanvas = useCallback(async (prompt: string, model: CanvasModel) => {
+        setIsGeneratingCanvas(true);
+        try {
+            const html = await generateInteractivePage(prompt, model, buildSystemInstruction(canvasSystemInstruction));
+            const newVersion: CanvasVersion = {
+                id: `canvas_${Date.now()}`,
+                htmlContent: html,
+                prompt: prompt,
+                createdAt: Date.now()
+            };
+            setCanvasVersions(prev => [...prev, newVersion]);
+            setActiveCanvasVersionId(newVersion.id);
+        } catch (error) {
+            console.error("Error generating canvas page:", error);
+            alert("Une erreur est survenue lors de la génération. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingCanvas(false);
+        }
+    }, [buildSystemInstruction, canvasSystemInstruction]);
+
+    // Fix: Update `handleGenerateFlashQuestion` to accept the model as an argument and remove `defaultFlashAiModel` from the dependency array.
+    const handleGenerateFlashQuestion = useCallback(async (level: string, model: FlashAiModel) => {
+        setIsGeneratingFlashQuestion(true);
+        try {
+            const question = await generateFlashQuestion(level, buildSystemInstruction(flashAiSystemInstruction), model);
+            setFlashQuestion(question);
+        } catch (error) {
+            console.error("Error generating flash question:", error);
+            alert("Une erreur est survenue. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingFlashQuestion(false);
+        }
+    }, [buildSystemInstruction, flashAiSystemInstruction]);
+
+    // Fix: Update `handleGeneratePlanning` to accept the model as an argument and remove `defaultPlanningAiModel` from the dependency array.
+    const handleGeneratePlanning = useCallback(async (task: string, dueDate: string, model: PlanningAiModel) => {
+        setIsGeneratingPlanning(true);
+        try {
+            const generatedPlan = await generatePlanning(task, dueDate, buildSystemInstruction(planningAiSystemInstruction), model);
+            setPlanning(generatedPlan);
+        } catch (error) {
+            console.error("Error generating planning:", error);
+            alert("Une erreur est survenue lors de la création du planning. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingPlanning(false);
+        }
+    }, [buildSystemInstruction, planningAiSystemInstruction]);
+
+    // Fix: Update `handleGenerateConseils` to accept the model as an argument and remove `defaultConseilsAiModel` from the dependency array.
+    const handleGenerateConseils = useCallback(async (subject: string, level: string, model: ConseilsAiModel) => {
+        setIsGeneratingConseils(true);
+        try {
+            const generatedConseils = await generateConseils(subject, level, buildSystemInstruction(conseilsAiSystemInstruction), model);
+            setConseils(generatedConseils);
+        } catch (error) {
+            console.error("Error generating conseils:", error);
+            alert("Une erreur est survenue lors de la génération des conseils. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingConseils(false);
+        }
+    }, [buildSystemInstruction, conseilsAiSystemInstruction]);
+    
     const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
     
     const remainingImageGenerations = () => {
@@ -634,7 +745,7 @@ const App: React.FC = () => {
     const renderContent = () => {
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
@@ -665,6 +776,22 @@ const App: React.FC = () => {
                         onDefaultDifficultyChange={setDefaultDifficulty}
                         defaultLevel={defaultLevel}
                         onDefaultLevelChange={setDefaultLevel}
+                        defaultCanvasModel={defaultCanvasModel}
+                        onDefaultCanvasModelChange={setDefaultCanvasModel}
+                        canvasSystemInstruction={canvasSystemInstruction}
+                        onCanvasSystemInstructionChange={setCanvasSystemInstruction}
+                        defaultFlashAiModel={defaultFlashAiModel}
+                        onDefaultFlashAiModelChange={setDefaultFlashAiModel}
+                        flashAiSystemInstruction={flashAiSystemInstruction}
+                        onFlashAiSystemInstructionChange={setFlashAiSystemInstruction}
+                        defaultPlanningAiModel={defaultPlanningAiModel}
+                        onDefaultPlanningAiModelChange={setDefaultPlanningAiModel}
+                        planningAiSystemInstruction={planningAiSystemInstruction}
+                        onPlanningAiSystemInstructionChange={setPlanningAiSystemInstruction}
+                        defaultConseilsAiModel={defaultConseilsAiModel}
+                        onDefaultConseilsAiModelChange={setDefaultConseilsAiModel}
+                        conseilsAiSystemInstruction={conseilsAiSystemInstruction}
+                        onConseilsAiSystemInstructionChange={setConseilsAiSystemInstruction}
                     />
                 );
             case 'chat':
@@ -683,6 +810,8 @@ const App: React.FC = () => {
                             onDeleteFolder={handleDeleteFolder}
                             onUpdateFolder={handleUpdateFolder}
                             onExitChat={handleBackToHome}
+                            subscriptionPlan={subscriptionPlan}
+                            onNewCustomModel={handleAddNewCustomModel}
                         />
                         <div className="flex-grow h-full">
                             {activeSession ? (
@@ -692,6 +821,11 @@ const App: React.FC = () => {
                                     systemInstruction={aiSystemInstruction}
                                     subscriptionPlan={subscriptionPlan}
                                     userName={userName}
+                                    onNavigateToImageGeneration={handleGoToImageGeneration}
+                                    onNavigateToCanvas={handleStartCanvas}
+                                    onNavigateToFlashAI={handleStartFlashAI}
+                                    onNavigateToPlanning={handleStartPlanning}
+                                    onNavigateToConseils={handleStartConseils}
                                 />
                             ) : (
                                 <WelcomeView />
@@ -713,16 +847,29 @@ const App: React.FC = () => {
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'imageGeneration':
                  return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
+            case 'canvas':
+                return <CanvasView versions={canvasVersions} activeVersionId={activeCanvasVersionId} onGenerate={handleGenerateCanvas} onSelectVersion={setActiveCanvasVersionId} isGenerating={isGeneratingCanvas} subscriptionPlan={subscriptionPlan} defaultCanvasModel={defaultCanvasModel} />;
+            // Fix: Pass the missing `subscriptionPlan` and `defaultFlashAiModel` props to the FlashAIView component.
+            case 'flashAI':
+                return <FlashAIView onGenerate={handleGenerateFlashQuestion} isLoading={isGeneratingFlashQuestion} question={flashQuestion} onClear={() => setFlashQuestion(null)} subscriptionPlan={subscriptionPlan} defaultFlashAiModel={defaultFlashAiModel} />;
+            // Fix: Pass the missing `subscriptionPlan` and `defaultPlanningAiModel` props to the PlanningView component.
+            case 'planning':
+                return <PlanningView onGenerate={handleGeneratePlanning} isLoading={isGeneratingPlanning} planning={planning} onClear={() => setPlanning(null)} subscriptionPlan={subscriptionPlan} defaultPlanningAiModel={defaultPlanningAiModel}/>;
+            // Fix: Pass the missing `subscriptionPlan` and `defaultConseilsAiModel` props to the ConseilsView component.
+            case 'conseils':
+                return <ConseilsView onGenerate={handleGenerateConseils} isLoading={isGeneratingConseils} conseils={conseils} onClear={() => setConseils(null)} subscriptionPlan={subscriptionPlan} defaultConseilsAiModel={defaultConseilsAiModel} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
         }
     };
     
     const showHeader = !['chat'].includes(view);
     const showExitButton = !['home', 'chat'].includes(view);
+    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils'].includes(view);
+
 
     return (
-        <div className={`w-full min-h-full p-4 sm:p-6 lg:p-8 ${view === 'quiz' ? '' : 'flex items-start justify-center'}`}>
+        <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-start justify-center'}`}>
              {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />

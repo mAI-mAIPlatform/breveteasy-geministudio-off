@@ -1,7 +1,6 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextResponse } from 'next/server';
-import type { Quiz, ImageModel } from '@/lib/types';
+import type { Quiz, ImageModel, Question, Planning, CanvasModel, FlashAiModel, PlanningAiModel } from '@/lib/types';
 
 if (!process.env.API_KEY) {
   throw new Error("Missing API_KEY environment variable");
@@ -47,9 +46,11 @@ async function internalGenerateQuiz({ subjectName, count, difficulty, level, cus
 }
 
 
-async function internalGenerateHtmlContent({ prompt, systemInstruction }: any): Promise<string> {
+async function internalGenerateHtmlContent({ prompt, systemInstruction, model }: any): Promise<string> {
+    // Fix: Use the provided model to select the correct Gemini model, making the function more flexible.
+    const geminiModel = (model === 'canvasai' || model === 'conseilsai') ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: geminiModel,
         contents: prompt,
         config: {
             systemInstruction: systemInstruction,
@@ -58,7 +59,8 @@ async function internalGenerateHtmlContent({ prompt, systemInstruction }: any): 
     return response.text;
 }
 
-async function internalGenerateImage({ prompt, model, style, format, aspectRatio, imageGenerationInstruction }: any): Promise<{ data: string; mimeType: string; }> {
+// FIX: Add `negativePrompt` to the function parameters and use it to construct the final prompt.
+async function internalGenerateImage({ prompt, model, style, format, aspectRatio, imageGenerationInstruction, negativePrompt }: any): Promise<{ data: string; mimeType: string; }> {
     const qualityPrompt = model === 'faceai-pro' || model === 'faceai-max'
         ? 'haute qualité, 4k, hyper-détaillé, photoréaliste'
         : '';
@@ -66,12 +68,16 @@ async function internalGenerateImage({ prompt, model, style, format, aspectRatio
     const stylePrompt = style !== 'none' ? `style ${style.replace('-', ' ')}` : '';
     const userInstruction = imageGenerationInstruction.trim();
 
-    const finalPrompt = [
+    const mainPrompt = [
         prompt,
         stylePrompt,
         qualityPrompt,
         userInstruction
     ].filter(Boolean).join(', ');
+    
+    const finalPrompt = negativePrompt?.trim()
+        ? `${mainPrompt}, negative_prompt: [${negativePrompt.trim()}]`
+        : mainPrompt;
     
     const response = await ai.models.generateImages({
         model: 'imagen-4.0-generate-001',
@@ -85,6 +91,74 @@ async function internalGenerateImage({ prompt, model, style, format, aspectRatio
     
     const imageBytes = response.generatedImages[0].image.imageBytes;
     return { data: imageBytes, mimeType: `image/${format}`};
+}
+
+// Fix: Add implementation for generating a flash question.
+async function internalGenerateFlashQuestion({ level, systemInstruction, model }: { level: string; systemInstruction: string; model: FlashAiModel }): Promise<Question> {
+    const questionSchema = {
+        type: Type.OBJECT,
+        properties: {
+            questionText: { type: Type.STRING },
+            options: { type: Type.ARRAY, items: { type: Type.STRING }, minItems: 4, maxItems: 4 },
+            correctAnswer: { type: Type.STRING },
+            explanation: { type: Type.STRING }
+        },
+        required: ['questionText', 'options', 'correctAnswer', 'explanation']
+    };
+
+    const prompt = `Génère une seule question flash de type QCM (avec exactement 4 options) pour le niveau ${level}. Le sujet peut être n'importe quelle matière du Brevet des collèges. Fournis une explication pour la bonne réponse.`;
+    
+    const geminiModel = model === 'flashai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: questionSchema,
+            systemInstruction: systemInstruction,
+        }
+    });
+    
+    return JSON.parse(response.text);
+}
+
+// Fix: Add implementation for generating a planning schedule.
+async function internalGeneratePlanning({ task, dueDate, systemInstruction, model }: { task: string; dueDate: string; systemInstruction: string; model: PlanningAiModel }): Promise<Planning> {
+    const planningSchema = {
+        type: Type.OBJECT,
+        properties: {
+            title: { type: Type.STRING },
+            schedule: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        date: { type: Type.STRING, description: "Date au format YYYY-MM-DD" },
+                        tasks: { type: Type.ARRAY, items: { type: Type.STRING } }
+                    },
+                    required: ['date', 'tasks']
+                }
+            }
+        },
+        required: ['title', 'schedule']
+    };
+
+    const prompt = `Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles. Le planning doit être réaliste.`;
+
+    const geminiModel = model === 'planningai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: planningSchema,
+            systemInstruction: systemInstruction,
+        }
+    });
+    
+    return JSON.parse(response.text);
 }
 
 
@@ -104,6 +178,15 @@ export async function POST(req: Request) {
             case 'generateImage':
                 const image = await internalGenerateImage(payload);
                 return NextResponse.json(image);
+            
+            // Fix: Add handlers for new actions to the API route.
+            case 'generateFlashQuestion':
+                const question = await internalGenerateFlashQuestion(payload);
+                return NextResponse.json(question);
+
+            case 'generatePlanning':
+                const planning = await internalGeneratePlanning(payload);
+                return NextResponse.json(planning);
 
             default:
                 return NextResponse.json({ message: 'Invalid action' }, { status: 400 });

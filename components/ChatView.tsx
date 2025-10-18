@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '../types';
 import { ai, Type } from '../services/geminiService';
 import type { Chat, Part } from '@google/genai';
+import { PremiumBadge } from './PremiumBadge';
 
 interface ChatViewProps {
     session: ChatSession;
@@ -13,6 +14,12 @@ interface ChatViewProps {
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
     userName: string;
+    // Fix: Add missing navigation properties to the interface to match props passed in App.tsx.
+    onNavigateToImageGeneration: () => void;
+    onNavigateToCanvas: () => void;
+    onNavigateToFlashAI: () => void;
+    onNavigateToPlanning: () => void;
+    onNavigateToConseils: () => void;
 }
 
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
@@ -35,17 +42,15 @@ const ModelSelectorDropdown: React.FC<{
 
     const modelDisplayNames: Record<AiModel, string> = {
         brevetai: 'BrevetAI',
-        'brevetai-plus': 'BrevetAI +',
         'brevetai-pro': 'BrevetAI Pro',
+        'brevetai-max': 'BrevetAI Max',
     };
     
-    const availableModels = useMemo(() => {
-        const models: AiModel[] = ['brevetai', 'brevetai-plus'];
-        if (subscriptionPlan === 'max') {
-            models.push('brevetai-pro');
-        }
-        return models;
-    }, [subscriptionPlan]);
+    const allModels = useMemo(() => [
+        { id: 'brevetai', requiredPlan: 'free' as const },
+        { id: 'brevetai-pro', requiredPlan: 'pro' as const },
+        { id: 'brevetai-max', requiredPlan: 'max' as const },
+    ], []);
 
 
     useEffect(() => {
@@ -82,18 +87,28 @@ const ModelSelectorDropdown: React.FC<{
             </button>
             {isOpen && (
                 <div className="absolute top-full left-0 mt-2 w-full rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-10 p-1">
-                    {availableModels.map((model) => (
-                        <button
-                            key={model}
-                            onClick={() => {
-                                onAiModelChange(model);
-                                setIsOpen(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm rounded-lg text-slate-800 dark:text-slate-200 hover:bg-indigo-500/80 hover:text-white transition-colors"
-                        >
-                            {modelDisplayNames[model]}
-                        </button>
-                    ))}
+                    {allModels.map((model) => {
+                         const isLocked = 
+                            (model.requiredPlan === 'pro' && subscriptionPlan === 'free') ||
+                            (model.requiredPlan === 'max' && subscriptionPlan !== 'max');
+
+                        return (
+                            <div key={model.id} className="relative">
+                                <button
+                                    onClick={() => {
+                                        if (isLocked) return;
+                                        onAiModelChange(model.id as AiModel);
+                                        setIsOpen(false);
+                                    }}
+                                    disabled={isLocked}
+                                    className="w-full text-left px-3 py-2 text-sm rounded-lg text-slate-800 dark:text-slate-200 hover:bg-indigo-500/80 hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {modelDisplayNames[model.id as AiModel]}
+                                </button>
+                                {isLocked && <PremiumBadge requiredPlan={model.requiredPlan} className="rounded-lg" />}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -175,7 +190,8 @@ const Message: React.FC<{
     onEdit: (index: number) => void;
     regenMenuIndex: number | null;
     setRegenMenuIndex: (index: number | null) => void;
-}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit, regenMenuIndex, setRegenMenuIndex }) => {
+    subscriptionPlan: SubscriptionPlan;
+}> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit, regenMenuIndex, setRegenMenuIndex, subscriptionPlan }) => {
     const isModel = message.role === 'model';
     const isRegenMenuOpen = regenMenuIndex === index;
     const regenMenuRef = useRef<HTMLDivElement>(null);
@@ -199,7 +215,7 @@ const Message: React.FC<{
     
     const actionBarClass = "flex items-center self-center gap-1 p-1 bg-white/60 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200";
     const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
-    const menuItemClass = "w-full text-left px-3 py-1.5 text-sm rounded-md text-slate-800 dark:text-slate-200 hover:bg-indigo-500 hover:text-white transition-colors flex items-center gap-3";
+    const menuItemClass = "w-full text-left px-3 py-1.5 text-sm rounded-md text-slate-800 dark:text-slate-200 hover:bg-indigo-500 hover:text-white transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed";
 
     return (
         <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'justify-end'}`}>
@@ -257,12 +273,13 @@ const Message: React.FC<{
                                 </button>
                                 <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
                                 <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai')}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
                                     <span>Régénérer avec BrevetAI</span>
                                 </button>
-                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-plus')}>
-                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-                                    <span>Régénérer avec BrevetAI +</span>
+                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-pro')} disabled={subscriptionPlan === 'free'}>
+                                    <span>Régénérer avec BrevetAI Pro</span>
+                                </button>
+                                <button className={menuItemClass} onClick={() => handleRegenOptionClick('change_model', 'brevetai-max')} disabled={subscriptionPlan !== 'max'}>
+                                    <span>Régénérer avec BrevetAI Max</span>
                                 </button>
                             </div>
                         )}
@@ -273,7 +290,7 @@ const Message: React.FC<{
     );
 };
 
-export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, systemInstruction, subscriptionPlan, userName }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, systemInstruction, subscriptionPlan, userName, onNavigateToImageGeneration, onNavigateToCanvas, onNavigateToFlashAI, onNavigateToPlanning, onNavigateToConseils }) => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -299,13 +316,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     };
 
     const messageLimit = useMemo(() => {
-        if (session.aiModel === 'brevetai') {
+        if (session.aiModel === 'brevetai' || session.aiModel === 'brevetai-max') {
             return Infinity;
         }
-        // Logic for 'brevetai-plus'
-        if (subscriptionPlan === 'free') return 15;
-        if (subscriptionPlan === 'pro') return 100;
-        return Infinity; // for 'max' plan
+        if (session.aiModel === 'brevetai-pro') {
+            if (subscriptionPlan === 'pro') return 100;
+            if (subscriptionPlan === 'max') return Infinity;
+        }
+        return 0; // Not accessible for free plan
     }, [subscriptionPlan, session.aiModel]);
     
     const isChatLimitReached = session.messages.length >= messageLimit;
@@ -346,10 +364,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
 
         if (modelToUse === 'brevetai') {
             config.thinkingConfig = { thinkingBudget: 0 };
-        } else if (modelToUse === 'brevetai-pro') {
+        } else if (modelToUse === 'brevetai-max') {
             geminiModelName = 'gemini-2.5-pro';
         }
-        // For 'brevetai-plus', we omit thinkingConfig to use the default (enabled) for gemini-2.5-flash
         
         return ai.chats.create({
             model: geminiModelName,
@@ -522,6 +539,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         onUpdateSession(session.id, { title: newTitle });
     };
 
+    const modelDisplayNames: Record<AiModel, string> = {
+        brevetai: 'BrevetAI',
+        'brevetai-pro': 'BrevetAI Pro',
+        'brevetai-max': 'BrevetAI Max',
+    };
+
     return (
         <div className="w-full h-full flex flex-col bg-white/10 dark:bg-slate-900/60">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
@@ -543,7 +566,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                            <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">
-                           {session.aiModel === 'brevetai' ? 'BrevetAI' : 'BrevetAI +'}
+                           {modelDisplayNames[session.aiModel] || 'BrevetAI'}
                         </h2>
                         <p className="text-slate-700 dark:text-slate-400">Comment puis-je vous aider à réviser ?</p>
                     </div>
@@ -559,11 +582,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         onEdit={handleEditMessage}
                         regenMenuIndex={regenMenuIndex}
                         setRegenMenuIndex={setRegenMenuIndex}
+                        subscriptionPlan={subscriptionPlan}
                     />
                 ))}
                  {isChatLimitReached && (
                     <div className="text-center p-4 bg-yellow-500/20 text-yellow-800 dark:text-yellow-300 border border-yellow-500/30 rounded-xl">
-                        Vous avez atteint la limite de {messageLimit} messages pour BrevetAI+ avec votre forfait. Passez à un forfait supérieur pour continuer.
+                        Vous avez atteint la limite de {messageLimit} messages pour ce modèle avec votre forfait. Passez à un forfait supérieur pour continuer.
                     </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -603,7 +627,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                        </svg>
                     </button>
                 </div>
-                {session.aiModel === 'brevetai-plus' && (
+                {session.aiModel === 'brevetai-pro' && (
                     <p className="text-center text-xs text-slate-600 dark:text-slate-400 pt-1">
                         {isFinite(messageLimit) ? `${Math.max(0, messageLimit - session.messages.length)} messages restants avec votre forfait.` : 'Messages illimités.'}
                     </p>

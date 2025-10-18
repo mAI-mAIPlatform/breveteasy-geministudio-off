@@ -1,6 +1,6 @@
-
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '@/lib/types';
+import { PremiumBadge } from './PremiumBadge';
 
 interface ChatViewProps {
     session: ChatSession;
@@ -12,6 +12,12 @@ interface ChatViewProps {
     systemInstruction: string;
     subscriptionPlan: SubscriptionPlan;
     userName: string;
+    // Fix: Add missing navigation properties to the interface to match props passed in App.tsx.
+    onNavigateToImageGeneration: () => void;
+    onNavigateToCanvas: () => void;
+    onNavigateToFlashAI: () => void;
+    onNavigateToPlanning: () => void;
+    onNavigateToConseils: () => void;
 }
 
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
@@ -38,16 +44,11 @@ const ModelSelectorDropdown: React.FC<{
         'brevetai-max': 'BrevetAI Max',
     };
     
-    const availableModels = useMemo(() => {
-        const models: AiModel[] = ['brevetai'];
-        if (subscriptionPlan === 'pro' || subscriptionPlan === 'max') {
-            models.push('brevetai-pro');
-        }
-        if (subscriptionPlan === 'max') {
-            models.push('brevetai-max');
-        }
-        return models;
-    }, [subscriptionPlan]);
+    const allModels = useMemo(() => [
+        { id: 'brevetai', requiredPlan: 'free' as const },
+        { id: 'brevetai-pro', requiredPlan: 'pro' as const },
+        { id: 'brevetai-max', requiredPlan: 'max' as const },
+    ], []);
 
 
     useEffect(() => {
@@ -84,18 +85,28 @@ const ModelSelectorDropdown: React.FC<{
             </button>
             {isOpen && (
                 <div className="absolute top-full left-0 mt-2 w-full rounded-xl bg-white dark:bg-slate-800/90 backdrop-blur-lg shadow-2xl border border-white/20 dark:border-slate-700 z-10 p-1">
-                    {availableModels.map((model) => (
-                        <button
-                            key={model}
-                            onClick={() => {
-                                onAiModelChange(model);
-                                setIsOpen(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm rounded-lg text-slate-800 dark:text-slate-200 hover:bg-indigo-500/80 hover:text-white transition-colors"
-                        >
-                            {modelDisplayNames[model]}
-                        </button>
-                    ))}
+                    {allModels.map((model) => {
+                         const isLocked = 
+                            (model.requiredPlan === 'pro' && subscriptionPlan === 'free') ||
+                            (model.requiredPlan === 'max' && subscriptionPlan !== 'max');
+
+                        return (
+                            <div key={model.id} className="relative">
+                                <button
+                                    onClick={() => {
+                                        if (isLocked) return;
+                                        onAiModelChange(model.id as AiModel);
+                                        setIsOpen(false);
+                                    }}
+                                    disabled={isLocked}
+                                    className="w-full text-left px-3 py-2 text-sm rounded-lg text-slate-800 dark:text-slate-200 hover:bg-indigo-500/80 hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {modelDisplayNames[model.id as AiModel]}
+                                </button>
+                                {isLocked && <PremiumBadge requiredPlan={model.requiredPlan} className="rounded-lg" />}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -277,7 +288,7 @@ const Message: React.FC<{
     );
 };
 
-export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, systemInstruction, subscriptionPlan, userName }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, systemInstruction, subscriptionPlan, userName, onNavigateToImageGeneration, onNavigateToCanvas, onNavigateToFlashAI, onNavigateToPlanning, onNavigateToConseils }) => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);

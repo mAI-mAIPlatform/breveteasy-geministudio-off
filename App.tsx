@@ -14,12 +14,18 @@ import { ExercisesView } from './components/ExercisesView';
 import { SubscriptionView } from './components/SubscriptionView';
 import { ImageGenerationView } from './components/ImageGenerationView';
 import { WelcomeView } from './components/WelcomeView';
-import { generateQuiz, generateHtmlContent, generateImage } from './services/geminiService';
+import { CanvasView } from './components/CanvasView';
+import { FlashAIView } from './components/FlashAIView';
+import { PlanningView } from './components/PlanningView';
+import { ConseilsView } from './components/ConseilsView';
+import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils } from './services/geminiService';
 import { AVATAR_ICONS } from './constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel } from './types';
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration';
-type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions';
+// Fix: Add new view types for the new features.
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
+// Fix: Add new loading task types for the new features.
+type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
 
 interface ImageUsage {
     count: number;
@@ -121,56 +127,35 @@ const App: React.FC = () => {
     // App State
     const [view, setView] = useState<View>('home');
     const [loadingTask, setLoadingTask] = useState<LoadingTask>('quiz');
-    const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
-        const savedTheme = localStorage.getItem('brevet-easy-theme');
-        return (savedTheme as any) || 'system';
-    });
-    const [aiSystemInstruction, setAiSystemInstruction] = useState<string>(() => {
-        return localStorage.getItem('brevet-easy-ai-instruction') || '';
-    });
-    const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>(() => {
-        const savedPlan = localStorage.getItem('brevet-easy-plan');
-        return (savedPlan as SubscriptionPlan) || 'free';
-    });
-    const [defaultAiModel, setDefaultAiModel] = useState<AiModel>(() => {
-        const savedModel = localStorage.getItem('brevet-easy-default-ai-model');
-        return (savedModel as AiModel) || 'brevetai';
-    });
-     const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>(() => {
-        const savedModel = localStorage.getItem('brevet-easy-default-image-model');
-        return (savedModel as ImageModel) || 'faceai';
-    });
-    const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>(() => {
-        return localStorage.getItem('brevet-easy-image-instruction') || '';
-    });
+    const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+    const [aiSystemInstruction, setAiSystemInstruction] = useState<string>('');
+    const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>('free');
     const [showScrollTop, setShowScrollTop] = useState(false);
     const rootRef = useRef<HTMLElement | null>(null);
 
     // Generation default settings
-    const [defaultItemCount, setDefaultItemCount] = useState<number>(() => {
-        return parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10);
-    });
-    const [defaultDifficulty, setDefaultDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>(() => {
-        const saved = localStorage.getItem('brevet-easy-default-difficulty');
-        if (saved === 'Moyen') return 'Normal';
-        if (saved === 'Facile' || saved === 'Normal' || saved === 'Difficile' || saved === 'Expert') {
-            return saved;
-        }
-        return 'Normal';
-    });
-    const [defaultLevel, setDefaultLevel] = useState<string>(() => {
-        return localStorage.getItem('brevet-easy-default-level') || 'Brevet';
-    });
+    const [defaultItemCount, setDefaultItemCount] = useState<number>(5);
+    const [defaultDifficulty, setDefaultDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>('Normal');
+    const [defaultLevel, setDefaultLevel] = useState<string>('Brevet');
+    
+    // Default Models & Instructions
+    const [defaultAiModel, setDefaultAiModel] = useState<AiModel>('brevetai');
+    const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>('faceai');
+    const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>('');
+    const [defaultCanvasModel, setDefaultCanvasModel] = useState<CanvasModel>('canvasai');
+    const [canvasSystemInstruction, setCanvasSystemInstruction] = useState<string>('');
+    const [defaultFlashAiModel, setDefaultFlashAiModel] = useState<FlashAiModel>('flashai');
+    const [flashAiSystemInstruction, setFlashAiSystemInstruction] = useState<string>('');
+    const [defaultPlanningAiModel, setDefaultPlanningAiModel] = useState<PlanningAiModel>('planningai');
+    const [planningAiSystemInstruction, setPlanningAiSystemInstruction] = useState<string>('');
+    const [defaultConseilsAiModel, setDefaultConseilsAiModel] = useState<ConseilsAiModel>('conseilsai');
+    const [conseilsAiSystemInstruction, setConseilsAiSystemInstruction] = useState<string>('');
 
 
     // User/Profile State
     const [user, setUser] = useState<{email: string} | null>(null);
-    const [userName, setUserName] = useState<string>(() => {
-        return localStorage.getItem('brevet-easy-user-name') || '';
-    });
-    const [userAvatar, setUserAvatar] = useState<string>(() => {
-        return localStorage.getItem('brevet-easy-user-avatar') || 'user';
-    });
+    const [userName, setUserName] = useState<string>('');
+    const [userAvatar, setUserAvatar] = useState<string>('user');
     
     // Quiz State
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
@@ -184,32 +169,88 @@ const App: React.FC = () => {
     const [isDownloadingHtml, setIsDownloadingHtml] = useState(false);
 
     // Chat State
-    const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
-        const savedSessions = localStorage.getItem('chatSessions');
-        return savedSessions ? JSON.parse(savedSessions) : [];
-    });
+    const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
-    const [folders, setFolders] = useState<Folder[]>(() => {
-        const savedFolders = localStorage.getItem('brevet-easy-folders');
-        return savedFolders ? JSON.parse(savedFolders) : [];
-    });
+    const [folders, setFolders] = useState<Folder[]>([]);
+    const [customAiModels, setCustomAiModels] = useState<CustomAiModel[]>([]);
 
 
     // Image Generation State
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
-    const [imageUsage, setImageUsage] = useState<ImageUsage>(() => {
+    const [imageUsage, setImageUsage] = useState<ImageUsage>({ count: 0, date: new Date().toISOString().split('T')[0] });
+
+    // Canvas State
+    const [canvasVersions, setCanvasVersions] = useState<CanvasVersion[]>([]);
+    const [activeCanvasVersionId, setActiveCanvasVersionId] = useState<string | null>(null);
+    const [isGeneratingCanvas, setIsGeneratingCanvas] = useState(false);
+
+    // FlashAI State
+    const [flashQuestion, setFlashQuestion] = useState<Question | null>(null);
+    const [isGeneratingFlashQuestion, setIsGeneratingFlashQuestion] = useState(false);
+    
+    // Planning State
+    const [planning, setPlanning] = useState<Planning | null>(null);
+    const [isGeneratingPlanning, setIsGeneratingPlanning] = useState(false);
+
+    // Conseils State
+    const [conseils, setConseils] = useState<string | null>(null);
+    const [isGeneratingConseils, setIsGeneratingConseils] = useState(false);
+
+
+    // Load state from localStorage on initial mount
+    useEffect(() => {
+        setTheme((localStorage.getItem('brevet-easy-theme') as any) || 'system');
+        setSubscriptionPlan((localStorage.getItem('brevet-easy-plan') as SubscriptionPlan) || 'free');
+        setUserName(localStorage.getItem('brevet-easy-user-name') || '');
+        setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
+
+        // Generation settings
+        setDefaultItemCount(parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10));
+        const savedDifficulty = localStorage.getItem('brevet-easy-default-difficulty');
+        setDefaultDifficulty((savedDifficulty === 'Facile' || savedDifficulty === 'Normal' || savedDifficulty === 'Difficile' || savedDifficulty === 'Expert' ? savedDifficulty : 'Normal'));
+        setDefaultLevel(localStorage.getItem('brevet-easy-default-level') || 'Brevet');
+        
+        // AI Models & Instructions
+        setAiSystemInstruction(localStorage.getItem('brevet-easy-ai-instruction') || '');
+        setDefaultAiModel((localStorage.getItem('brevet-easy-default-ai-model') as AiModel) || 'brevetai');
+        setImageGenerationInstruction(localStorage.getItem('brevet-easy-image-instruction') || '');
+        setDefaultImageModel((localStorage.getItem('brevet-easy-default-image-model') as ImageModel) || 'faceai');
+        setCanvasSystemInstruction(localStorage.getItem('brevet-easy-canvas-instruction') || '');
+        setDefaultCanvasModel((localStorage.getItem('brevet-easy-default-canvas-model') as CanvasModel) || 'canvasai');
+        setFlashAiSystemInstruction(localStorage.getItem('brevet-easy-flashai-instruction') || '');
+        setDefaultFlashAiModel((localStorage.getItem('brevet-easy-default-flashai-model') as FlashAiModel) || 'flashai');
+        setPlanningAiSystemInstruction(localStorage.getItem('brevet-easy-planningai-instruction') || '');
+        setDefaultPlanningAiModel((localStorage.getItem('brevet-easy-default-planningai-model') as PlanningAiModel) || 'planningai');
+        setConseilsAiSystemInstruction(localStorage.getItem('brevet-easy-conseilsai-instruction') || '');
+        setDefaultConseilsAiModel((localStorage.getItem('brevet-easy-default-conseilsai-model') as ConseilsAiModel) || 'conseilsai');
+
+        const savedSessions = localStorage.getItem('chatSessions');
+        setChatSessions(savedSessions ? JSON.parse(savedSessions) : []);
+        const savedCanvasVersions = localStorage.getItem('canvasVersions');
+        setCanvasVersions(savedCanvasVersions ? JSON.parse(savedCanvasVersions) : []);
+        
+        const savedFolders = localStorage.getItem('brevet-easy-folders');
+        setFolders(savedFolders ? JSON.parse(savedFolders) : []);
+        
+        const savedCustomModels = localStorage.getItem('brevet-easy-custom-models');
+        setCustomAiModels(savedCustomModels ? JSON.parse(savedCustomModels) : []);
+
         const savedUsage = localStorage.getItem('brevet-easy-image-usage');
         const today = new Date().toISOString().split('T')[0];
         if (savedUsage) {
             const usage: ImageUsage = JSON.parse(savedUsage);
             if (usage.date !== today) {
-                return { count: 0, date: today };
+                setImageUsage({ count: 0, date: today });
+            } else {
+                setImageUsage(usage);
             }
-            return usage;
+        } else {
+            setImageUsage({ count: 0, date: today });
         }
-        return { count: 0, date: today };
-    });
+
+    }, []);
+
 
     // Theme Management Effect
     useEffect(() => {
@@ -237,7 +278,6 @@ const App: React.FC = () => {
         if (!container) return;
 
         const handleScroll = () => {
-            // Show button if scrolled more than 200px
             if (container.scrollTop > 200) {
                 setShowScrollTop(true);
             } else {
@@ -247,76 +287,53 @@ const App: React.FC = () => {
 
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
-    }, []); // Runs once on mount
+    }, []);
     
-    // AI Instruction Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction);
-    }, [aiSystemInstruction]);
+    // Persistence effects for all settings
+    useEffect(() => { localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction); }, [aiSystemInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-user-name', userName); }, [userName]);
+    useEffect(() => { localStorage.setItem('brevet-easy-user-avatar', userAvatar); }, [userAvatar]);
+    useEffect(() => { localStorage.setItem('brevet-easy-plan', subscriptionPlan); }, [subscriptionPlan]);
+    useEffect(() => { localStorage.setItem('chatSessions', JSON.stringify(chatSessions)); }, [chatSessions]);
+    useEffect(() => { localStorage.setItem('brevet-easy-folders', JSON.stringify(folders)); }, [folders]);
+    useEffect(() => { localStorage.setItem('brevet-easy-custom-models', JSON.stringify(customAiModels)); }, [customAiModels]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-ai-model', defaultAiModel); }, [defaultAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-image-model', defaultImageModel); }, [defaultImageModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-image-instruction', imageGenerationInstruction); }, [imageGenerationInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-image-usage', JSON.stringify(imageUsage)); }, [imageUsage]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-item-count', String(defaultItemCount)); }, [defaultItemCount]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-difficulty', defaultDifficulty); }, [defaultDifficulty]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-level', defaultLevel); }, [defaultLevel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-canvas-model', defaultCanvasModel); }, [defaultCanvasModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-canvas-instruction', canvasSystemInstruction); }, [canvasSystemInstruction]);
+    useEffect(() => { localStorage.setItem('canvasVersions', JSON.stringify(canvasVersions)); }, [canvasVersions]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-flashai-model', defaultFlashAiModel); }, [defaultFlashAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-flashai-instruction', flashAiSystemInstruction); }, [flashAiSystemInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-planningai-model', defaultPlanningAiModel); }, [defaultPlanningAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-planningai-instruction', planningAiSystemInstruction); }, [planningAiSystemInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-conseilsai-model', defaultConseilsAiModel); }, [defaultConseilsAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-conseilsai-instruction', conseilsAiSystemInstruction); }, [conseilsAiSystemInstruction]);
     
-    // User Name Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-user-name', userName);
-    }, [userName]);
 
-    // User Avatar Persistence Effect
+    // Effect to handle model downgrades when subscription changes
     useEffect(() => {
-        localStorage.setItem('brevet-easy-user-avatar', userAvatar);
-    }, [userAvatar]);
-    
-    // Subscription Plan Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-plan', subscriptionPlan);
-    }, [subscriptionPlan]);
-
-    // Chat Session Persistence Effect
-     useEffect(() => {
-        localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
-    }, [chatSessions]);
-    
-    // Folders Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-folders', JSON.stringify(folders));
-    }, [folders]);
-
-    // Default AI Model Logic
-    useEffect(() => {
-        if (subscriptionPlan !== 'max' && defaultAiModel === 'brevetai-pro') {
-            setDefaultAiModel('brevetai-plus');
+        if (subscriptionPlan === 'free') {
+            if (defaultAiModel !== 'brevetai') setDefaultAiModel('brevetai');
+            if (defaultImageModel !== 'faceai') setDefaultImageModel('faceai');
+            if (defaultCanvasModel !== 'canvasai') setDefaultCanvasModel('canvasai');
+            if (defaultFlashAiModel !== 'flashai') setDefaultFlashAiModel('flashai');
+            if (defaultPlanningAiModel !== 'planningai') setDefaultPlanningAiModel('planningai');
+            if (defaultConseilsAiModel !== 'conseilsai') setDefaultConseilsAiModel('conseilsai');
+        } else if (subscriptionPlan === 'pro') {
+            if (defaultAiModel === 'brevetai-max') setDefaultAiModel('brevetai-pro');
+            if (defaultImageModel === 'faceai-max') setDefaultImageModel('faceai-pro');
+            if (defaultCanvasModel === 'canvasai-max') setDefaultCanvasModel('canvasai-pro');
+            if (defaultFlashAiModel === 'flashai-max') setDefaultFlashAiModel('flashai-pro');
+            if (defaultPlanningAiModel === 'planningai-max') setDefaultPlanningAiModel('planningai-pro');
+            if (defaultConseilsAiModel === 'conseilsai-max') setDefaultConseilsAiModel('conseilsai-pro');
         }
-    }, [subscriptionPlan, defaultAiModel]);
+    }, [subscriptionPlan, defaultAiModel, defaultImageModel, defaultCanvasModel, defaultFlashAiModel, defaultPlanningAiModel, defaultConseilsAiModel]);
 
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-ai-model', defaultAiModel);
-    }, [defaultAiModel]);
-
-
-    // Image Generation Settings Persistence
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-image-model', defaultImageModel);
-    }, [defaultImageModel]);
-    
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-image-instruction', imageGenerationInstruction);
-    }, [imageGenerationInstruction]);
-
-    // Image Usage Persistence
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-image-usage', JSON.stringify(imageUsage));
-    }, [imageUsage]);
-    
-    // Default Generation Settings Persistence
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-item-count', String(defaultItemCount));
-    }, [defaultItemCount]);
-
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-difficulty', defaultDifficulty);
-    }, [defaultDifficulty]);
-
-    useEffect(() => {
-        localStorage.setItem('brevet-easy-default-level', defaultLevel);
-    }, [defaultLevel]);
 
     // Navigation Handlers
     const handleSubjectSelect = (subject: Subject) => {
@@ -332,6 +349,9 @@ const App: React.FC = () => {
         setCurrentQuestionIndex(0);
         setGeneratedHtml(null);
         setGeneratedImage(null);
+        setFlashQuestion(null);
+        setPlanning(null);
+        setConseils(null);
         setView('home');
     };
     
@@ -341,6 +361,21 @@ const App: React.FC = () => {
     const handleGoToImageGeneration = () => {
         setGeneratedImage(null);
         setView('imageGeneration');
+    };
+    const handleStartCanvas = () => {
+        setView('canvas');
+    };
+    const handleStartFlashAI = () => {
+        setFlashQuestion(null);
+        setView('flashAI');
+    };
+    const handleStartPlanning = () => {
+        setPlanning(null);
+        setView('planning');
+    }
+    const handleStartConseils = () => {
+        setConseils(null);
+        setView('conseils');
     };
     const handleScrollToTop = () => {
         rootRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -364,13 +399,13 @@ const App: React.FC = () => {
     };
 
     // AI Instruction Builder
-    const buildSystemInstruction = useCallback(() => {
-        let finalInstruction = aiSystemInstruction.trim();
+    const buildSystemInstruction = useCallback((baseInstruction: string) => {
+        let finalInstruction = baseInstruction.trim();
         if (userName.trim()) {
             finalInstruction += `\nL'utilisateur s'appelle ${userName.trim()}. Adresse-toi à lui par son prénom.`;
         }
         return finalInstruction;
-    }, [aiSystemInstruction, userName]);
+    }, [userName]);
 
     // Quiz Flow Handlers
     const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
@@ -380,7 +415,7 @@ const App: React.FC = () => {
         setCurrentQuestionIndex(0);
         
         try {
-            const systemInstruction = buildSystemInstruction();
+            const systemInstruction = buildSystemInstruction(aiSystemInstruction);
             const generatedQuiz = await generateQuiz(
                 selectedSubject.name,
                 count,
@@ -398,7 +433,7 @@ const App: React.FC = () => {
             alert("Une erreur est survenue lors de la génération du quiz. Veuillez réessayer.");
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction]);
 
     const handleQuizSubmit = (answers: (string | null)[]) => {
         if (!quiz) return;
@@ -418,7 +453,7 @@ const App: React.FC = () => {
         setView('loading');
         setLoadingTask(task);
         try {
-            const html = await generateHtmlContent(prompt, buildSystemInstruction());
+            const html = await generateHtmlContent(prompt, buildSystemInstruction(aiSystemInstruction));
             setGeneratedHtml(html);
             setView('exercises');
         } catch (error) {
@@ -426,7 +461,7 @@ const App: React.FC = () => {
             alert(`Une erreur est survenue lors de la génération. Veuillez réessayer.`);
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction]);
 
     const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string) => {
         const prompt = `Génère une fiche de ${count} exercices sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
@@ -490,7 +525,6 @@ const App: React.FC = () => {
         setChatSessions(prev => prev.filter(s => s.id !== sessionId));
         if (activeChatSessionId === sessionId) {
             setActiveChatSessionId(null);
-            // Optional: select the most recent chat after deletion
             const remainingSessions = chatSessions.filter(s => s.id !== sessionId);
             if(remainingSessions.length > 0) {
                  const sorted = [...remainingSessions].sort((a,b) => b.createdAt - a.createdAt);
@@ -512,12 +546,10 @@ const App: React.FC = () => {
             prev.map(s => {
                 if (s.id === sessionId) {
                     const newSession = { ...s };
-                    // Handle non-message updates
                     if (updates.title !== undefined) newSession.title = updates.title;
                     if (updates.aiModel !== undefined) newSession.aiModel = updates.aiModel;
                     if (updates.folderId !== undefined) newSession.folderId = updates.folderId;
 
-                    // Handle message updates
                     if (updates.messages) {
                         if (typeof updates.messages === 'function') {
                             newSession.messages = updates.messages(s.messages);
@@ -574,7 +606,6 @@ const App: React.FC = () => {
     
     const handleDeleteFolder = (folderId: string) => {
         setFolders(prev => prev.filter(f => f.id !== folderId));
-        // Un-assign sessions from the deleted folder
         setChatSessions(prev => prev.map(s => s.folderId === folderId ? {...s, folderId: null} : s));
     };
 
@@ -582,6 +613,16 @@ const App: React.FC = () => {
         setFolders(prev =>
             prev.map(f => (f.id === folderId ? { ...f, ...updates } : f))
         );
+    };
+
+    // Custom Model Handlers
+    const handleAddNewCustomModel = (modelData: Omit<CustomAiModel, 'id' | 'createdAt'>) => {
+        const newModel: CustomAiModel = {
+            ...modelData,
+            id: `custom_${Date.now()}`,
+            createdAt: Date.now(),
+        };
+        setCustomAiModels(prev => [newModel, ...prev]);
     };
 
     // Image Generation Handlers
@@ -596,15 +637,14 @@ const App: React.FC = () => {
         setGeneratedImage(null);
         
         try {
-            // BUG FIX: The `negativePrompt` argument is received from the component but is NOT passed to the service,
-            // as it's not a supported parameter for the underlying API call.
             const imageData = await generateImage(
                 prompt,
                 model,
                 style,
                 format,
                 aspectRatio,
-                imageGenerationInstruction
+                imageGenerationInstruction,
+                negativePrompt
             );
             
             setGeneratedImage(imageData);
@@ -617,8 +657,67 @@ const App: React.FC = () => {
             setIsGeneratingImage(false);
         }
     }, [imageUsage, subscriptionPlan, imageGenerationInstruction]);
-    
 
+    // Canvas, FlashAI, Planning & Conseils Handlers
+    const handleGenerateCanvas = useCallback(async (prompt: string, model: CanvasModel) => {
+        setIsGeneratingCanvas(true);
+        try {
+            const html = await generateInteractivePage(prompt, model, buildSystemInstruction(canvasSystemInstruction));
+            const newVersion: CanvasVersion = {
+                id: `canvas_${Date.now()}`,
+                htmlContent: html,
+                prompt: prompt,
+                createdAt: Date.now()
+            };
+            setCanvasVersions(prev => [...prev, newVersion]);
+            setActiveCanvasVersionId(newVersion.id);
+        } catch (error) {
+            console.error("Error generating canvas page:", error);
+            alert("Une erreur est survenue lors de la génération. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingCanvas(false);
+        }
+    }, [buildSystemInstruction, canvasSystemInstruction]);
+
+    const handleGenerateFlashQuestion = useCallback(async (level: string, model: FlashAiModel) => {
+        setIsGeneratingFlashQuestion(true);
+        try {
+            const question = await generateFlashQuestion(level, buildSystemInstruction(flashAiSystemInstruction), model);
+            setFlashQuestion(question);
+        } catch (error) {
+            console.error("Error generating flash question:", error);
+            alert("Une erreur est survenue. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingFlashQuestion(false);
+        }
+    }, [buildSystemInstruction, flashAiSystemInstruction]);
+
+    const handleGeneratePlanning = useCallback(async (task: string, dueDate: string, model: PlanningAiModel) => {
+        setIsGeneratingPlanning(true);
+        try {
+            const generatedPlan = await generatePlanning(task, dueDate, buildSystemInstruction(planningAiSystemInstruction), model);
+            setPlanning(generatedPlan);
+        } catch (error) {
+            console.error("Error generating planning:", error);
+            alert("Une erreur est survenue lors de la création du planning. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingPlanning(false);
+        }
+    }, [buildSystemInstruction, planningAiSystemInstruction]);
+
+    const handleGenerateConseils = useCallback(async (subject: string, level: string, model: ConseilsAiModel) => {
+        setIsGeneratingConseils(true);
+        try {
+            const generatedConseils = await generateConseils(subject, level, buildSystemInstruction(conseilsAiSystemInstruction), model);
+            setConseils(generatedConseils);
+        } catch (error) {
+            console.error("Error generating conseils:", error);
+            alert("Une erreur est survenue lors de la génération des conseils. Veuillez réessayer.");
+        } finally {
+            setIsGeneratingConseils(false);
+        }
+    }, [buildSystemInstruction, conseilsAiSystemInstruction]);
+    
     const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
     
     const remainingImageGenerations = () => {
@@ -636,7 +735,7 @@ const App: React.FC = () => {
     const renderContent = () => {
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
@@ -667,6 +766,22 @@ const App: React.FC = () => {
                         onDefaultDifficultyChange={setDefaultDifficulty}
                         defaultLevel={defaultLevel}
                         onDefaultLevelChange={setDefaultLevel}
+                        defaultCanvasModel={defaultCanvasModel}
+                        onDefaultCanvasModelChange={setDefaultCanvasModel}
+                        canvasSystemInstruction={canvasSystemInstruction}
+                        onCanvasSystemInstructionChange={setCanvasSystemInstruction}
+                        defaultFlashAiModel={defaultFlashAiModel}
+                        onDefaultFlashAiModelChange={setDefaultFlashAiModel}
+                        flashAiSystemInstruction={flashAiSystemInstruction}
+                        onFlashAiSystemInstructionChange={setFlashAiSystemInstruction}
+                        defaultPlanningAiModel={defaultPlanningAiModel}
+                        onDefaultPlanningAiModelChange={setDefaultPlanningAiModel}
+                        planningAiSystemInstruction={planningAiSystemInstruction}
+                        onPlanningAiSystemInstructionChange={setPlanningAiSystemInstruction}
+                        defaultConseilsAiModel={defaultConseilsAiModel}
+                        onDefaultConseilsAiModelChange={setDefaultConseilsAiModel}
+                        conseilsAiSystemInstruction={conseilsAiSystemInstruction}
+                        onConseilsAiSystemInstructionChange={setConseilsAiSystemInstruction}
                     />
                 );
             case 'chat':
@@ -685,6 +800,8 @@ const App: React.FC = () => {
                             onDeleteFolder={handleDeleteFolder}
                             onUpdateFolder={handleUpdateFolder}
                             onExitChat={handleBackToHome}
+                            subscriptionPlan={subscriptionPlan}
+                            onNewCustomModel={handleAddNewCustomModel}
                         />
                         <div className="flex-grow h-full">
                             {activeSession ? (
@@ -694,6 +811,11 @@ const App: React.FC = () => {
                                     systemInstruction={aiSystemInstruction}
                                     subscriptionPlan={subscriptionPlan}
                                     userName={userName}
+                                    onNavigateToImageGeneration={handleGoToImageGeneration}
+                                    onNavigateToCanvas={handleStartCanvas}
+                                    onNavigateToFlashAI={handleStartFlashAI}
+                                    onNavigateToPlanning={handleStartPlanning}
+                                    onNavigateToConseils={handleStartConseils}
                                 />
                             ) : (
                                 <WelcomeView />
@@ -715,16 +837,25 @@ const App: React.FC = () => {
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'imageGeneration':
                  return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
+            case 'canvas':
+                return <CanvasView versions={canvasVersions} activeVersionId={activeCanvasVersionId} onGenerate={handleGenerateCanvas} onSelectVersion={setActiveCanvasVersionId} isGenerating={isGeneratingCanvas} subscriptionPlan={subscriptionPlan} defaultCanvasModel={defaultCanvasModel} />;
+            case 'flashAI':
+                return <FlashAIView onGenerate={handleGenerateFlashQuestion} isLoading={isGeneratingFlashQuestion} question={flashQuestion} onClear={() => setFlashQuestion(null)} subscriptionPlan={subscriptionPlan} defaultFlashAiModel={defaultFlashAiModel} />;
+            case 'planning':
+                return <PlanningView onGenerate={handleGeneratePlanning} isLoading={isGeneratingPlanning} planning={planning} onClear={() => setPlanning(null)} subscriptionPlan={subscriptionPlan} defaultPlanningAiModel={defaultPlanningAiModel}/>;
+            case 'conseils':
+                return <ConseilsView onGenerate={handleGenerateConseils} isLoading={isGeneratingConseils} conseils={conseils} onClear={() => setConseils(null)} subscriptionPlan={subscriptionPlan} defaultConseilsAiModel={defaultConseilsAiModel} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} remainingGenerations={remainingImageGenerations()} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
         }
     };
     
     const showHeader = !['chat'].includes(view);
     const showExitButton = !['home', 'chat'].includes(view);
+    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils'].includes(view);
 
     return (
-        <div className={`w-full min-h-full p-4 sm:p-6 lg:p-8 ${view === 'quiz' ? '' : 'flex items-start justify-center'}`}>
+        <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-start justify-center'}`}>
              {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
@@ -740,4 +871,5 @@ const App: React.FC = () => {
     );
 };
 
+// Fix: Add default export to resolve the module import error in index.tsx
 export default App;

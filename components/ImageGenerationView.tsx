@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { SubscriptionPlan, ImageModel } from '../types';
 import { PremiumBadge } from './PremiumBadge';
 
@@ -82,16 +82,18 @@ const STYLES_OPTIONS: { value: string; label: string }[] = [
 
 export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGenerate, isGenerating, generatedImage, remainingGenerations, defaultImageModel, subscriptionPlan }) => {
   const [prompt, setPrompt] = useState('');
+  const [negativePrompt, setNegativePrompt] = useState('');
   const [model, setModel] = useState<ImageModel>(defaultImageModel);
   const [style, setStyle] = useState('none');
   const [format, setFormat] = useState<'jpeg' | 'png'>('jpeg');
   const [aspectRatio, setAspectRatio] = useState('1:1');
-  const [negativePrompt, setNegativePrompt] = useState('');
 
-  const isProFeature = model === 'faceai-plus' && subscriptionPlan !== 'pro' && subscriptionPlan !== 'max';
+  const isModelLocked =
+    (model === 'faceai-pro' && subscriptionPlan === 'free') ||
+    (model === 'faceai-max' && subscriptionPlan !== 'max');
 
   const handleSubmit = () => {
-    if (!prompt.trim() || isGenerating || isProFeature) return;
+    if (!prompt.trim() || isGenerating || isModelLocked) return;
     onGenerate(prompt, model, style, format, aspectRatio, negativePrompt);
   };
   
@@ -100,8 +102,20 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   
   const imageModelDisplayNames: Record<ImageModel, string> = {
     'faceai': 'FaceAI',
-    'faceai-plus': 'FaceAI +',
+    'faceai-pro': 'FaceAI Pro',
+    'faceai-max': 'FaceAI Max',
   };
+  
+  const modelOptions = useMemo(() => {
+    const options: ImageModel[] = ['faceai'];
+    if (subscriptionPlan === 'pro' || subscriptionPlan === 'max') {
+        options.push('faceai-pro');
+    }
+    if (subscriptionPlan === 'max') {
+        options.push('faceai-max');
+    }
+    return options;
+  }, [subscriptionPlan]);
 
   return (
     <div className="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -115,16 +129,23 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                         placeholder="Ex: Un astronaute surfant sur une vague cosmique..."
                     />
                 </div>
+                 <div>
+                    <label htmlFor="negative-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">À ne pas inclure (facultatif)</label>
+                    <textarea id="negative-prompt" rows={2} value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)}
+                        className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500"
+                        placeholder="Ex: flou, texte, couleurs ternes..."
+                    />
+                </div>
                 
                 <div className="relative">
                     <StyledDropdown<ImageModel> 
                         label="Modèle" 
-                        options={['faceai', 'faceai-plus']} 
+                        options={modelOptions} 
                         value={model} 
                         onChange={setModel}
                         renderOption={(option) => imageModelDisplayNames[option]}
                     />
-                    {model === 'faceai-plus' && subscriptionPlan === 'free' && <PremiumBadge requiredPlan="pro" />}
+                    {isModelLocked && <PremiumBadge requiredPlan={model === 'faceai-pro' ? 'pro' : 'max'} />}
                 </div>
 
                 <div className="pt-4 border-t border-slate-300/50 dark:border-slate-700/50">
@@ -148,15 +169,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                     </div>
                 </div>
 
-                <div>
-                    <label htmlFor="negative-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">Prompt négatif (facultatif)</label>
-                    <textarea id="negative-prompt" rows={2} value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)}
-                        className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500"
-                        placeholder="Ex: flou, texte, couleurs ternes..."
-                    />
-                </div>
-                
-                <button onClick={handleSubmit} disabled={isGenerating || !prompt.trim() || isProFeature}
+                <button onClick={handleSubmit} disabled={isGenerating || !prompt.trim() || isModelLocked}
                     className="w-full py-4 px-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100">
                     {isGenerating ? 'Génération en cours...' : 'Générer l\'image'}
                 </button>

@@ -26,7 +26,7 @@ const OptionCard: React.FC<{
         <button
             onClick={onClick}
             disabled={isProFeature}
-            className={`group w-full text-left p-6 bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg transition-all duration-300 ease-in-out flex items-center space-x-5 ${
+            className={`group w-full text-left p-6 bg-white/5 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-slate-700/80 rounded-3xl shadow-lg transition-all duration-300 ease-in-out flex items-center space-x-5 ${
                 isProFeature 
                     ? 'opacity-60 cursor-not-allowed' 
                     : 'hover:shadow-2xl hover:-translate-y-1'
@@ -200,7 +200,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
             </h1>
         </div>
         
-        <div className="relative z-10 bg-slate-100/60 dark:bg-black/40 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/50 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
+        <div className="relative z-10 bg-white/5 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-slate-700/80 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
             <div className="mb-6">
                 <label htmlFor="custom-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">
                     Instructions spécifiques (facultatif)
