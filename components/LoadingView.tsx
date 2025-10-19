@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 interface LoadingViewProps {
   subject: string;
-  // Fix: Broaden the task type to include all possible loading tasks from the main App component.
-  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
+  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game';
   onCancel: () => void;
 }
 
@@ -60,7 +59,6 @@ const loadingTips = {
         "Mise en évidence des mots-clés...",
         "Votre fiche de révisions est bientôt prête !"
     ],
-    // Fix: Add loading tips for new generation types.
     canvas: [
         "L'IA prépare votre toile numérique...",
         "Génération du code HTML, CSS, et JavaScript...",
@@ -85,6 +83,12 @@ const loadingTips = {
         "Rédaction de conseils personnalisés...",
         "Vos conseils sur mesure arrivent !",
     ],
+    game: [
+        "Invention des règles du jeu...",
+        "L'IA code un mini-jeu pour vous...",
+        "Préparation d'une expérience ludique...",
+        "Votre jeu est presque prêt !",
+    ],
 };
 
 export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCancel }) => {
@@ -96,11 +100,11 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCance
     exercises: 'des exercices',
     cours: 'du cours',
     'fiche-revisions': 'de la fiche de révisions',
-    // Fix: Add title text for new generation types.
     canvas: 'de la page interactive',
     flashAI: 'de la question flash',
     planning: 'du planning',
     conseils: 'des conseils',
+    game: 'du jeu',
   };
   const titleText = titleTextMap[task] || 'du contenu';
 

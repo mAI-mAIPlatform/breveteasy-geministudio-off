@@ -1,40 +1,45 @@
-// Fix: Provide the implementation for the constants.
 import React from 'react';
 import type { Subject } from './types';
 
 export const SUBJECTS: Subject[] = [
   {
-    name: "Français",
+    nameKey: "subject_french",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>,
     color: "text-blue-500 dark:text-blue-300",
     bgColor: "bg-blue-500/20",
   },
   {
-    name: "Mathématiques",
+    nameKey: "subject_maths",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><line x1="12" y1="10" x2="12" y2="18"></line><line x1="8" y1="10" x2="8" y2="18"></line><line x1="8" y1="14" x2="12" y2="14"></line></svg>,
     color: "text-red-500 dark:text-red-300",
     bgColor: "bg-red-500/20",
   },
   {
-    name: "Histoire-Géo-EMC",
+    nameKey: "subject_history",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
     color: "text-yellow-500 dark:text-yellow-300",
     bgColor: "bg-yellow-500/20",
   },
    {
-    name: "Anglais",
+    nameKey: "subject_english",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>,
     color: "text-purple-500 dark:text-purple-300",
     bgColor: "bg-purple-500/20",
   },
   {
-    name: "Espagnol",
+    nameKey: "subject_spanish",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1"/><path d="M12 8v5"/><path d="M15.5 11.5L18 13l-3.5 1.5"/><path d="M8.5 11.5L6 13l3.5 1.5"/><path d="M12 13v5l-3 3"/><path d="M15 21l-3-3"/></svg>,
     color: "text-orange-500 dark:text-orange-300",
     bgColor: "bg-orange-500/20",
   },
   {
-    name: "SVT",
+    nameKey: "subject_german",
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.8 4.6a2.6 2.6 0 0 1 2.5 3.2 2.6 2.6 0 0 1-2.5 3.2h-7.6a2.6 2.6 0 0 1-2.5-3.2 2.6 2.6 0 0 1 2.5-3.2Z"/><path d="M15.8 13v.1a2.6 2.6 0 0 1-2.5 3.2 2.6 2.6 0 0 1-2.5-3.2V13"/><path d="M8.2 13v.1a2.6 2.6 0 0 0 2.5 3.2 2.6 2.6 0 0 0 2.5-3.2V13"/><path d="M12 11V4.6"/><path d="m8.2 4.6 2.1 3.2"/><path d="m15.8 4.6-2.1 3.2"/></svg>,
+    color: "text-amber-500 dark:text-amber-300",
+    bgColor: "bg-amber-500/20",
+  },
+  {
+    nameKey: "subject_svt",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="9" r="5" />
@@ -48,33 +53,37 @@ export const SUBJECTS: Subject[] = [
     bgColor: "bg-green-500/20",
   },
   {
-    name: "Physique-Chimie",
+    nameKey: "subject_physics",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></svg>,
     color: "text-teal-500 dark:text-teal-300",
     bgColor: "bg-teal-500/20",
   },
   {
-    name: "Technologie",
+    nameKey: "subject_technology",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>,
     color: "text-slate-500 dark:text-slate-300",
     bgColor: "bg-slate-500/20",
   },
   {
-    name: "Arts",
+    nameKey: "subject_arts",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M7 7c2-2 5-2 7 0M7 17c2 2 5 2 7 0"/></svg>,
     color: "text-pink-500 dark:text-pink-300",
     bgColor: "bg-pink-500/20",
   },
   {
-    name: "Éducation musicale",
+    nameKey: "subject_music",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>,
     color: "text-indigo-500 dark:text-indigo-300",
     bgColor: "bg-indigo-500/20",
   },
+  {
+    nameKey: "subject_games",
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 12h12M12 6v12"/></svg>,
+    color: "text-lime-500 dark:text-lime-300",
+    bgColor: "bg-lime-500/20",
+  }
 ];
 
-
-// Fix: Update type definition to allow 'className' prop for styling with React.cloneElement.
 export const AVATAR_ICONS: Record<string, React.ReactElement<{ className?: string }>> = {
     'user': <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
     'folder': <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V5a2 2 0 0 1 2-2h5l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9"/></svg>,
@@ -105,6 +114,4 @@ export const AVATAR_ICONS: Record<string, React.ReactElement<{ className?: strin
     'cog': <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.213-1.28Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>,
     'trophy': <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9a9.75 9.75 0 0 0 1.373-3.852A9.75 9.75 0 0 0 4.5 6.75c0-2.432 1.255-4.596 3.168-5.832A9.753 9.753 0 0 1 12 3c2.09 0 4.028.623 5.682 1.668C19.595 5.904 21 8.068 21 10.5c0 2.236-1.005 4.21-2.627 5.648A9.75 9.75 0 0 0 16.5 18.75z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v3.75m0 0h3.75m-3.75 0H8.25" /></svg>,
 };
-
-// Fix: Add missing export for avatar icon keys, used in SettingsView.
 export const AVATAR_ICON_KEYS = Object.keys(AVATAR_ICONS);

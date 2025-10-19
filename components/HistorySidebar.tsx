@@ -124,6 +124,7 @@ interface HistorySidebarProps {
   onDeleteChat: (chatId: string) => void;
   onDownloadChat: (chatId: string) => void;
   onNewChat: () => void;
+  onStartGhostChat: () => void;
   onUpdateSession: (sessionId: string, updates: {
     messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
     title?: string;
@@ -224,7 +225,7 @@ const SessionItem: React.FC<{
 };
 
 export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
-  const { sessions, folders, activeSessionId, onSelectChat, onDeleteChat, onDownloadChat, onNewChat, onUpdateSession, onNewFolder, onDeleteFolder, onUpdateFolder, onExitChat, subscriptionPlan, onNewCustomModel } = props;
+  const { sessions, folders, activeSessionId, onSelectChat, onDeleteChat, onDownloadChat, onNewChat, onStartGhostChat, onUpdateSession, onNewFolder, onDeleteFolder, onUpdateFolder, onExitChat, subscriptionPlan, onNewCustomModel } = props;
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -398,13 +399,23 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
             </button>
         </div>
         <div className="flex flex-col items-stretch gap-2">
-            <button
-                onClick={onNewChat}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-colors"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
-                + Discussion
-            </button>
+            <div className="flex items-stretch gap-2">
+                <button
+                    onClick={onNewChat}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-500 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-600 transition-colors"
+                    title="Nouvelle discussion"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                    <span>Discussion</span>
+                </button>
+                <button
+                    onClick={onStartGhostChat}
+                    className="flex-shrink-0 flex items-center justify-center w-11 h-11 bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                    title="Nouvelle discussion fantôme (non sauvegardée)"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-9.8 11.33c.05.39.3.73.65.88l1.43.62c.35.15.75.05 1.01-.24l.11-.12a7 7 0 0 1 10.33-4.14 7 7 0 0 1 .48 8.16l-.11.12a.85.85 0 0 0 1.01.24l1.43-.62a1.05 1.05 0 0 0 .65-.88A10 10 0 0 0 12 2zm-3.5 10a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+                </button>
+            </div>
             <div className="flex gap-2">
                 <div className="flex-1 relative">
                     <button

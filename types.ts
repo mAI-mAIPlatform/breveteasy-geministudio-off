@@ -1,7 +1,9 @@
 import React from 'react';
 
+export type Language = 'fr' | 'en' | 'es' | 'de';
+
 export interface Subject {
-  name: string;
+  nameKey: string;
   icon: React.ReactElement<{ className?: string }>;
   color: string;
   bgColor: string;
@@ -58,6 +60,7 @@ export interface ChatSession {
     messages: ChatMessage[];
     aiModel: AiModel;
     folderId?: string | null;
+    isGhost?: boolean;
 }
 
 export type SubscriptionPlan = 'free' | 'pro' | 'max';
@@ -143,4 +146,10 @@ export interface PlanningTask {
 export interface Planning {
     title: string;
     schedule: PlanningTask[];
+}
+
+export interface PremadeGame {
+    name: string;
+    description: string;
+    html: string;
 }

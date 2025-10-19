@@ -329,7 +329,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [attachment, setAttachment] = useState<{ file: File, previewUrl: string } | null>(null);
-    const [promptModifier, setPromptModifier] = useState<PromptModifier | null>(null);
+    const [useWebSearch, setUseWebSearch] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -407,92 +407,138 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         }
     }, [onUpdateSession, session.id]);
 
-    const handleSendMessage = useCallback(async () => {
-        let textInput = input.trim();
-        if ((!textInput && !attachment) || isLoading) return;
-
-        if (promptModifier === 'long') {
-            textInput += "\n\n(Instruction : Rends ta réponse plus longue et plus détaillée.)";
-        } else if (promptModifier === 'short') {
-            textInput += "\n\n(Instruction : Rends ta réponse plus courte et plus concise.)";
-        }
-
+    const handleSendMessage = useCallback(async (modifiedParts?: ChatPart[], historyOverride?: ChatMessage[]) => {
+        const textInput = input.trim();
+        if ((!textInput && !attachment && !modifiedParts) || isLoading) return;
+    
         setIsLoading(true);
-        const userParts: ChatPart[] = [];
-        if (attachment) {
-          try {
-            const base64Data = await fileToBase64(attachment.file);
-            userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
-          } catch (error) {
-            console.error("Error converting file to base64", error);
-            alert("Erreur lors du traitement de l'image.");
-            setIsLoading(false);
-            return;
-          }
+        let userParts: ChatPart[] = [];
+        let isRegeneration = !!modifiedParts;
+    
+        if (modifiedParts) {
+            userParts = modifiedParts;
+        } else {
+            if (attachment) {
+                try {
+                    const base64Data = await fileToBase64(attachment.file);
+                    userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
+                } catch (error) {
+                    console.error("Error converting file to base64", error);
+                    alert("Erreur lors du traitement de l'image.");
+                    setIsLoading(false);
+                    return;
+                }
+            }
+            if (textInput) {
+                userParts.push({ text: textInput });
+            }
         }
-        if (textInput) {
-          userParts.push({ text: textInput });
-        }
-
-        const currentHistory = session.messages;
+    
+        const currentHistory = historyOverride || session.messages;
         const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
-        
-        onUpdateSession(session.id, {
-          messages: (prev) => [...prev, userInputMessage, { role: 'model', parts: [], isGenerating: true }],
-        });
-
+    
+        if (!isRegeneration) {
+            onUpdateSession(session.id, {
+                messages: (prev) => [...prev, userInputMessage, { role: 'model', parts: [], isGenerating: true }],
+            });
+        } else {
+            onUpdateSession(session.id, {
+                messages: (prev) => [...currentHistory, { role: 'model', parts: [], isGenerating: true }],
+            });
+        }
+    
         const isFirstUserMessage = currentHistory.filter(m => m.role === 'user').length === 0;
-        
+    
         setInput('');
         setAttachment(null);
-        setPromptModifier(null);
-        
+    
         try {
-          if (promptModifier === 'web') {
-            const response = await generateContentWithSearch(currentHistory, userParts);
-            const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-            onUpdateSession(session.id, {
-              messages: (prev) => {
-                const newMessages = [...prev.slice(0, -1)];
-                newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata });
-                return newMessages;
-              },
-            });
-          } else {
-            // Streaming logic
-            const chat = createChatInstance(currentHistory);
-            const result = await chat.sendMessageStream({ message: userParts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}})) });
-            
-            let accumulatedText = "";
-            for await (const chunk of result) {
-                accumulatedText += chunk.text;
+            if (useWebSearch) {
+                const response = await generateContentWithSearch(currentHistory, userParts);
+                const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
                 onUpdateSession(session.id, {
                     messages: (prev) => {
+                        const newMessages = prev.slice(0, -1);
+                        newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata });
+                        return newMessages;
+                    },
+                });
+            } else {
+                const chat = createChatInstance(currentHistory);
+                const result = await chat.sendMessageStream({ message: userParts.map(p => p.text ? ({ text: p.text }) : ({ inlineData: { data: p.image!.data, mimeType: p.image!.mimeType } })) });
+    
+                let accumulatedText = "";
+                for await (const chunk of result) {
+                    accumulatedText += chunk.text;
+                    onUpdateSession(session.id, {
+                        messages: (prev) => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: accumulatedText }], isGenerating: true };
+                            return newMessages;
+                        }
+                    });
+                }
+                 onUpdateSession(session.id, {
+                    messages: (prev) => {
                         const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: accumulatedText }] };
+                        newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: accumulatedText }], isGenerating: false };
                         return newMessages;
                     }
                 });
             }
-          }
-
-          if (isFirstUserMessage) {
-            await generateTitle(textInput || "Discussion avec image");
-          }
+    
+            if (isFirstUserMessage && !isRegeneration) {
+                await generateTitle(textInput || "Discussion avec image");
+            }
         } catch (error) {
-          console.error("Error sending message:", error);
-          onUpdateSession(session.id, {
-            messages: (prev) => {
-              const newMessages = [...prev.slice(0, -1)];
-              newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] });
-              return newMessages;
-            },
-          });
+            console.error("Error sending message:", error);
+            onUpdateSession(session.id, {
+                messages: (prev) => {
+                    const newMessages = prev.slice(0, -1);
+                    newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] });
+                    return newMessages;
+                },
+            });
         } finally {
-          setIsLoading(false);
+            setIsLoading(false);
         }
-    }, [input, attachment, isLoading, onUpdateSession, session.id, session.messages, generateTitle, promptModifier, generateContentWithSearch, createChatInstance]);
-
+    }, [input, attachment, isLoading, session.id, session.messages, generateTitle, useWebSearch, generateContentWithSearch, createChatInstance, onUpdateSession]);
+    
+    const handleRegenerateWithModifier = (modifier: 'long' | 'short') => {
+        if (isLoading || session.messages.length === 0) return;
+    
+        let lastModelIndex = -1;
+        for (let i = session.messages.length - 1; i >= 0; i--) {
+            if (session.messages[i].role === 'model' && !session.messages[i].isGenerating) {
+                lastModelIndex = i;
+                break;
+            }
+        }
+    
+        if (lastModelIndex === -1 || lastModelIndex === 0) return;
+    
+        const lastUserMessageIndex = lastModelIndex - 1;
+        const lastUserMessage = session.messages[lastUserMessageIndex];
+    
+        if (lastUserMessage.role !== 'user') return;
+    
+        const historyOverride = session.messages.slice(0, lastUserMessageIndex + 1);
+    
+        const instruction = modifier === 'long' 
+            ? "\n\n(Instruction : Rends ta réponse plus longue et plus détaillée.)"
+            : "\n\n(Instruction : Rends ta réponse plus courte et plus concise.)";
+        
+        const modifiedParts = JSON.parse(JSON.stringify(lastUserMessage.parts));
+        const textPart = modifiedParts.find((p: ChatPart) => p.text);
+    
+        if (textPart) {
+            textPart.text += instruction;
+        } else {
+            modifiedParts.push({ text: instruction });
+        }
+    
+        handleSendMessage(modifiedParts, historyOverride);
+    };
 
     const handleCopy = (parts: ChatPart[], index: number) => {
         const textToCopy = parts.map(p => p.text).filter(Boolean).join('\n');
@@ -530,11 +576,18 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                 onUpdateSession(session.id, {
                     messages: (prev) => {
                         const newMessages = [...prev];
-                        newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: accumulatedText }] };
+                        newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: accumulatedText }], isGenerating: true };
                         return newMessages;
                     }
                 });
             }
+             onUpdateSession(session.id, {
+                    messages: (prev) => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: accumulatedText }], isGenerating: false };
+                        return newMessages;
+                    }
+                });
         } catch (error) {
             console.error("Error regenerating response:", error);
             onUpdateSession(session.id, {
@@ -558,6 +611,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     };
 
     const isConversationStarted = session.messages.length > 0;
+    const canRegenerate = isConversationStarted && !isLoading && session.messages[session.messages.length-1].role === 'model';
 
     return (
         <div className="w-full h-full flex flex-col bg-white/10 dark:bg-slate-900/60">
@@ -608,6 +662,17 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         </button>
                     </div>
                 )}
+                 <div className="flex justify-center items-center gap-2">
+                    <button onClick={() => handleRegenerateWithModifier('long')} disabled={!canRegenerate} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed`}>Plus long</button>
+                    <button onClick={() => handleRegenerateWithModifier('short')} disabled={!canRegenerate} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed`}>Plus court</button>
+                    <div className="relative">
+                      <button onClick={() => setUseWebSearch(s => !s)} disabled={subscriptionPlan !== 'max'} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1 ${useWebSearch ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'} disabled:opacity-50 disabled:cursor-not-allowed`}>
+                        <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        Avec le Web
+                      </button>
+                       {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" size="small" />}
+                    </div>
+                </div>
                 <div className="flex items-end bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg rounded-2xl p-1 shadow-inner pr-2 border border-white/20 dark:border-slate-700">
                     <button onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-1">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
@@ -627,22 +692,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         rows={1}
                         disabled={isLoading}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
+                    <button onClick={() => handleSendMessage()} disabled={isLoading || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
                        </svg>
                     </button>
-                </div>
-                 <div className="flex justify-center items-center gap-2 pt-1">
-                    <button onClick={() => setPromptModifier(m => m === 'long' ? null : 'long')} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors ${promptModifier === 'long' ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'}`}>Plus long</button>
-                    <button onClick={() => setPromptModifier(m => m === 'short' ? null : 'short')} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors ${promptModifier === 'short' ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'}`}>Plus court</button>
-                    <div className="relative">
-                      <button onClick={() => setPromptModifier(m => m === 'web' ? null : 'web')} disabled={subscriptionPlan !== 'max'} className={`px-2 py-0.5 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1 ${promptModifier === 'web' ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'} disabled:opacity-50 disabled:cursor-not-allowed`}>
-                        <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                        Avec le Web
-                      </button>
-                       {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" size="small" />}
-                    </div>
                 </div>
             </footer>
         </div>

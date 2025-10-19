@@ -2,18 +2,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart } from '../types';
 import type { GenerateContentResponse } from '@google/genai';
 
-// ===================================================================================
-// IMPORTANT SECURITY WARNING:
-// In a real-world application, especially a Next.js app, this API key
-// should NEVER be exposed on the client side. All API calls should be proxied
-// through server-side API routes to protect the key from being stolen.
-// This client-side implementation is for demonstration purposes only.
-// ===================================================================================
 const apiKey = process.env.API_KEY;
 
 if (!apiKey) {
-  // This check ensures the application fails fast with a clear error message
-  // if the API key is not configured in the deployment environment.
   throw new Error(
     "La variable d'environnement API_KEY n'est pas définie. " +
     "Veuillez vous assurer qu'elle est correctement configurée dans votre environnement de déploiement."
@@ -24,17 +15,6 @@ const ai = new GoogleGenAI({ apiKey });
 
 export { ai, Type };
 
-
-/**
- * Generates a quiz using the Gemini API.
- * @param subjectName - The name of the quiz subject.
- * @param count - The number of questions to generate.
- * @param difficulty - The difficulty level of the quiz.
- * @param level - The educational level for the quiz.
- * @param customPrompt - Any additional custom instructions.
- * @param systemInstruction - The system instruction for the AI model.
- * @returns A promise that resolves to the generated Quiz object.
- */
 export const generateQuiz = async (
     subjectName: string,
     count: number,
@@ -79,12 +59,6 @@ export const generateQuiz = async (
     return JSON.parse(response.text);
 };
 
-/**
- * Generates generic HTML content (exercises, lessons, etc.) using the Gemini API.
- * @param prompt - The full prompt describing the content to generate.
- * @param systemInstruction - The system instruction for the AI model.
- * @returns A promise that resolves to the generated HTML string.
- */
 export const generateHtmlContent = async (
     prompt: string,
     systemInstruction: string,
@@ -99,18 +73,17 @@ export const generateHtmlContent = async (
     return response.text;
 };
 
-// Fix: Add missing generateImage export
-/**
- * Generates an image using the Gemini API (Imagen model).
- * @param prompt - The text prompt for image generation.
- * @param model - The specific image model to use.
- * @param style - A style modifier for the image.
- * @param format - The output image format ('jpeg' or 'png').
- * @param aspectRatio - The desired aspect ratio.
- * @param imageGenerationInstruction - Additional system-level instructions for style.
- * @param negativePrompt - Elements to exclude from the image.
- * @returns A promise that resolves to the image data.
- */
+export const generateGame = async (subjectName: string): Promise<string> => {
+    const prompt = `Crée un jeu éducatif simple et amusant sur le thème "${subjectName}" pour un élève de niveau Brevet des collèges (France).
+    Le jeu doit être un fichier HTML unique et autonome, avec tout le CSS et JavaScript inclus dans des balises <style> et <script>.
+    N'utilise aucune bibliothèque externe ni d'URL d'image.
+    Le jeu doit être jouable, visuellement simple mais agréable, et inclure des instructions claires.
+    Exemples de types de jeux : un quiz avec feedback instantané, un jeu de paires (memory), un jeu de pendu avec des termes du sujet, un 'glisser-déposer' pour associer des concepts.
+    Assure-toi que la sortie est SEULEMENT le code HTML complet, en commençant par <!DOCTYPE html>.`;
+
+    return generateHtmlContent(prompt, "Tu es un développeur de jeux éducatifs expert qui crée des expériences d'apprentissage interactives et amusantes.");
+};
+
 export const generateImage = async (
     prompt: string,
     model: ImageModel,
@@ -144,14 +117,6 @@ export const generateImage = async (
     return { data: imageBytes, mimeType: `image/${format}`};
 };
 
-// Fix: Add missing generateInteractivePage export
-/**
- * Generates an interactive HTML page using the Gemini API.
- * @param prompt - The prompt describing the page to create.
- * @param model - The canvas model to use.
- * @param systemInstruction - System-level instructions for the AI.
- * @returns A promise resolving to the HTML content string.
- */
 export const generateInteractivePage = async (
     prompt: string,
     model: CanvasModel,
@@ -171,14 +136,6 @@ export const generateInteractivePage = async (
     return response.text;
 };
 
-// Fix: Add missing generateFlashQuestion export
-/**
- * Generates a single flash question (MCQ).
- * @param level - The educational level for the question.
- * @param systemInstruction - System-level instructions for the AI.
- * @param model - The flash AI model to use.
- * @returns A promise resolving to a Question object.
- */
 export const generateFlashQuestion = async (
     level: string,
     systemInstruction: string,
@@ -212,16 +169,6 @@ export const generateFlashQuestion = async (
     return JSON.parse(response.text);
 };
 
-// Fix: Add missing generatePlanning export
-/**
- * Generates a study plan.
- * @param task - The task to be planned.
- * @param dueDate - The deadline for the task.
- * @param todayDate - The current date.
- * @param systemInstruction - System-level instructions for the AI.
- * @param model - The planning AI model to use.
- * @returns A promise resolving to a Planning object.
- */
 export const generatePlanning = async (
     task: string,
     dueDate: string,
@@ -265,15 +212,6 @@ export const generatePlanning = async (
     return JSON.parse(response.text);
 };
 
-// Fix: Add missing generateConseils export
-/**
- * Generates study advice.
- * @param subject - The subject for which advice is needed.
- * @param level - The educational level.
- * @param systemInstruction - System-level instructions for the AI.
- * @param model - The advice AI model to use.
- * @returns A promise resolving to an HTML string with advice.
- */
 export const generateConseils = async (
     subject: string,
     level: string,

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { SUBJECTS } from '../constants';
 import type { SubscriptionPlan, ConseilsAiModel } from '../types';
 import { PremiumBadge } from './PremiumBadge';
+import { useLocalization } from '../hooks/useLocalization';
 
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
 const CheckIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>;
@@ -186,13 +187,17 @@ const ModelSelector: React.FC<{
 
 
 export const ConseilsView: React.FC<ConseilsViewProps> = ({ onGenerate, isLoading, conseils, onClear, subscriptionPlan, defaultConseilsAiModel }) => {
-    const [subject, setSubject] = useState(SUBJECTS[0].name);
+    // Fix: Import useLocalization to translate subject keys.
+    const { t } = useLocalization();
+    // Fix: Use translated subject name for options and initial state.
+    const subjectOptions = SUBJECTS.map(s => ({ value: t(s.nameKey), label: t(s.nameKey) }));
+    // Fix: Initialize state with translated name from subjectOptions.
+    const [subject, setSubject] = useState(subjectOptions[0].value);
     const [level, setLevel] = useState('Brevet');
     const [model, setModel] = useState<ConseilsAiModel>(defaultConseilsAiModel);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [copied, setCopied] = useState(false);
     
-    const subjectOptions = SUBJECTS.map(s => ({ value: s.name, label: s.name }));
     const levelOptions = LEVELS.map(l => ({ value: l, label: l }));
 
     const handleGenerate = () => {
@@ -273,7 +278,7 @@ export const ConseilsView: React.FC<ConseilsViewProps> = ({ onGenerate, isLoadin
             </>
         );
     }
-
+    
     return (
         <div className="w-full max-w-2xl mx-auto">
             <div className="text-center mb-10">
