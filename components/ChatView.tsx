@@ -3,6 +3,9 @@ import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } fr
 import { PremiumBadge } from './PremiumBadge';
 import { useLocalization } from '../hooks/useLocalization';
 import { marked } from 'marked';
+import { ai } from '../services/geminiService';
+import type { Part, GenerateContentResponse } from '@google/genai';
+
 
 interface ChatViewProps {
     session: ChatSession;
@@ -19,7 +22,7 @@ interface ChatViewProps {
     onNavigateToFlashAI: () => void;
     onNavigateToPlanning: () => void;
     onNavigateToConseils: () => void;
-    generateContentWithSearch: (history: ChatMessage[], currentParts: ChatPart[]) => Promise<any>;
+    generateContentWithSearch: (history: ChatMessage[], currentParts: ChatPart[]) => Promise<GenerateContentResponse>;
 }
 
 const CopyIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
@@ -292,49 +295,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             reader.onerror = error => reject(error);
         });
     };
-    
-    const generateTitle = useCallback(async (initialPrompt: string) => {
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'generateTitle', payload: { prompt: initialPrompt } }),
-            });
-            if (!response.ok) throw new Error('Failed to generate title');
-            const { title } = await response.json();
-            onUpdateSession(session.id, { title: title.trim().replace(/"/g, '') });
-        } catch (error) {
-            console.error("Error generating title:", error);
-        }
-    }, [onUpdateSession, session.id]);
-
-     const processStream = useCallback(async (response: Response) => {
-        if (!response.ok || !response.body) {
-            throw new Error(`API call failed: ${response.statusText}`);
-        }
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullResponse = '';
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            fullResponse += decoder.decode(value, { stream: true });
-            onUpdateSession(session.id, {
-                messages: (prev) => {
-                    const newMessages = [...prev];
-                    newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
-                    return newMessages;
-                }
-            });
-        }
-        onUpdateSession(session.id, {
-            messages: (prev) => {
-                const newMessages = [...prev];
-                newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: false };
-                return newMessages;
-            }
-        });
-    }, [onUpdateSession, session.id]);
 
     const handleSendMessage = useCallback(async () => {
         const textInput = input.trim();
@@ -371,48 +331,102 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         
         try {
           if (useWebSearch) {
-            const response = await generateContentWithSearch(currentHistory, userParts) as any;
+            const response = await generateContentWithSearch(currentHistory, userParts);
             const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
             onUpdateSession(session.id, {
               messages: (prev) => {
                 const newMessages = [...prev.slice(0, -1)];
-                newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata });
+                newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata, isGenerating: false });
                 return newMessages;
               },
             });
           } else {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'sendMessage',
-                    payload: {
-                        history: currentHistory,
-                        message: { parts: userParts },
-                        config: { aiModel: session.aiModel, systemInstruction, userName, subscriptionPlan }
-                    }
-                }),
+            const geminiHistory: { role: 'user' | 'model'; parts: Part[] }[] = currentHistory
+                .filter(m => !m.isGenerating)
+                .map(m => ({
+                    role: m.role,
+                    parts: m.parts.map(part => {
+                        if (part.image) {
+                            return { inlineData: { data: part.image.data, mimeType: part.image.mimeType } };
+                        }
+                        return { text: part.text || "" };
+                    }).filter(p => p.text || p.inlineData) as Part[]
+                }));
+
+            const baseInstruction = "Tu es BrevetAI, un tuteur IA spécialisé dans l'aide aux révisions pour le Brevet des collèges en France. Tes réponses doivent être pédagogiques, encourageantes et adaptées au niveau d'un élève de 3ème. Sois concis et clair. Tu peux utiliser des listes à puces ou des exemples pour faciliter la compréhension. N'hésite pas à poser des questions pour vérifier la compréhension de l'élève.";
+            let finalInstruction = baseInstruction;
+            if (subscriptionPlan !== 'free' && systemInstruction.trim()) {
+                finalInstruction = `${systemInstruction.trim()}\n\n---\n\n${baseInstruction}`;
+            }
+            if (userName.trim()) {
+                finalInstruction += `\n\nL'utilisateur s'appelle ${userName.trim()}. Adresse-toi à lui par son prénom de manière amicale.`;
+            }
+
+            const config: any = { systemInstruction: finalInstruction };
+            let geminiModelName: 'gemini-2.5-flash' | 'gemini-2.5-pro' = 'gemini-2.5-flash';
+            if (session.aiModel === 'brevetai') {
+                config.thinkingConfig = { thinkingBudget: 0 };
+            } else if (session.aiModel === 'brevetai-max') {
+                geminiModelName = 'gemini-2.5-pro';
+            }
+            
+            const chat = ai.chats.create({
+                model: geminiModelName,
+                history: geminiHistory,
+                config,
             });
-            await processStream(response);
+
+            const messageForApi = userParts.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' }) as Part[];
+            const streamResult = await chat.sendMessageStream({ message: messageForApi });
+
+            let fullResponse = '';
+            for await (const chunk of streamResult) {
+                const chunkText = chunk.text;
+                if (chunkText) {
+                    fullResponse += chunkText;
+                    onUpdateSession(session.id, {
+                        messages: (prev) => {
+                            const newMessages = [...prev];
+                            if (newMessages.length > 0) {
+                               newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
+                            }
+                            return newMessages;
+                        }
+                    });
+                }
+            }
+            
+            onUpdateSession(session.id, {
+                messages: (prev) => {
+                    const newMessages = [...prev];
+                     if (newMessages.length > 0) {
+                        newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: false };
+                    }
+                    return newMessages;
+                }
+            });
           }
 
           if (isFirstUserMessage && (textInput || attachment)) {
-            await generateTitle(textInput || "Discussion avec image");
+            const titleResponse = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: `Génère un titre court et concis (4-5 mots maximum) pour une discussion qui commence par cette question : "${textInput || "Discussion avec image"}". Réponds uniquement avec le titre.`,
+            });
+            onUpdateSession(session.id, { title: titleResponse.text.trim().replace(/"/g, '') });
           }
         } catch (error) {
           console.error("Error sending message:", error);
           onUpdateSession(session.id, {
             messages: (prev) => {
               const newMessages = [...prev.slice(0, -1)];
-              newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] });
+              newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }], isGenerating: false });
               return newMessages;
             },
           });
         } finally {
           setIsLoading(false);
         }
-    }, [input, attachment, isLoading, onUpdateSession, session.id, session.messages, generateTitle, useWebSearch, systemInstruction, userName, subscriptionPlan, session.aiModel, processStream, generateContentWithSearch]);
-
+    }, [input, attachment, isLoading, onUpdateSession, session.id, session.messages, session.aiModel, useWebSearch, generateContentWithSearch, systemInstruction, userName, subscriptionPlan]);
 
     const handleCopy = (parts: ChatPart[], index: number) => {
         const textToCopy = parts.map(p => p.text).filter(Boolean).join('\n');
@@ -465,28 +479,70 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         onUpdateSession(session.id, { messages: [...historyForRegen, { role: 'model', parts: [], isGenerating: true }] });
 
         try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'sendMessage',
-                    payload: {
-                        history: historyBeforeUserMessage,
-                        message: lastUserMessage,
-                        config: { aiModel: session.aiModel, systemInstruction, userName, subscriptionPlan }
-                    }
-                }),
+            const geminiHistory: { role: 'user' | 'model'; parts: Part[] }[] = historyBeforeUserMessage
+                .filter(m => !m.isGenerating)
+                .map(m => ({
+                    role: m.role,
+                    parts: m.parts.map(part => {
+                        if (part.image) {
+                            return { inlineData: { data: part.image.data, mimeType: part.image.mimeType } };
+                        }
+                        return { text: part.text || "" };
+                    }).filter(p => p.text || p.inlineData) as Part[]
+                }));
+
+            const baseInstruction = "Tu es BrevetAI, un tuteur IA spécialisé dans l'aide aux révisions pour le Brevet des collèges en France. Tes réponses doivent être pédagogiques, encourageantes et adaptées au niveau d'un élève de 3ème. Sois concis et clair. Tu peux utiliser des listes à puces ou des exemples pour faciliter la compréhension. N'hésite pas à poser des questions pour vérifier la compréhension de l'élève.";
+            let finalInstruction = baseInstruction;
+            if (subscriptionPlan !== 'free' && systemInstruction.trim()) {
+                finalInstruction = `${systemInstruction.trim()}\n\n---\n\n${baseInstruction}`;
+            }
+            if (userName.trim()) {
+                finalInstruction += `\n\nL'utilisateur s'appelle ${userName.trim()}. Adresse-toi à lui par son prénom de manière amicale.`;
+            }
+
+            const config: any = { systemInstruction: finalInstruction };
+            let geminiModelName: 'gemini-2.5-flash' | 'gemini-2.5-pro' = 'gemini-2.5-flash';
+            if (session.aiModel === 'brevetai') {
+                config.thinkingConfig = { thinkingBudget: 0 };
+            } else if (session.aiModel === 'brevetai-max') {
+                geminiModelName = 'gemini-2.5-pro';
+            }
+
+            const chat = ai.chats.create({ model: geminiModelName, history: geminiHistory, config });
+            const messageForApi = lastUserMessage.parts.map((p:any) => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' }) as Part[];
+            const streamResult = await chat.sendMessageStream({ message: messageForApi });
+
+            let fullResponse = '';
+            for await (const chunk of streamResult) {
+                const chunkText = chunk.text;
+                if (chunkText) {
+                    fullResponse += chunkText;
+                    onUpdateSession(session.id, {
+                        messages: (prev) => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
+                            return newMessages;
+                        }
+                    });
+                }
+            }
+            
+            onUpdateSession(session.id, {
+                messages: (prev) => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: false };
+                    return newMessages;
+                }
             });
-            await processStream(response);
         } catch (error) {
             console.error("Error regenerating response:", error);
             onUpdateSession(session.id, {
-                messages: (prev) => [...prev.slice(0, -1), { role: 'model', parts: [{ text: "Désolé, la regénération a échoué." }] }],
+                messages: (prev) => [...prev.slice(0, -1), { role: 'model', parts: [{ text: "Désolé, la regénération a échoué." }], isGenerating: false }],
             });
         } finally {
             setIsLoading(false);
         }
-    }, [isLoading, session.messages, onUpdateSession, session.id, systemInstruction, userName, subscriptionPlan, session.aiModel, processStream]);
+    }, [isLoading, session.messages, session.aiModel, onUpdateSession, session.id, systemInstruction, userName, subscriptionPlan]);
     
     const handleRegenerateLast = (modification: 'longer' | 'shorter') => {
         const lastModelIndex = session.messages.findLastIndex(m => m.role === 'model' && !m.isGenerating);
