@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type Language = 'fr' | 'en' | 'es' | 'de';
+export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt';
 
 export interface Subject {
   nameKey: string;
@@ -139,16 +139,22 @@ export interface CanvasVersion {
 }
 
 export interface PlanningTask {
+    id: string;
+    text: string;
+    isCompleted: boolean;
+}
+
+export interface PlanningDay {
     date: string; // e.g., "2025-10-27"
-    tasks: string[]; // List of tasks for the day
+    tasks: PlanningTask[];
 }
 
 export interface Planning {
     title: string;
-    schedule: PlanningTask[];
+    schedule: PlanningDay[];
 }
 
-// Fix: Add PremadeGame interface
+
 export interface PremadeGame {
   nameKey: string;
   descriptionKey: string;

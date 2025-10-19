@@ -1,4 +1,3 @@
-// Fix: Provide the implementation for the SubjectOptionsView component.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { Subject, SubscriptionPlan } from '../types';
 import { PremiumBadge } from './PremiumBadge';
@@ -52,7 +51,6 @@ const OptionCard: React.FC<{
 );
 
 
-// New StyledDropdown component
 interface StyledDropdownProps<T extends string | number> {
     label: string;
     options: readonly T[];

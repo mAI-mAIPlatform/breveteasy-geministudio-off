@@ -1,6 +1,6 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel } from '../types';
-import type { GenerateContentResponse } from '@google/genai';
+import { GoogleGenAI, Type, Chat, Part } from "@google/genai";
+import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, PlanningTask, PlanningDay } from '../types';
+import type { GenerateContentResponse, Content } from '@google/genai';
 
 const apiKey = process.env.API_KEY;
 
@@ -111,7 +111,6 @@ export const generateImage = async (
 
     const mainPrompt = [prompt, stylePrompt, qualityPrompt, userInstruction].filter(Boolean).join(', ');
     
-    // Fix: Use the negativePrompt parameter to construct the final prompt.
     const finalPrompt = negativePrompt?.trim() ? `${mainPrompt} --no ${negativePrompt.trim()}` : mainPrompt;
     
     const response = await ai.models.generateImages({
@@ -220,7 +219,18 @@ export const generatePlanning = async (
         }
     });
     
-    return JSON.parse(response.text);
+    const parsed = JSON.parse(response.text);
+    // Transform the flat task strings into task objects
+    const scheduleWithTaskObjects: PlanningDay[] = parsed.schedule.map((day: { date: string, tasks: string[] }) => ({
+        date: day.date,
+        tasks: day.tasks.map((taskText: string) => ({
+            id: `task_${Date.now()}_${Math.random()}`,
+            text: taskText,
+            isCompleted: false,
+        }))
+    }));
+
+    return { ...parsed, schedule: scheduleWithTaskObjects };
 };
 
 export const generateConseils = async (
@@ -244,7 +254,7 @@ export const generateConseils = async (
 };
 
 export const generateContentWithSearch = async (history: ChatMessage[], currentParts: ChatPart[]): Promise<GenerateContentResponse> => {
-    const contents = history.map(m => ({
+    const contents: Content[] = history.map(m => ({
         role: m.role,
         parts: m.parts.map(p => p.text ? ({text: p.text}) : ({inlineData: {data: p.image!.data, mimeType: p.image!.mimeType}}))
     }));
@@ -256,7 +266,6 @@ export const generateContentWithSearch = async (history: ChatMessage[], currentP
 
     const response = await ai.models.generateContent({
        model: "gemini-2.5-flash",
-       // @ts-ignore
        contents: contents,
        config: {
          tools: [{googleSearch: {}}],
@@ -264,4 +273,56 @@ export const generateContentWithSearch = async (history: ChatMessage[], currentP
     });
 
     return response;
+};
+
+export const generateTitleForChat = async (prompt: string): Promise<string> => {
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Génère un titre court et concis (4-5 mots maximum) pour une discussion qui commence par cette question : "${prompt}". Réponds uniquement avec le titre.`,
+    });
+    return response.text.trim().replace(/"/g, '');
+}
+
+export const sendMessageStream = (
+    history: ChatMessage[], 
+    message: ChatPart[], 
+    config: { aiModel: string; systemInstruction: string; userName: string, subscriptionPlan: string }
+) => {
+    const geminiHistory: { role: 'user' | 'model'; parts: Part[] }[] = history
+        .filter(m => !m.isGenerating)
+        .map(m => ({
+            role: m.role,
+            parts: m.parts.map(part => {
+                if (part.image) {
+                    return { inlineData: { data: part.image.data, mimeType: part.image.mimeType } };
+                }
+                return { text: part.text || "" };
+            }).filter(p => p.text || p.inlineData) as Part[]
+        }));
+
+    const baseInstruction = "Tu es BrevetAI, un tuteur IA spécialisé dans l'aide aux révisions pour le Brevet des collèges en France. Tes réponses doivent être pédagogiques, encourageantes et adaptées au niveau d'un élève de 3ème. Sois concis et clair. Tu peux utiliser des listes à puces ou des exemples pour faciliter la compréhension. N'hésite pas à poser des questions pour vérifier la compréhension de l'élève.";
+    let finalInstruction = baseInstruction;
+    if (config.subscriptionPlan !== 'free' && config.systemInstruction.trim()) {
+        finalInstruction = `${config.systemInstruction.trim()}\n\n---\n\n${baseInstruction}`;
+    }
+    if (config.userName.trim()) {
+        finalInstruction += `\n\nL'utilisateur s'appelle ${config.userName.trim()}. Adresse-toi à lui par son prénom de manière amicale.`;
+    }
+
+    const modelConfig: any = { systemInstruction: finalInstruction };
+    let geminiModelName: 'gemini-2.5-flash' | 'gemini-2.5-pro' = 'gemini-2.5-flash';
+    if (config.aiModel === 'brevetai') {
+        modelConfig.thinkingConfig = { thinkingBudget: 0 };
+    } else if (config.aiModel === 'brevetai-max') {
+        geminiModelName = 'gemini-2.5-pro';
+    }
+    
+    const chat = ai.chats.create({
+        model: geminiModelName,
+        history: geminiHistory,
+        config: modelConfig,
+    });
+
+    const messageForApi = message.map(p => p.image ? { inlineData: { data: p.image.data, mimeType: p.image.mimeType } } : { text: p.text || '' }) as Part[];
+    return chat.sendMessageStream({ message: messageForApi });
 };

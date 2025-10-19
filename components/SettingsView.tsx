@@ -78,7 +78,7 @@ const ShareAppModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ is
                 <div className="flex items-center gap-3 mb-6">
                     <button onClick={handleCopy} className="w-full flex items-center justify-center p-3 border-2 border-slate-300 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-200/50 dark:hover:bg-slate-700/60 transition-colors">
                         {copied ? <CheckIconSmall className="w-5 h-5 text-green-500 mr-2"/> : <CopyIcon className="w-5 h-5 mr-2"/>}
-                        {copied ? t('copied') : t('settings_share_modal_copy_link')}
+                        {copied ? 'Copié !' : 'Copier'}
                     </button>
                 </div>
                 
@@ -104,12 +104,11 @@ const ShareAppModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ is
     );
 };
 
-
 const FeedbackModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { t } = useLocalization();
     const [feedbackName, setFeedbackName] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState('');
-    const [feedbackRating, setFeedbackRating] = useState(10);
+    const [feedbackRating, setFeedbackRating] = useState(15);
     const [feedbackTerms, setFeedbackTerms] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [feedbackCode, setFeedbackCode] = useState('');
@@ -334,8 +333,6 @@ const RadioGroup: React.FC<{
     </div>
 );
 
-
-// StyledDropdown component copied from SubjectOptionsView.tsx
 interface StyledDropdownProps<T extends string | number> {
     label: string;
     options: readonly T[];
@@ -391,19 +388,16 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
     );
 };
 
-
 export const SettingsView: React.FC<SettingsViewProps> = (props) => {
-    const { t } = useLocalization();
     const { theme, onThemeChange, aiSystemInstruction, onAiSystemInstructionChange, subscriptionPlan, userName, onUserNameChange, userAvatar, onUserAvatarChange, defaultAiModel, onDefaultAiModelChange, defaultImageModel, onDefaultImageModelChange, imageGenerationInstruction, onImageGenerationInstructionChange, defaultItemCount, onDefaultItemCountChange, defaultDifficulty, onDefaultDifficultyChange, defaultLevel, onDefaultLevelChange, defaultCanvasModel, onDefaultCanvasModelChange, canvasSystemInstruction, onCanvasSystemInstructionChange, defaultFlashAiModel, onDefaultFlashAiModelChange, flashAiSystemInstruction, onFlashAiSystemInstructionChange, defaultPlanningAiModel, onDefaultPlanningAiModelChange, planningAiSystemInstruction, onPlanningAiSystemInstructionChange, defaultConseilsAiModel, onDefaultConseilsAiModelChange, conseilsAiSystemInstruction, onConseilsAiSystemInstructionChange, defaultGamesAiModel, onDefaultGamesAiModelChange, gamesAiSystemInstruction, onGamesAiSystemInstructionChange } = props;
     
-    const { language, setLanguage } = useLocalization();
+    const { language, setLanguage, t } = useLocalization();
     const isFree = subscriptionPlan === 'free';
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     const themeOptions = [ { value: 'light', label: t('settings_theme_light'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg> }, { value: 'dark', label: t('settings_theme_dark'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg> }, { value: 'system', label: t('settings_theme_system'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> }, ];
-    const langOptions = [ { value: 'fr', label: 'Français 🇫🇷' }, { value: 'en', label: 'English 🇬🇧' }, { value: 'es', label: 'Español 🇪🇸' }, { value: 'de', label: 'Deutsch 🇩🇪' }, ];
-
+    const langOptions = [ { value: 'fr', label: 'Français 🇫🇷' }, { value: 'en', label: 'English 🇬🇧' }, { value: 'es', label: 'Español 🇪🇸' }, { value: 'de', label: 'Deutsch 🇩🇪' }, { value: 'it', label: 'Italiano 🇮🇹' }, { value: 'pt', label: 'Português 🇵🇹' } ];
     const aiModelOptions = useMemo(() => [ { value: 'brevetai', label: 'BrevetAI', disabled: false }, { value: 'brevetai-pro', label: 'BrevetAI Pro', disabled: subscriptionPlan === 'free', requiredPlan: 'pro' as const }, { value: 'brevetai-max', label: 'BrevetAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, ], [subscriptionPlan]);
     const imageModelOptions = useMemo(() => [ { value: 'faceai', label: 'FaceAI', disabled: false }, { value: 'faceai-pro', label: 'FaceAI Pro', disabled: subscriptionPlan === 'free', requiredPlan: 'pro' as const }, { value: 'faceai-max', label: 'FaceAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, ], [subscriptionPlan]);
     const canvasModelOptions = useMemo(() => [ { value: 'canvasai', label: 'CanvasAI', disabled: false }, { value: 'canvasai-pro', label: 'CanvasAI Pro', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, { value: 'canvasai-max', label: 'CanvasAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, ], [subscriptionPlan]);
@@ -511,7 +505,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">{t('settings_default_model')}</label><RadioGroup name="conseilsAiModel" options={conseilsAiModelOptions} selectedValue={defaultConseilsAiModel} onChange={onDefaultConseilsAiModelChange} /></div>
                 </SettingSection>
 
-                <SettingSection className="z-[5]" title={t('settings_gamesai_title')} description={t('settings_gamesai_desc')}>
+                <SettingSection title={t('settings_gamesai_title')} description={t('settings_gamesai_desc')}>
                     <div className="relative">
                         <label htmlFor="gamesai-instruction" className="block text-sm font-medium text-slate-700 dark:text-slate-400 mb-1">{t('settings_system_instruction')}</label>
                         <textarea id="gamesai-instruction" rows={3} value={gamesAiSystemInstruction} onChange={(e) => onGamesAiSystemInstructionChange(e.target.value)} className={`w-full p-3 bg-white/20 dark:bg-slate-800/60 border border-white/20 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 ${isFree ? 'opacity-60' : ''}`} placeholder={t('settings_gamesai_placeholder')} disabled={isFree} />

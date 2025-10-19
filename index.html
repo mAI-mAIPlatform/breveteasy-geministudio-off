@@ -62,7 +62,7 @@
         background-color: #2160c4;
         top: -10vh;
         right: -15vw;
-        opacity: 0.4;
+        opacity: 0.3;
         animation: move-blue 30s infinite alternate ease-in-out;
       }
 
@@ -75,15 +75,15 @@
         background-color: #55d9c3;
         bottom: -20vh;
         left: -10vw;
-        opacity: 0.5;
+        opacity: 0.4;
          animation: move-cyan 35s infinite alternate ease-in-out -5s;
       }
 
       .dark .background-container::before {
-         opacity: 0.25;
+         opacity: 0.2;
       }
       .dark .background-container::after {
-         opacity: 0.15;
+         opacity: 0.1;
       }
 
       @keyframes move-blue {
@@ -160,33 +160,20 @@
         z-index: 9999;
       }
 
-      /* Reflection animation for loading text */
-      @keyframes reflection-swoop {
-        0% { transform: translateX(-100%) scaleX(2.5); opacity: 0; }
-        20% { opacity: 0.7; }
-        80% { opacity: 0.7; }
-        100% { transform: translateX(100%) scaleX(2.5); opacity: 0; }
-      }
       .reflection-text {
         position: relative;
-        overflow: hidden;
-        display: inline-block;
+        color: transparent;
+        background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6, #60a5fa);
+        background-size: 200% auto;
+        background-clip: text;
+        -webkit-background-clip: text;
+        animation: text-shine 4s linear infinite;
+        font-weight: 600;
       }
-      .reflection-text::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 20px;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.7);
-        transform: translateX(-100%) scaleX(2.5);
-        filter: blur(15px);
-        animation: reflection-swoop 2s infinite linear;
+       @keyframes text-shine {
+        to { background-position: 200% center; }
       }
-      .dark .reflection-text::before {
-        background: rgba(128, 178, 255, 0.5);
-      }
+
 
       /* Blinking cursor for streaming text */
       @keyframes blink {

@@ -187,11 +187,8 @@ const ModelSelector: React.FC<{
 
 
 export const ConseilsView: React.FC<ConseilsViewProps> = ({ onGenerate, isLoading, conseils, onClear, subscriptionPlan, defaultConseilsAiModel }) => {
-    // Fix: Import useLocalization to translate subject keys.
     const { t } = useLocalization();
-    // Fix: Use translated subject name for options and initial state.
-    const subjectOptions = SUBJECTS.map(s => ({ value: t(s.nameKey), label: t(s.nameKey) }));
-    // Fix: Initialize state with translated name from subjectOptions.
+    const subjectOptions = SUBJECTS.filter(s => s.nameKey !== 'subject_games' && s.nameKey !== 'subject_arts').map(s => ({ value: t(s.nameKey), label: t(s.nameKey) }));
     const [subject, setSubject] = useState(subjectOptions[0].value);
     const [level, setLevel] = useState('Brevet');
     const [model, setModel] = useState<ConseilsAiModel>(defaultConseilsAiModel);
@@ -282,14 +279,14 @@ export const ConseilsView: React.FC<ConseilsViewProps> = ({ onGenerate, isLoadin
     return (
         <div className="w-full max-w-2xl mx-auto">
             <div className="text-center mb-10">
-                <h1 className="text-5xl font-bold text-slate-900 dark:text-white">Conseils de Pro</h1>
-                <p className="text-xl text-slate-700 dark:text-slate-300 mt-2">Recevez des stratégies de révision par matière.</p>
+                <h1 className="text-5xl font-bold text-slate-900 dark:text-white">{t('home_conseilsai')}</h1>
+                <p className="text-xl text-slate-700 dark:text-slate-300 mt-2">{t('conseilsai_subtitle')}</p>
             </div>
 
             <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/20 dark:border-slate-700 p-6 sm:p-8 rounded-3xl shadow-xl space-y-6">
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <StyledDropdown label="Matière" options={subjectOptions} value={subject} onChange={setSubject} />
-                    <StyledDropdown label="Niveau" options={levelOptions} value={level} onChange={setLevel} />
+                    <StyledDropdown label={t('conseilsai_subject_label')} options={subjectOptions} value={subject} onChange={setSubject} />
+                    <StyledDropdown label={t('level')} options={levelOptions.map(l => ({value: l.value, label: l.label}))} value={level} onChange={setLevel} />
                 </div>
                  <ModelSelector selectedModel={model} onModelChange={setModel} subscriptionPlan={subscriptionPlan} />
                 <button
@@ -297,7 +294,7 @@ export const ConseilsView: React.FC<ConseilsViewProps> = ({ onGenerate, isLoadin
                     className="w-full py-3 px-4 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-all flex items-center justify-center gap-2"
                 >
                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M6.343 18.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0zM3 12h1m16 0h1M5.636 6.364l.707.707m12.728 12.728l.707.707" /></svg>
-                    Obtenir des conseils
+                    {t('conseilsai_generate_button')}
                 </button>
             </div>
         </div>

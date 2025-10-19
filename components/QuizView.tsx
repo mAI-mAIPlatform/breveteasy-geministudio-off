@@ -45,7 +45,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
   const [animationClass, setAnimationClass] = useState('animate-fade-in');
   
   const totalQuestions = quiz.questions.length;
-  const totalTime = totalQuestions * 45; // 45 seconds per question
+  const totalTime = totalQuestions > 0 ? totalQuestions * 45 : 1; // 45 seconds per question
   const [timeLeft, setTimeLeft] = useState(() => isTimed ? totalTime : -1);
 
   const handleSubmit = React.useCallback(() => {
@@ -53,18 +53,24 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
   }, [answers, onSubmit]);
 
   useEffect(() => {
-    if (!isTimed || timeLeft <= 0) return;
-    const timer = setInterval(() => {
-        setTimeLeft(prev => {
-            if (prev <= 1) {
-                clearInterval(timer);
-                handleSubmit();
-                return 0;
-            }
-            return prev - 1;
-        });
+    if (!isTimed) return;
+
+    if (timeLeft === 0) {
+      handleSubmit();
+      return; // Stop the effect
+    }
+
+    // This ensures that we don't start a timer if timeLeft is already 0 or less.
+    if (timeLeft < 0) {
+      return;
+    }
+
+    const timerId = setTimeout(() => {
+      setTimeLeft(t => t - 1);
     }, 1000);
-    return () => clearInterval(timer);
+
+    // Cleanup function
+    return () => clearTimeout(timerId);
   }, [isTimed, timeLeft, handleSubmit]);
 
   const handleOptionSelect = (option: string) => {
@@ -97,7 +103,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
   
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const timePercentage = isTimed ? (timeLeft / totalTime) * 100 : 0;
+  const timePercentage = (timeLeft / totalTime) * 100;
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col relative">
@@ -109,10 +115,10 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
             </div>
             <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-1.5">
                 <div 
-                    className="bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 h-1.5 rounded-full transition-all duration-1000 ease-linear" 
+                    className="h-1.5 rounded-full transition-all duration-1000 ease-linear" 
                     style={{ 
                         width: `${timePercentage}%`,
-                        filter: `hue-rotate(${100 - timePercentage}deg)`
+                        backgroundColor: `hsl(${(timePercentage * 1.2)}, 80%, 50%)`
                     }}
                 ></div>
             </div>

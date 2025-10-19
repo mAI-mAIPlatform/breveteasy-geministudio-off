@@ -17,7 +17,7 @@ const CustomModelCreator: React.FC<CustomModelCreatorProps> = ({ isOpen, onClose
     const [icon, setIcon] = useState('brain');
     const [version, setVersion] = useState('1.0');
     const [description, setDescription] = useState('');
-    const [baseModel, setBaseModel] = useState<AiModel>('brevetai-pro');
+    const [baseModel, setBaseModel] = useState<AiModel>('brevetai');
     const [instructions, setInstructions] = useState('');
     const modalRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +26,7 @@ const CustomModelCreator: React.FC<CustomModelCreatorProps> = ({ isOpen, onClose
         setIcon('brain');
         setVersion('1.0');
         setDescription('');
-        setBaseModel('brevetai-pro');
+        setBaseModel('brevetai');
         setInstructions('');
     };
 
@@ -95,9 +95,9 @@ const CustomModelCreator: React.FC<CustomModelCreatorProps> = ({ isOpen, onClose
                     <div>
                         <label htmlFor="model-base" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Modèle de base</label>
                         <select id="model-base" value={baseModel} onChange={e => setBaseModel(e.target.value as AiModel)} className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg">
-                            <option value="brevetai">BrevetAI (Rapide)</option>
-                            <option value="brevetai-pro">BrevetAI Pro (Intelligent)</option>
-                            <option value="brevetai-max">BrevetAI Max (Le plus puissant)</option>
+                            <option value="brevetai">BrevetAI</option>
+                            <option value="brevetai-pro">BrevetAI Pro</option>
+                            <option value="brevetai-max">BrevetAI Max</option>
                         </select>
                     </div>
                     <div>

@@ -7,28 +7,28 @@ interface LoadingViewProps {
 }
 
 const LoadingSpinner: React.FC = () => (
-  <div className="w-16 h-16">
-    <svg className="w-full h-full animate-spin" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: 'rgb(129, 140, 248)', stopOpacity: 1 }} /> 
-          <stop offset="100%" style={{ stopColor: 'rgb(56, 189, 248)', stopOpacity: 1 }} />
-        </linearGradient>
-      </defs>
-      <circle 
-        cx="50" 
-        cy="50" 
-        r="45" 
-        fill="none" 
-        stroke="url(#spinner-gradient)" 
-        strokeWidth="5" 
-        strokeLinecap="round"
-        strokeDasharray="160"
-        strokeDashoffset="100"
-      />
-    </svg>
-  </div>
+    <div className="w-24 h-24">
+        <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="spinner-gradient-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style={{stopColor: 'rgb(129, 140, 248)'}} />
+                    <stop offset="100%" style={{stopColor: 'rgb(56, 189, 248)'}} />
+                </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(129, 140, 248, 0.2)" strokeWidth="10" />
+            <path
+                d="M 50,5 A 45,45 0 1 1 5,50"
+                fill="none"
+                stroke="url(#spinner-gradient-2)"
+                strokeWidth="10"
+                strokeLinecap="round"
+                className="animate-spin"
+                style={{ transformOrigin: '50% 50%', animationDuration: '1s' }}
+            />
+        </svg>
+    </div>
 );
+
 
 const loadingTips = {
     quiz: [
@@ -141,10 +141,10 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCance
       </button>
 
       <LoadingSpinner />
-      <div>
+      <div className="mt-4">
         <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: loadingMessage }}></h2>
         <p key={currentTipIndex} className="text-lg text-slate-600 dark:text-slate-400 mt-4 animate-fade-in">
-            {tipsForTask[currentTipIndex]}
+            <span className="reflection-text">{tipsForTask[currentTipIndex]}</span>
         </p>
       </div>
     </div>

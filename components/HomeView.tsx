@@ -131,7 +131,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDraw
       </div>
     </main>
     <footer className="text-center text-xs text-slate-500 dark:text-slate-400 mt-16 pb-4">
-      {t('home_footer')}
+      26-4.0 © 2025 - Tous droits réservés | Brevet' Easy | Propulsé par mAI
     </footer>
   </div>
 )};
