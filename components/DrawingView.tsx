@@ -75,6 +75,8 @@ export const DrawingView: React.FC = () => {
   const [fontSize, setFontSize] = useState(32);
   const [fontFamily, setFontFamily] = useState('Arial');
   const [isFullScreen, setIsFullScreen] = useState(false);
+  // Fix: Add state to track spacebar press for panning.
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
 
   // --- HELPER FUNCTIONS ---
   const getActiveCanvas = useCallback(() => layerCanvasRefs.current.get(activeLayerId), [activeLayerId]);
@@ -307,7 +309,11 @@ export const DrawingView: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === ' ' && !isPanningRef.current) {
           e.preventDefault();
-          containerRef.current!.style.cursor = 'grab';
+          // Fix: Set state to track spacebar press.
+          setIsSpacePressed(true);
+          if (containerRef.current) {
+            containerRef.current.style.cursor = 'grab';
+          }
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
@@ -320,7 +326,11 @@ export const DrawingView: React.FC = () => {
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === ' ') {
-          containerRef.current!.style.cursor = 'crosshair';
+          // Fix: Clear state when spacebar is released.
+          setIsSpacePressed(false);
+          if (containerRef.current) {
+            containerRef.current.style.cursor = 'crosshair';
+          }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -333,9 +343,9 @@ export const DrawingView: React.FC = () => {
   
   useEffect(() => {
     if (tool === 'eyedropper') {
-        containerRef.current!.style.cursor = 'copy';
-    } else {
-        containerRef.current!.style.cursor = 'crosshair';
+        if (containerRef.current) containerRef.current.style.cursor = 'copy';
+    } else if (containerRef.current) {
+        containerRef.current.style.cursor = 'crosshair';
     }
   }, [tool]);
 
@@ -379,10 +389,11 @@ export const DrawingView: React.FC = () => {
   return (
     <div ref={containerRef} className="w-full h-[calc(100vh-6rem)] flex flex-col gap-4 animate-fade-in touch-none select-none bg-slate-200 dark:bg-slate-950 p-4 rounded-3xl"
         onMouseDown={(e) => {
-            if (e.button === 1 || e.nativeEvent.buttons === 4 || e.key === ' ') { 
+            // Fix: Replace incorrect `e.key` check with `isSpacePressed` state for panning.
+            if (e.button === 1 || e.nativeEvent.buttons === 4 || isSpacePressed) { 
                 isPanningRef.current = true;
                 lastPanPointRef.current = { x: e.clientX, y: e.clientY };
-                containerRef.current!.style.cursor = 'grabbing';
+                if (containerRef.current) containerRef.current.style.cursor = 'grabbing';
                 e.preventDefault();
             } else if (e.button === 0) {
                 startDrawing(e);
@@ -401,7 +412,7 @@ export const DrawingView: React.FC = () => {
         onMouseUp={(e) => {
             if (isPanningRef.current) {
                 isPanningRef.current = false;
-                containerRef.current!.style.cursor = 'crosshair';
+                if (containerRef.current) containerRef.current.style.cursor = isSpacePressed ? 'grab' : 'crosshair';
             } else {
                 stopDrawing();
             }

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart } from '../types';
+import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel } from '../types';
 import type { GenerateContentResponse } from '@google/genai';
 
 const apiKey = process.env.API_KEY;
@@ -73,15 +73,25 @@ export const generateHtmlContent = async (
     return response.text;
 };
 
-export const generateGame = async (subjectName: string): Promise<string> => {
+export const generateGame = async (subjectName: string, customPrompt: string, model: GamesAiModel, systemInstruction: string): Promise<string> => {
     const prompt = `Crée un jeu éducatif simple et amusant sur le thème "${subjectName}" pour un élève de niveau Brevet des collèges (France).
+    Instruction de l'utilisateur : "${customPrompt}".
     Le jeu doit être un fichier HTML unique et autonome, avec tout le CSS et JavaScript inclus dans des balises <style> et <script>.
     N'utilise aucune bibliothèque externe ni d'URL d'image.
     Le jeu doit être jouable, visuellement simple mais agréable, et inclure des instructions claires.
     Exemples de types de jeux : un quiz avec feedback instantané, un jeu de paires (memory), un jeu de pendu avec des termes du sujet, un 'glisser-déposer' pour associer des concepts.
     Assure-toi que la sortie est SEULEMENT le code HTML complet, en commençant par <!DOCTYPE html>.`;
 
-    return generateHtmlContent(prompt, "Tu es un développeur de jeux éducatifs expert qui crée des expériences d'apprentissage interactives et amusantes.");
+    const geminiModel = (model === 'gamesai-pro' || model === 'gamesai-max') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+            systemInstruction: systemInstruction || "Tu es un développeur de jeux éducatifs expert qui crée des expériences d'apprentissage interactives et amusantes.",
+        }
+    });
+    return response.text;
 };
 
 export const generateImage = async (
@@ -101,7 +111,8 @@ export const generateImage = async (
 
     const mainPrompt = [prompt, stylePrompt, qualityPrompt, userInstruction].filter(Boolean).join(', ');
     
-    const finalPrompt = negativePrompt?.trim() ? `${mainPrompt}, negative_prompt: [${negativePrompt.trim()}]` : mainPrompt;
+    // Fix: Use the negativePrompt parameter to construct the final prompt.
+    const finalPrompt = negativePrompt?.trim() ? `${mainPrompt} --no ${negativePrompt.trim()}` : mainPrompt;
     
     const response = await ai.models.generateImages({
         model: 'imagen-4.0-generate-001',

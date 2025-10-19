@@ -2,7 +2,8 @@
 import React from 'react';
 
 export interface Subject {
-  name: string;
+  // Fix: Changed `name` to `nameKey` to match usage in constants and components.
+  nameKey: string;
   // Fix: Specify that the icon can accept a className prop for styling via React.cloneElement.
   icon: React.ReactElement<{ className?: string }>;
   color: string;
@@ -44,6 +45,8 @@ export type CanvasModel = 'canvasai' | 'canvasai-pro' | 'canvasai-max';
 export type FlashAiModel = 'flashai' | 'flashai-pro' | 'flashai-max';
 export type PlanningAiModel = 'planningai' | 'planningai-pro' | 'planningai-max';
 export type ConseilsAiModel = 'conseilsai' | 'conseilsai-pro' | 'conseilsai-max';
+// Fix: Added GamesAiModel type.
+export type GamesAiModel = 'gamesai' | 'gamesai-pro' | 'gamesai-max';
 
 
 export interface Folder {
@@ -145,4 +148,12 @@ export interface PlanningTask {
 export interface Planning {
     title: string;
     schedule: PlanningTask[];
+}
+
+// Fix: Add PremadeGame interface
+export interface PremadeGame {
+  nameKey: string;
+  descriptionKey: string;
+  html: string;
+  subjectNameKey: string;
 }

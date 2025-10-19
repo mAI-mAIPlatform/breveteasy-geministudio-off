@@ -1,40 +1,46 @@
 // Fix: Provide the implementation for the constants.
 import React from 'react';
-import type { Subject } from './types';
+import type { Subject, PremadeGame } from './types';
 
 export const SUBJECTS: Subject[] = [
   {
-    name: "Français",
+    nameKey: "subject_french",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>,
     color: "text-blue-500 dark:text-blue-300",
     bgColor: "bg-blue-500/20",
   },
   {
-    name: "Mathématiques",
+    nameKey: "subject_maths",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><line x1="12" y1="10" x2="12" y2="18"></line><line x1="8" y1="10" x2="8" y2="18"></line><line x1="8" y1="14" x2="12" y2="14"></line></svg>,
     color: "text-red-500 dark:text-red-300",
     bgColor: "bg-red-500/20",
   },
   {
-    name: "Histoire-Géo-EMC",
+    nameKey: "subject_history",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
     color: "text-yellow-500 dark:text-yellow-300",
     bgColor: "bg-yellow-500/20",
   },
    {
-    name: "Anglais",
+    nameKey: "subject_english",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>,
     color: "text-purple-500 dark:text-purple-300",
     bgColor: "bg-purple-500/20",
   },
   {
-    name: "Espagnol",
+    nameKey: "subject_spanish",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="1"/><path d="M12 8v5"/><path d="M15.5 11.5L18 13l-3.5 1.5"/><path d="M8.5 11.5L6 13l3.5 1.5"/><path d="M12 13v5l-3 3"/><path d="M15 21l-3-3"/></svg>,
     color: "text-orange-500 dark:text-orange-300",
     bgColor: "bg-orange-500/20",
   },
+   {
+    nameKey: "subject_german",
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.2 6.2C13.8 5.5 12 6.5 12 8s0 3 2 3c2.7 0 4.8-2.2 4.8-5 .1-1.3-1-3-3.8-3"/><path d="M8.8 17.8c1.4.7 3.2-.3 3.2-2s0-3-2-3c-2.7 0-4.8 2.2-4.8 5C5.2 20.3 7 22 9.8 21"/><path d="M12 8s0 3-2 3c-2.8 0-5-2.2-5-5s2.2-5 5-5c1.4 0 2.5.6 3.2 1.2"/><path d="M12 16s0-3 2-3c2.8 0 5 2.2 5 5s-2.2 5-5 5c-1.4 0-2.5-.6-3.2-1.2"/></svg>,
+    color: "text-amber-500 dark:text-amber-300",
+    bgColor: "bg-amber-500/20",
+  },
   {
-    name: "SVT",
+    nameKey: "subject_svt",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="9" r="5" />
@@ -48,31 +54,63 @@ export const SUBJECTS: Subject[] = [
     bgColor: "bg-green-500/20",
   },
   {
-    name: "Physique-Chimie",
+    nameKey: "subject_physics",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></svg>,
     color: "text-teal-500 dark:text-teal-300",
     bgColor: "bg-teal-500/20",
   },
   {
-    name: "Technologie",
+    nameKey: "subject_technology",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>,
     color: "text-slate-500 dark:text-slate-300",
     bgColor: "bg-slate-500/20",
   },
    {
-    name: "Arts",
+    nameKey: "subject_arts",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M7 7c2-2 5-2 7 0M7 17c2 2 5 2 7 0"/></svg>,
     color: "text-pink-500 dark:text-pink-300",
     bgColor: "bg-pink-500/20",
   },
   {
-    name: "Éducation musicale",
+    nameKey: "subject_music",
     icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>,
     color: "text-indigo-500 dark:text-indigo-300",
     bgColor: "bg-indigo-500/20",
   },
+  {
+    nameKey: "subject_games",
+    icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 12h12M12 6v12"/></svg>,
+    color: "text-lime-500 dark:text-lime-300",
+    bgColor: "bg-lime-500/20",
+  }
 ];
 
+export const PREMADE_GAMES: PremadeGame[] = [
+    {
+        nameKey: "game_maths_calc_rush_name",
+        descriptionKey: "game_maths_calc_rush_desc",
+        html: `<!DOCTYPE html><html><head><title>Calcul Rush</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f0f0f0;}.container{text-align:center;padding:20px;background:white;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.1);}#problem{font-size:2em;margin:20px 0;}#answer{font-size:1.5em;padding:10px;width:100px;text-align:center;}#feedback{height:20px;font-weight:bold;margin-top:10px;}</style></head><body><div class="container"><h1>Calcul Rush</h1><div id="problem"></div><input type="number" id="answer" /><p>Score: <span id="score">0</span></p><div id="feedback"></div></div><script>let score=0;let currentProblem={a:0,b:0,answer:0};const problemEl=document.getElementById('problem');const answerEl=document.getElementById('answer');const scoreEl=document.getElementById('score');const feedbackEl=document.getElementById('feedback');function newProblem(){currentProblem.a=Math.ceil(Math.random()*10);currentProblem.b=Math.ceil(Math.random()*10);currentProblem.answer=currentProblem.a+currentProblem.b;problemEl.textContent=currentProblem.a + ' + ' + currentProblem.b + ' = ?';}answerEl.addEventListener('keyup',function(e){if(e.key==='Enter'){checkAnswer();}});function checkAnswer(){const userAnswer=parseInt(answerEl.value);if(userAnswer===currentProblem.answer){score++;feedbackEl.textContent='Correct !';feedbackEl.style.color='green';}else{score=Math.max(0,score-1);feedbackEl.textContent='Faux. La réponse était '+currentProblem.answer;feedbackEl.style.color='red';}scoreEl.textContent=score;answerEl.value='';newProblem();}newProblem();</script></body></html>`,
+        subjectNameKey: "subject_maths",
+    },
+    {
+        nameKey: "game_french_conjug_name",
+        descriptionKey: "game_french_conjug_desc",
+        html: `<!DOCTYPE html><html><head><title>Conjuguaison Express</title><style>body{font-family:sans-serif;text-align:center;padding-top:50px;}</style></head><body><h1>Conjuguaison Express</h1><p id="challenge"></p><input id="response" type="text"><button onclick="check()">Vérifier</button><p id="result"></p><script>const verbs = { "être": { "présent": { "je": "suis", "tu": "es", "il": "est" } }, "avoir": { "présent": { "je": "ai", "tu": "as", "il": "a" } } }; let currentVerb, currentPronoun; function newChallenge() { const verbKeys = Object.keys(verbs); currentVerb = verbKeys[Math.floor(Math.random() * verbKeys.length)]; const pronounKeys = Object.keys(verbs[currentVerb].présent); currentPronoun = pronounKeys[Math.floor(Math.random() * pronounKeys.length)]; document.getElementById('challenge').innerText = \`Conjuguez "\${currentVerb}" au présent avec "\${currentPronoun}" :\`; document.getElementById('response').value = ''; document.getElementById('result').innerText = ''; } function check() { const answer = document.getElementById('response').value.trim().toLowerCase(); const correctAnswer = verbs[currentVerb].présent[currentPronoun]; if (answer === correctAnswer) { document.getElementById('result').innerText = "Correct !"; } else { document.getElementById('result').innerText = "Faux. La réponse est : " + correctAnswer; } setTimeout(newChallenge, 2000); } window.onload = newChallenge;</script></body></html>`,
+        subjectNameKey: "subject_french",
+    },
+    {
+        nameKey: "game_history_dates_name",
+        descriptionKey: "game_history_dates_desc",
+        html: `<!DOCTYPE html><html><head><title>Dates Clés</title></head><body><h1>Dates Clés</h1><p>Associez la date à l'événement.</p><div id="game"></div><script>const events = { "1789": "Révolution française", "1492": "Découverte de l'Amérique", "1914": "Début de la Première Guerre mondiale" }; let date, correctAnswer; function newQuestion() { const dates = Object.keys(events); date = dates[Math.floor(Math.random() * dates.length)]; correctAnswer = events[date]; const options = [correctAnswer, ...Object.values(events).filter(v => v !== correctAnswer).sort(() => .5 - Math.random()).slice(0, 2)].sort(() => .5 - Math.random()); let gameHtml = \`<p>Que s'est-il passé en \${date} ?</p>\`; options.forEach(opt => { gameHtml += \`<button onclick="check('\${opt}')">\${opt}</button>\`; }); document.getElementById('game').innerHTML = gameHtml; } function check(answer) { if (answer === correctAnswer) { alert("Correct !"); } else { alert("Faux, la bonne réponse était " + correctAnswer); } newQuestion(); } newQuestion();</script></body></html>`,
+        subjectNameKey: "subject_history",
+    },
+    {
+        nameKey: "game_svt_body_parts_name",
+        descriptionKey: "game_svt_body_parts_desc",
+        html: `<!DOCTYPE html><html><head><title>Le Corps Humain</title></head><body><h1>Le Corps Humain</h1><p>Quiz sur les parties du corps.</p><script>alert('Jeu de SVT à venir !');</script></body></html>`,
+        subjectNameKey: "subject_svt"
+    }
+];
 
 // Fix: Update type definition to allow 'className' prop for styling with React.cloneElement.
 export const AVATAR_ICONS: Record<string, React.ReactElement<{ className?: string }>> = {
@@ -105,6 +143,4 @@ export const AVATAR_ICONS: Record<string, React.ReactElement<{ className?: strin
     'cog': <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.213-1.28Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>,
     'trophy': <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9a9.75 9.75 0 0 0 1.373-3.852A9.75 9.75 0 0 0 4.5 6.75c0-2.432 1.255-4.596 3.168-5.832A9.753 9.753 0 0 1 12 3c2.09 0 4.028.623 5.682 1.668C19.595 5.904 21 8.068 21 10.5c0 2.236-1.005 4.21-2.627 5.648A9.75 9.75 0 0 0 16.5 18.75z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v3.75m0 0h3.75m-3.75 0H8.25" /></svg>,
 };
-
-// Fix: Add missing export for avatar icon keys, used in SettingsView.
 export const AVATAR_ICON_KEYS = Object.keys(AVATAR_ICONS);

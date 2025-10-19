@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 interface LoadingViewProps {
   subject: string;
-  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game';
+  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
   onCancel: () => void;
 }
 
@@ -89,6 +89,13 @@ const loadingTips = {
         "Préparation d'une expérience ludique...",
         "Votre jeu est presque prêt !",
     ],
+    gamesAI: [
+        "L'IA imagine un concept de jeu original...",
+        "Écriture du code du jeu en HTML, CSS et JS...",
+        "Test et débogage du gameplay...",
+        "Création des graphismes en pur CSS...",
+        "Votre jeu personnalisé arrive !",
+    ],
 };
 
 export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCancel }) => {
@@ -105,6 +112,7 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCance
     planning: 'du planning',
     conseils: 'des conseils',
     game: 'du jeu',
+    gamesAI: 'du jeu personnalisé',
   };
   const titleText = titleTextMap[task] || 'du contenu';
 

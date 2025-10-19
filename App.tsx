@@ -1,6 +1,6 @@
 // Fix: Provide the implementation for the main App component.
 // Fix: Corrected React import to include necessary hooks.
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { HomeView } from './components/HomeView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
 import { LoadingView } from './components/LoadingView';
@@ -19,9 +19,14 @@ import { FlashAIView } from './components/FlashAIView';
 import { PlanningView } from './components/PlanningView';
 import { ConseilsView } from './components/ConseilsView';
 import { DrawingView } from './components/DrawingView';
-import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateContentWithSearch } from './services/geminiService';
-import { AVATAR_ICONS } from './constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatPart } from './types';
+import { JeuxView } from './components/JeuxView';
+import { JeuxDetailView } from './components/JeuxDetailView';
+import { GameDisplayView } from './components/GameDisplayView';
+import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateContentWithSearch, generateGame } from './services/geminiService';
+import { AVATAR_ICONS, SUBJECTS } from './constants';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatPart, PremadeGame, GamesAiModel } from './types';
+import { useLocalization } from './hooks/useLocalization';
+
 
 // Confetti and success message components
 interface ConfettiParticle {
@@ -60,9 +65,9 @@ const UpgradeSuccessNotification: React.FC<{ message: string }> = ({ message }) 
 
 
 // Fix: Add new view types for the new features.
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay';
 // Fix: Add new loading task types for the new features.
-type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils';
+type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
 
 interface ImageUsage {
     count: number;
@@ -95,6 +100,7 @@ const FixedHeader: React.FC<{
     userAvatar: string;
     userName: string;
 }> = ({ onNavigateSettings, onNavigateSubscription, subscriptionPlan, userAvatar, userName }) => {
+    const { t } = useLocalization();
     const hasName = userName.trim().length > 0;
     
     return (
@@ -102,8 +108,8 @@ const FixedHeader: React.FC<{
            {subscriptionPlan !== 'max' && (
             <HeaderButton 
                 onClick={onNavigateSubscription} 
-                title="Mettre à niveau"
-                ariaLabel="Mettre à niveau et voir les forfaits d'abonnement"
+                title={t('header_upgrade')}
+                ariaLabel={t('header_upgrade_aria')}
                 isIconOnly={true}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
@@ -111,16 +117,16 @@ const FixedHeader: React.FC<{
            )}
            <HeaderButton
             onClick={onNavigateSettings} 
-            title="Paramètres"
-            ariaLabel="Ouvrir les paramètres"
+            title={t('header_settings_title')}
+            ariaLabel={t('header_settings_aria')}
             isIconOnly={true}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" /></svg>
           </HeaderButton>
           <HeaderButton 
             onClick={onNavigateSettings} 
-            title="Profil"
-            ariaLabel="Ouvrir les paramètres du profil"
+            title={t('header_profile_title')}
+            ariaLabel={t('header_profile_aria')}
             isIconOnly={!hasName}
           >
             {React.cloneElement(AVATAR_ICONS[userAvatar] || AVATAR_ICONS['user'], { className: 'h-5 w-5' })}
@@ -130,37 +136,44 @@ const FixedHeader: React.FC<{
     );
 };
 
-const FixedExitButton: React.FC<{ onClick: () => void; position?: 'fixed' | 'absolute' }> = ({ onClick, position = 'fixed' }) => (
-    <div className={`${position} top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-[100]`}>
-        <HeaderButton 
-            onClick={onClick} 
-            title="Retour à l'accueil"
-            ariaLabel="Retourner à l'accueil"
-            isIconOnly={true}
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-        </HeaderButton>
-    </div>
-);
+const FixedExitButton: React.FC<{ onClick: () => void; position?: 'fixed' | 'absolute' }> = ({ onClick, position = 'fixed' }) => {
+    const { t } = useLocalization();
+    return (
+        <div className={`${position} top-4 sm:top-6 lg:top-8 left-4 sm:left-6 lg:left-8 z-[100]`}>
+            <HeaderButton 
+                onClick={onClick} 
+                title={t('header_back_home')}
+                ariaLabel={t('header_back_home')}
+                isIconOnly={true}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </HeaderButton>
+        </div>
+    );
+};
 
-const ScrollToTopButton: React.FC<{ onClick: () => void; isVisible: boolean }> = ({ onClick, isVisible }) => (
-    <div className={`fixed bottom-10 sm:bottom-6 lg:bottom-8 right-4 sm:right-6 lg:right-8 z-[100] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        <HeaderButton
-            onClick={onClick}
-            title="Remonter en haut"
-            ariaLabel="Remonter en haut de la page"
-            isIconOnly={true}
-            className="transform hover:-translate-y-1"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-            </svg>
-        </HeaderButton>
-    </div>
-);
+const ScrollToTopButton: React.FC<{ onClick: () => void; isVisible: boolean }> = ({ onClick, isVisible }) => {
+    const { t } = useLocalization();
+    return (
+        <div className={`fixed bottom-10 sm:bottom-6 lg:bottom-8 right-4 sm:right-6 lg:right-8 z-[100] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+            <HeaderButton
+                onClick={onClick}
+                title={t('header_scroll_top')}
+                ariaLabel={t('header_scroll_top')}
+                isIconOnly={true}
+                className="transform hover:-translate-y-1"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                </svg>
+            </HeaderButton>
+        </div>
+    );
+};
 
 
 const App: React.FC = () => {
+    const { t } = useLocalization();
     // App State
     const [view, setView] = useState<View>('home');
     const [loadingTask, setLoadingTask] = useState<LoadingTask>('quiz');
@@ -171,6 +184,7 @@ const App: React.FC = () => {
     const rootRef = useRef<HTMLElement | null>(null);
     const [upgradeSuccess, setUpgradeSuccess] = useState<string | null>(null);
     const [confetti, setConfetti] = useState<ConfettiParticle[]>([]);
+    const [isQuizTimed, setIsQuizTimed] = useState(false);
 
     // Generation default settings
     const [defaultItemCount, setDefaultItemCount] = useState<number>(5);
@@ -189,6 +203,8 @@ const App: React.FC = () => {
     const [planningAiSystemInstruction, setPlanningAiSystemInstruction] = useState<string>('');
     const [defaultConseilsAiModel, setDefaultConseilsAiModel] = useState<ConseilsAiModel>('conseilsai');
     const [conseilsAiSystemInstruction, setConseilsAiSystemInstruction] = useState<string>('');
+    const [defaultGamesAiModel, setDefaultGamesAiModel] = useState<GamesAiModel>('gamesai');
+    const [gamesAiSystemInstruction, setGamesAiSystemInstruction] = useState<string>('');
 
 
     // User/Profile State
@@ -236,6 +252,14 @@ const App: React.FC = () => {
     const [conseils, setConseils] = useState<string | null>(null);
     const [isGeneratingConseils, setIsGeneratingConseils] = useState(false);
 
+    // Jeux State
+    const [selectedGameSubject, setSelectedGameSubject] = useState<Subject | null>(null);
+    const [gameHtml, setGameHtml] = useState<string | null>(null);
+
+    const navigate = useCallback((newView: View) => {
+        rootRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+        setView(newView);
+    }, []);
 
     // Load state from localStorage on initial mount
     useEffect(() => {
@@ -264,6 +288,9 @@ const App: React.FC = () => {
         setDefaultPlanningAiModel((localStorage.getItem('brevet-easy-default-planningai-model') as PlanningAiModel) || 'planningai');
         setConseilsAiSystemInstruction(localStorage.getItem('brevet-easy-conseilsai-instruction') || '');
         setDefaultConseilsAiModel((localStorage.getItem('brevet-easy-default-conseilsai-model') as ConseilsAiModel) || 'conseilsai');
+        setGamesAiSystemInstruction(localStorage.getItem('brevet-easy-gamesai-instruction') || '');
+        setDefaultGamesAiModel((localStorage.getItem('brevet-easy-default-gamesai-model') as GamesAiModel) || 'gamesai');
+
 
         const savedSessions = localStorage.getItem('chatSessions');
         setChatSessions(savedSessions ? JSON.parse(savedSessions) : []);
@@ -353,6 +380,8 @@ const App: React.FC = () => {
     useEffect(() => { localStorage.setItem('brevet-easy-planningai-instruction', planningAiSystemInstruction); }, [planningAiSystemInstruction]);
     useEffect(() => { localStorage.setItem('brevet-easy-default-conseilsai-model', defaultConseilsAiModel); }, [defaultConseilsAiModel]);
     useEffect(() => { localStorage.setItem('brevet-easy-conseilsai-instruction', conseilsAiSystemInstruction); }, [conseilsAiSystemInstruction]);
+    useEffect(() => { localStorage.setItem('brevet-easy-default-gamesai-model', defaultGamesAiModel); }, [defaultGamesAiModel]);
+    useEffect(() => { localStorage.setItem('brevet-easy-gamesai-instruction', gamesAiSystemInstruction); }, [gamesAiSystemInstruction]);
     
 
     // Effect to handle model downgrades when subscription changes
@@ -364,6 +393,7 @@ const App: React.FC = () => {
             if (defaultFlashAiModel !== 'flashai') setDefaultFlashAiModel('flashai');
             if (defaultPlanningAiModel !== 'planningai') setDefaultPlanningAiModel('planningai');
             if (defaultConseilsAiModel !== 'conseilsai') setDefaultConseilsAiModel('conseilsai');
+            if (defaultGamesAiModel !== 'gamesai') setDefaultGamesAiModel('gamesai');
         } else if (subscriptionPlan === 'pro') {
             if (defaultAiModel === 'brevetai-max') setDefaultAiModel('brevetai-pro');
             if (defaultImageModel === 'faceai-max') setDefaultImageModel('faceai-pro');
@@ -371,17 +401,18 @@ const App: React.FC = () => {
             if (defaultFlashAiModel === 'flashai-max') setDefaultFlashAiModel('flashai-pro');
             if (defaultPlanningAiModel === 'planningai-max') setDefaultPlanningAiModel('planningai-pro');
             if (defaultConseilsAiModel === 'conseilsai-max') setDefaultConseilsAiModel('conseilsai-pro');
+            if (defaultGamesAiModel === 'gamesai-max') setDefaultGamesAiModel('gamesai-pro');
         }
-    }, [subscriptionPlan, defaultAiModel, defaultImageModel, defaultCanvasModel, defaultFlashAiModel, defaultPlanningAiModel, defaultConseilsAiModel]);
+    }, [subscriptionPlan, defaultAiModel, defaultImageModel, defaultCanvasModel, defaultFlashAiModel, defaultPlanningAiModel, defaultConseilsAiModel, defaultGamesAiModel]);
 
 
     // Navigation Handlers
-    const handleSubjectSelect = (subject: Subject) => {
+    const handleSubjectSelect = useCallback((subject: Subject) => {
         setSelectedSubject(subject);
-        setView('subjectOptions');
-    };
+        navigate('subjectOptions');
+    }, [navigate]);
 
-    const handleBackToHome = () => {
+    const handleBackToHome = useCallback(() => {
         setSelectedSubject(null);
         setQuiz(null);
         setQuizAnswers([]);
@@ -392,35 +423,49 @@ const App: React.FC = () => {
         setFlashQuestion(null);
         setPlanning(null);
         setConseils(null);
-        setView('home');
-    };
+        setGameHtml(null);
+        setSelectedGameSubject(null);
+        setIsQuizTimed(false);
+        navigate('home');
+    }, [navigate]);
     
-    const handleGoToSettings = () => setView('settings');
-    const handleGoToLogin = () => setView('login');
-    const handleGoToSubscription = () => setView('subscription');
-    const handleGoToImageGeneration = () => {
+    const handleGoToSettings = useCallback(() => navigate('settings'), [navigate]);
+    const handleGoToLogin = useCallback(() => navigate('login'), [navigate]);
+    const handleGoToSubscription = useCallback(() => navigate('subscription'), [navigate]);
+    const handleGoToImageGeneration = useCallback(() => {
         setGeneratedImage(null);
-        setView('imageGeneration');
-    };
-    const handleStartCanvas = () => {
-        setView('canvas');
-    };
-    const handleStartDrawing = () => setView('drawing');
-    const handleStartFlashAI = () => {
+        navigate('imageGeneration');
+    }, [navigate]);
+    const handleStartCanvas = useCallback(() => navigate('canvas'), [navigate]);
+    const handleStartDrawing = useCallback(() => navigate('drawing'), [navigate]);
+    const handleStartFlashAI = useCallback(() => {
         setFlashQuestion(null);
-        setView('flashAI');
-    };
-    const handleStartPlanning = () => {
+        navigate('flashAI');
+    }, [navigate]);
+    const handleStartPlanning = useCallback(() => {
         setPlanning(null);
-        setView('planning');
-    }
-    const handleStartConseils = () => {
+        navigate('planning');
+    }, [navigate]);
+    const handleStartConseils = useCallback(() => {
         setConseils(null);
-        setView('conseils');
-    };
+        navigate('conseils');
+    }, [navigate]);
     const handleScrollToTop = () => {
         rootRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     };
+    
+    const handleStartJeux = useCallback(() => navigate('jeux'), [navigate]);
+
+    const handleSelectGameSubject = useCallback((subject: Subject) => {
+        setSelectedGameSubject(subject);
+        navigate('jeuxDetail');
+    }, [navigate]);
+
+    const handleSelectPremadeGame = useCallback((game: PremadeGame) => {
+        setGameHtml(game.html);
+        setSelectedGameSubject(SUBJECTS.find(s => s.nameKey === game.subjectNameKey) || null);
+        navigate('gameDisplay');
+    }, [navigate]);
 
     const triggerFullScreenConfetti = () => {
         const newParticles: ConfettiParticle[] = Array.from({ length: 200 }).map((_, i) => {
@@ -443,15 +488,15 @@ const App: React.FC = () => {
         let planName: string | null = null;
         if (upperCaseCode === 'BVTPRO') {
             setSubscriptionPlan('pro');
-            planName = 'Brevet Pro';
+            planName = t('subscription_plan_pro');
         }
         if (upperCaseCode === 'BVTMAX') {
             setSubscriptionPlan('max');
-            planName = 'Brevet Max';
+            planName = t('subscription_plan_max');
         }
 
         if (planName) {
-            setUpgradeSuccess(`Félicitations ! Vous avez activé le forfait ${planName}.`);
+            setUpgradeSuccess(t('subscription_upgrade_success').replace('{planName}', planName));
             triggerFullScreenConfetti();
             setTimeout(() => {
                 setUpgradeSuccess(null);
@@ -473,16 +518,17 @@ const App: React.FC = () => {
     }, [userName]);
 
     // Quiz Flow Handlers
-    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
+    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean) => {
         if (!selectedSubject) return;
-        setView('loading');
+        navigate('loading');
         setLoadingTask('quiz');
         setCurrentQuestionIndex(0);
+        setIsQuizTimed(useTimer);
         
         try {
             const systemInstruction = buildSystemInstruction(aiSystemInstruction);
             const generatedQuiz = await generateQuiz(
-                selectedSubject.name,
+                t(selectedSubject.nameKey),
                 count,
                 difficulty,
                 level,
@@ -491,16 +537,16 @@ const App: React.FC = () => {
             );
             setQuiz(generatedQuiz);
             setQuizAnswers(Array(generatedQuiz.questions.length).fill(null));
-            setView('quiz');
+            navigate('quiz');
 
         } catch (error) {
             console.error("Error generating quiz:", error);
-            alert("Une erreur est survenue lors de la génération du quiz. Veuillez réessayer.");
+            alert(t('error_generating'));
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t, navigate, handleBackToHome]);
 
-    const handleQuizSubmit = (answers: (string | null)[]) => {
+    const handleQuizSubmit = useCallback((answers: (string | null)[]) => {
         if (!quiz) return;
         let correctAnswers = 0;
         quiz.questions.forEach((q, index) => {
@@ -510,38 +556,38 @@ const App: React.FC = () => {
         });
         setScore(correctAnswers);
         setQuizAnswers(answers);
-        setView('results');
-    };
+        navigate('results');
+    }, [quiz, navigate]);
 
     const handleGenericHtmlGeneration = useCallback(async (task: LoadingTask, prompt: string) => {
         if (!selectedSubject) return;
-        setView('loading');
+        navigate('loading');
         setLoadingTask(task);
         try {
             const html = await generateHtmlContent(prompt, buildSystemInstruction(aiSystemInstruction));
             setGeneratedHtml(html);
-            setView('exercises');
+            navigate('exercises');
         } catch (error) {
             console.error(`Error generating ${task}:`, error);
-            alert(`Une erreur est survenue lors de la génération. Veuillez réessayer.`);
+            alert(t('error_generating'));
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t, navigate, handleBackToHome]);
 
-    const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string) => {
-        const prompt = `Génère une fiche de ${count} exercices sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
+    const handleGenerateExercises = useCallback((customPrompt: string, count: number, difficulty: string, level: string) => {
+        const prompt = `Génère une fiche de ${count} exercices sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
         handleGenericHtmlGeneration('exercises', prompt);
-    };
+    }, [t, selectedSubject, handleGenericHtmlGeneration]);
     
-    const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string) => {
-        const prompt = `Génère une fiche de cours sur le sujet "${selectedSubject?.name}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquojte), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
+    const handleGenerateCours = useCallback((customPrompt: string, count: number, difficulty: string, level: string) => {
+        const prompt = `Génère une fiche de cours sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquojte), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
         handleGenericHtmlGeneration('cours', prompt);
-    };
+    }, [t, selectedSubject, handleGenericHtmlGeneration]);
     
-    const handleGenerateFicheRevisions = (customPrompt: string, count: number, difficulty: string, level: string) => {
-        const prompt = `Génère une fiche de révisions synthétique sur le sujet "${selectedSubject?.name}" pour le niveau ${level}. ${customPrompt}. La fiche doit résumer les points essentiels à connaître pour le brevet. La sortie doit être un fichier HTML bien formaté, utilisant des titres, des listes à puces, du gras pour les termes importants, et un code couleur simple pour mettre en évidence les différentes sections. Le contenu doit être concis et aller à l'essentiel.`;
+    const handleGenerateFicheRevisions = useCallback((customPrompt: string, count: number, difficulty: string, level: string) => {
+        const prompt = `Génère une fiche de révisions synthétique sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}. ${customPrompt}. La fiche doit résumer les points essentiels à connaître pour le brevet. La sortie doit être un fichier HTML bien formaté, utilisant des titres, des listes à puces, du gras pour les termes importants, et un code couleur simple pour mettre en évidence les différentes sections. Le contenu doit être concis et aller à l'essentiel.`;
         handleGenericHtmlGeneration('fiche-revisions', prompt);
-    };
+    }, [t, selectedSubject, handleGenericHtmlGeneration]);
 
     const handleDownloadHtml = () => {
         if (!generatedHtml || isDownloadingHtml) return;
@@ -550,7 +596,7 @@ const App: React.FC = () => {
             const blob = new Blob([generatedHtml], { type: 'text/html' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `${loadingTask}_${selectedSubject?.name.replace(' ', '_')}.html`;
+            link.download = `${loadingTask}_${t(selectedSubject?.nameKey || '').replace(' ', '_')}.html`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -571,7 +617,7 @@ const App: React.FC = () => {
     };
 
     // Chat Flow Handlers
-    const handleStartChat = () => {
+    const handleStartChat = useCallback(() => {
         const newSession: ChatSession = {
             id: `chat_${Date.now()}`,
             title: 'Nouvelle Discussion',
@@ -581,18 +627,18 @@ const App: React.FC = () => {
         };
         setChatSessions(prev => [newSession, ...prev]);
         setActiveChatSessionId(newSession.id);
-        setView('chat');
-    };
+        navigate('chat');
+    }, [defaultAiModel, navigate]);
     
-    const handleNewChat = () => {
+    const handleNewChat = useCallback(() => {
         setActiveChatSessionId(null);
         setTimeout(handleStartChat, 0); // Create after deselecting to ensure a fresh start
-    };
+    }, [handleStartChat]);
 
-    const handleSelectChat = (sessionId: string) => {
+    const handleSelectChat = useCallback((sessionId: string) => {
         setActiveChatSessionId(sessionId);
-        setView('chat');
-    };
+        navigate('chat');
+    }, [navigate]);
 
     const handleDeleteChat = (sessionId: string) => {
         setChatSessions(prev => prev.filter(s => s.id !== sessionId));
@@ -725,11 +771,11 @@ const App: React.FC = () => {
 
         } catch (error) {
             console.error("Error generating image:", error);
-            alert("Une erreur est survenue lors de la génération de l'image.");
+            alert(t('error_generating'));
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [imageUsage, subscriptionPlan, imageGenerationInstruction]);
+    }, [imageUsage, subscriptionPlan, imageGenerationInstruction, t]);
 
     // Canvas, FlashAI, Planning & Conseils Handlers
     const handleGenerateCanvas = useCallback(async (prompt: string, model: CanvasModel) => {
@@ -746,11 +792,11 @@ const App: React.FC = () => {
             setActiveCanvasVersionId(newVersion.id);
         } catch (error) {
             console.error("Error generating canvas page:", error);
-            alert("Une erreur est survenue lors de la génération. Veuillez réessayer.");
+            alert(t('error_generating'));
         } finally {
             setIsGeneratingCanvas(false);
         }
-    }, [buildSystemInstruction, canvasSystemInstruction]);
+    }, [buildSystemInstruction, canvasSystemInstruction, t]);
 
     const handleGenerateFlashQuestion = useCallback(async (level: string, model: FlashAiModel) => {
         setIsGeneratingFlashQuestion(true);
@@ -759,26 +805,26 @@ const App: React.FC = () => {
             setFlashQuestion(question);
         } catch (error) {
             console.error("Error generating flash question:", error);
-            alert("Une erreur est survenue. Veuillez réessayer.");
+            alert(t('error_generating'));
         } finally {
             setIsGeneratingFlashQuestion(false);
         }
-    }, [buildSystemInstruction, flashAiSystemInstruction]);
+    }, [buildSystemInstruction, flashAiSystemInstruction, t]);
 
     const handleGeneratePlanning = useCallback(async (task: string, dueDate: string, model: PlanningAiModel) => {
         setIsGeneratingPlanning(true);
         try {
-            const todayDate = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD in UTC
+            const todayDate = new Date().toISOString().split('T')[0];
             const generatedPlan = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), model);
             setPlanning(generatedPlan);
         } catch (error) {
             console.error("Error generating planning:", error);
-            alert("Une erreur est survenue lors de la création du planning. Veuillez réessayer.");
+            alert(t('error_generating'));
         } finally {
             setIsGeneratingPlanning(false);
         }
-    }, [buildSystemInstruction, planningAiSystemInstruction]);
-
+    }, [buildSystemInstruction, planningAiSystemInstruction, t]);
+    
     const handleUpdatePlanning = (updatedPlanning: Planning) => {
         setPlanning(updatedPlanning);
     };
@@ -790,11 +836,26 @@ const App: React.FC = () => {
             setConseils(generatedConseils);
         } catch (error) {
             console.error("Error generating conseils:", error);
-            alert("Une erreur est survenue lors de la génération des conseils. Veuillez réessayer.");
+            alert(t('error_generating'));
         } finally {
             setIsGeneratingConseils(false);
         }
-    }, [buildSystemInstruction, conseilsAiSystemInstruction]);
+    }, [buildSystemInstruction, conseilsAiSystemInstruction, t]);
+    
+    const handleGenerateAIGame = useCallback(async (subject: Subject, prompt: string, model: GamesAiModel) => {
+        navigate('loading');
+        setLoadingTask('gamesAI');
+        try {
+            const html = await generateGame(t(subject.nameKey), prompt, model, buildSystemInstruction(gamesAiSystemInstruction));
+            setGameHtml(html);
+            setSelectedGameSubject(subject);
+            navigate('gameDisplay');
+        } catch (error) {
+            console.error(`Error generating game:`, error);
+            alert(t('error_generating'));
+            handleBackToHome();
+        }
+    }, [t, navigate, handleBackToHome, buildSystemInstruction, gamesAiSystemInstruction]);
     
     const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
     
@@ -805,19 +866,15 @@ const App: React.FC = () => {
     };
 
     const quizProgress = quiz ? ((currentQuestionIndex + 1) / (quiz.questions.length || 1)) * 100 : 0;
-
-    if (view === 'loading') {
-        return <LoadingView subject={selectedSubject?.name || ''} task={loadingTask} onCancel={handleBackToHome} />;
-    }
     
     const renderContent = () => {
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartDrawing={handleStartDrawing} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
-                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} />;
+                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} isTimed={isQuizTimed} />;
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
             case 'settings':
@@ -860,6 +917,10 @@ const App: React.FC = () => {
                         onDefaultConseilsAiModelChange={setDefaultConseilsAiModel}
                         conseilsAiSystemInstruction={conseilsAiSystemInstruction}
                         onConseilsAiSystemInstructionChange={setConseilsAiSystemInstruction}
+                        defaultGamesAiModel={defaultGamesAiModel}
+                        onDefaultGamesAiModelChange={setDefaultGamesAiModel}
+                        gamesAiSystemInstruction={gamesAiSystemInstruction}
+                        onGamesAiSystemInstructionChange={setGamesAiSystemInstruction}
                     />
                 );
             case 'chat':
@@ -926,19 +987,36 @@ const App: React.FC = () => {
                 return <ConseilsView onGenerate={handleGenerateConseils} isLoading={isGeneratingConseils} conseils={conseils} onClear={() => setConseils(null)} subscriptionPlan={subscriptionPlan} defaultConseilsAiModel={defaultConseilsAiModel} />;
             case 'drawing':
                 return <DrawingView />;
+            case 'jeux':
+                return <JeuxView onSelectSubject={handleSelectGameSubject} />;
+            case 'jeuxDetail':
+                return selectedGameSubject && <JeuxDetailView subject={selectedGameSubject} onSelectPremadeGame={handleSelectPremadeGame} onGenerateAIGame={handleGenerateAIGame} subscriptionPlan={subscriptionPlan} defaultGamesAiModel={defaultGamesAiModel} />;
+            case 'gameDisplay':
+                return <GameDisplayView htmlContent={gameHtml} subject={selectedGameSubject} onGenerateAnother={handleSelectGameSubject} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartDrawing={handleStartDrawing} onStartChat={() => setView('chat')} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
         }
     };
     
-    const showHeader = !['chat'].includes(view);
+    const showHeader = !['chat', 'drawing'].includes(view);
     const showExitButton = !['home', 'chat'].includes(view);
-    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing'].includes(view);
+    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay'].includes(view);
+
+    const paddingTopClass = useMemo(() => {
+        switch (view) {
+            case 'home':
+                return 'pt-12';
+            case 'quiz':
+                return 'pt-0';
+            default:
+                return 'pt-24';
+        }
+    }, [view]);
 
     return (
-        <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-start justify-center'}`}>
-             <Confetti particles={confetti} />
+        <div className={`w-full min-h-full ${view !== 'chat' && view !== 'drawing' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-start justify-center'}`}>
              {upgradeSuccess && <UpgradeSuccessNotification message={upgradeSuccess} />}
+             <Confetti particles={confetti} />
              {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
@@ -949,10 +1027,11 @@ const App: React.FC = () => {
                     </div>
                 </div>
              )}
-             {renderContent()}
+             <div className={paddingTopClass}>
+                {renderContent()}
+             </div>
         </div>
     );
 };
 
-// Fix: Add default export to resolve the module import error in index.tsx
 export default App;

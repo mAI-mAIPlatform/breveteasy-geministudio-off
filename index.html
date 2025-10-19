@@ -159,6 +159,49 @@
         animation: confetti-explode 1.5s ease-out forwards;
         z-index: 9999;
       }
+
+      /* Reflection animation for loading text */
+      @keyframes reflection-swoop {
+        0% { transform: translateX(-100%) scaleX(2.5); opacity: 0; }
+        20% { opacity: 0.7; }
+        80% { opacity: 0.7; }
+        100% { transform: translateX(100%) scaleX(2.5); opacity: 0; }
+      }
+      .reflection-text {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+      }
+      .reflection-text::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 20px;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.7);
+        transform: translateX(-100%) scaleX(2.5);
+        filter: blur(15px);
+        animation: reflection-swoop 2s infinite linear;
+      }
+      .dark .reflection-text::before {
+        background: rgba(128, 178, 255, 0.5);
+      }
+
+      /* Blinking cursor for streaming text */
+      @keyframes blink {
+        50% { opacity: 0; }
+      }
+      .blinking-cursor {
+        display: inline-block;
+        width: 8px;
+        height: 1em;
+        background-color: currentColor;
+        animation: blink 1s step-end infinite;
+        vertical-align: text-bottom;
+        margin-left: 2px;
+      }
+
     </style>
   <script type="importmap">
 {

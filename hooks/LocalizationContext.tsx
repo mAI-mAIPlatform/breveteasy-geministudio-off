@@ -4,7 +4,7 @@ import { translations, Language } from '../translations';
 interface LocalizationContextType {
   language: Language;
   setLanguage: (language: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, replacements?: Record<string, string | number>) => string;
 }
 
 export const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
@@ -25,8 +25,14 @@ export const LocalizationProvider: React.FC<{ children: ReactNode }> = ({ childr
     document.documentElement.lang = lang;
   };
 
-  const t = (key: string): string => {
-    return translations[language]?.[key] || translations['fr']?.[key] || key;
+  const t = (key: string, replacements?: Record<string, string | number>): string => {
+    let translation = translations[language]?.[key] || translations['fr']?.[key] || key;
+    if (replacements) {
+        Object.keys(replacements).forEach(rKey => {
+            translation = translation.replace(`{${rKey}}`, String(replacements[rKey]));
+        });
+    }
+    return translation;
   };
 
   return (

@@ -97,7 +97,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
   
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
-  const timePercentage = isTimed ? (timeLeft / totalTime) * 100 : 0;
+  const timePercentage = (timeLeft / totalTime) * 100;
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col relative">

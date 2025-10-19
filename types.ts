@@ -44,6 +44,7 @@ export type CanvasModel = 'canvasai' | 'canvasai-pro' | 'canvasai-max';
 export type FlashAiModel = 'flashai' | 'flashai-pro' | 'flashai-max';
 export type PlanningAiModel = 'planningai' | 'planningai-pro' | 'planningai-max';
 export type ConseilsAiModel = 'conseilsai' | 'conseilsai-pro' | 'conseilsai-max';
+export type GamesAiModel = 'gamesai' | 'gamesai-pro' | 'gamesai-max';
 
 
 export interface Folder {
@@ -60,7 +61,6 @@ export interface ChatSession {
     messages: ChatMessage[];
     aiModel: AiModel;
     folderId?: string | null;
-    isGhost?: boolean;
 }
 
 export type SubscriptionPlan = 'free' | 'pro' | 'max';
@@ -148,8 +148,10 @@ export interface Planning {
     schedule: PlanningTask[];
 }
 
+// Fix: Add PremadeGame interface
 export interface PremadeGame {
-    name: string;
-    description: string;
-    html: string;
+  nameKey: string;
+  descriptionKey: string;
+  html: string;
+  subjectNameKey: string;
 }

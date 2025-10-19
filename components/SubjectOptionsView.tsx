@@ -2,10 +2,11 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { Subject, SubscriptionPlan } from '../types';
 import { PremiumBadge } from './PremiumBadge';
+import { useLocalization } from '../hooks/useLocalization';
 
 interface SubjectOptionsViewProps {
   subject: Subject;
-  onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string) => void;
+  onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean) => void;
   onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string) => void;
   onGenerateFicheRevisions: (customPrompt: string, count: number, difficulty: string, level: string) => void;
@@ -21,7 +22,8 @@ const OptionCard: React.FC<{
     icon: React.ReactNode; 
     onClick: () => void; 
     isProFeature?: boolean;
-}> = ({ title, description, icon, onClick, isProFeature = false }) => (
+    children?: React.ReactNode;
+}> = ({ title, description, icon, onClick, isProFeature = false, children }) => (
     <div className="relative">
         <button
             onClick={onClick}
@@ -35,12 +37,13 @@ const OptionCard: React.FC<{
             <div className="p-3 bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 rounded-full">
                 {icon}
             </div>
-            <div>
+            <div className="flex-grow">
                 <h3 className={`text-xl font-bold text-slate-900 dark:text-slate-100 ${!isProFeature && 'group-hover:text-indigo-500 dark:group-hover:text-sky-300 transition-colors duration-300'}`}>
                     {title}
                 </h3>
                 <p className="text-slate-700 dark:text-slate-400 mt-1">{description}</p>
             </div>
+            {children}
         </button>
         {isProFeature && (
              <PremiumBadge requiredPlan="pro" />
@@ -136,12 +139,14 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
 
 
 export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject, onGenerateQuiz, onGenerateExercises, onGenerateCours, onGenerateFicheRevisions, subscriptionPlan, defaultItemCount, defaultDifficulty, defaultLevel }) => {
+  const { t } = useLocalization();
   const isFreePlan = subscriptionPlan === 'free';
   const isFicheRevisionsLocked = subscriptionPlan === 'free';
 
   const [customPrompt, setCustomPrompt] = useState('');
   const [difficulty, setDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>(defaultDifficulty);
   const [level, setLevel] = useState<string>(defaultLevel);
+  const [useTimer, setUseTimer] = useState(false);
 
   const [itemCount, setItemCount] = useState<number>(() => {
     const defaultCount = defaultItemCount;
@@ -157,7 +162,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   const currentDifficulty = isFreePlan ? 'Normal' : difficulty;
 
   const handleGenerateQuizClick = () => {
-    onGenerateQuiz(customPrompt, itemCount, currentDifficulty, currentLevel);
+    onGenerateQuiz(customPrompt, itemCount, currentDifficulty, currentLevel, useTimer);
   };
 
   const handleGenerateExercisesClick = () => {
@@ -176,14 +181,14 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
     <div className="w-full max-w-2xl mx-auto">
         <div className="relative text-center mb-10">
             <h1 className="text-5xl font-bold text-slate-900 dark:text-white">
-                {subject.name}
+                {t(subject.nameKey)}
             </h1>
         </div>
         
         <div className="relative z-10 bg-white/5 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-slate-700/80 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
             <div className="mb-6">
                 <label htmlFor="custom-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">
-                    Instructions spécifiques (facultatif)
+                    {t('subject_options_specific_instructions')}
                 </label>
                 <textarea
                     id="custom-prompt"
@@ -191,21 +196,21 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
                     className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base text-slate-900 dark:text-slate-100 placeholder-slate-500 transition"
-                    placeholder={`ex: "Concentre-toi sur la Première Guerre mondiale"`}
+                    placeholder={t('subject_options_specific_instructions_placeholder')}
                 />
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Laissez vide pour un contenu général sur le sujet.</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('subject_options_general_content_note')}</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <StyledDropdown<string>
-                    label="Niveau"
+                    label={t('level')}
                     options={LEVELS}
                     value={currentLevel}
                     onChange={setLevel}
                     disabled={isFreePlan}
                 />
                 <StyledDropdown<'Facile' | 'Normal' | 'Difficile' | 'Expert'>
-                    label="Difficulté"
+                    label={t('difficulty')}
                     options={DIFFICULTIES}
                     value={currentDifficulty}
                     onChange={setDifficulty}
@@ -213,7 +218,7 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                 />
             </div>
              <div className="pt-6">
-                <label htmlFor="item-count-slider" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">Nombre d'éléments ({itemCount})</label>
+                <label htmlFor="item-count-slider" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">{t('settings_generation_item_count', { count: itemCount })}</label>
                 <input
                     id="item-count-slider"
                     type="range"
@@ -229,27 +234,32 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
 
         <main className="space-y-6">
             <OptionCard
-                title="Générer un quiz"
-                description={`Testez vos connaissances avec un quiz de ${itemCount} questions.`}
+                title={t('subject_options_generate_quiz')}
+                description={t('subject_options_generate_quiz_desc', { count: itemCount })}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                 onClick={handleGenerateQuizClick}
-            />
+            >
+                <div className="flex items-center gap-2 pl-4" onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" id="timer-checkbox" checked={useTimer} onChange={(e) => setUseTimer(e.target.checked)} className="h-5 w-5 rounded text-indigo-500 focus:ring-indigo-500 border-slate-400 dark:border-slate-500 bg-white/20 dark:bg-slate-900/40" />
+                    <label htmlFor="timer-checkbox" className="text-sm font-semibold text-slate-800 dark:text-slate-300 select-none">Minuteur</label>
+                </div>
+            </OptionCard>
              <OptionCard
-                title="Générer des exercices"
-                description={`Recevez une fiche de ${itemCount} exercices avec corrigés.`}
+                title={t('subject_options_generate_exercises')}
+                description={t('subject_options_generate_exercises_desc', { count: itemCount })}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>}
                 onClick={handleGenerateExercisesClick}
             />
             <OptionCard
-                title="Générer un cours"
-                description={`Obtenez une fiche de cours structurée sur ${itemCount} concepts clés.`}
+                title={t('subject_options_generate_course')}
+                description={t('subject_options_generate_course_desc', { count: itemCount })}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" /></svg>}
                 onClick={handleGenerateCoursClick}
                 isProFeature={isFreePlan}
             />
             <OptionCard
-                title="Générer une fiche de révisions"
-                description="Un résumé des points clés à savoir pour le brevet."
+                title={t('subject_options_generate_summary')}
+                description={t('subject_options_generate_summary_desc')}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>}
                 onClick={handleGenerateFicheRevisionsClick}
                 isProFeature={isFicheRevisionsLocked}
