@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt';
+export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'zh' | 'ru';
 
 export interface Subject {
   nameKey: string;

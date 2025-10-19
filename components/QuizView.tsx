@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Quiz, Question } from '../types';
 
 interface QuizViewProps {
@@ -43,6 +43,7 @@ const QuestionDisplay: React.FC<{
 export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuestionIndex, setCurrentQuestionIndex, isTimed }) => {
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(quiz.questions.length).fill(null));
   const [animationClass, setAnimationClass] = useState('animate-fade-in');
+  const hasSubmitted = useRef(false);
   
   const totalQuestions = quiz.questions.length;
   const totalTime = totalQuestions > 0 ? totalQuestions * 45 : 1; // 45 seconds per question
@@ -55,12 +56,12 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
   useEffect(() => {
     if (!isTimed) return;
 
-    if (timeLeft === 0) {
+    if (timeLeft === 0 && !hasSubmitted.current) {
+      hasSubmitted.current = true;
       handleSubmit();
-      return; // Stop the effect
+      return;
     }
-
-    // This ensures that we don't start a timer if timeLeft is already 0 or less.
+    
     if (timeLeft < 0) {
       return;
     }
@@ -69,7 +70,6 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
       setTimeLeft(t => t - 1);
     }, 1000);
 
-    // Cleanup function
     return () => clearTimeout(timerId);
   }, [isTimed, timeLeft, handleSubmit]);
 

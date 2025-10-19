@@ -397,7 +397,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     const themeOptions = [ { value: 'light', label: t('settings_theme_light'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg> }, { value: 'dark', label: t('settings_theme_dark'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg> }, { value: 'system', label: t('settings_theme_system'), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> }, ];
-    const langOptions = [ { value: 'fr', label: 'Français 🇫🇷' }, { value: 'en', label: 'English 🇬🇧' }, { value: 'es', label: 'Español 🇪🇸' }, { value: 'de', label: 'Deutsch 🇩🇪' }, { value: 'it', label: 'Italiano 🇮🇹' }, { value: 'pt', label: 'Português 🇵🇹' } ];
+    const langOptions = [ { value: 'fr', label: 'Français 🇫🇷' }, { value: 'en', label: 'English 🇬🇧' }, { value: 'es', label: 'Español 🇪🇸' }, { value: 'de', label: 'Deutsch 🇩🇪' }, { value: 'it', label: 'Italiano 🇮🇹' }, { value: 'pt', label: 'Português 🇵🇹' }, { value: 'ja', label: '日本語 🇯🇵' }, { value: 'zh', label: '中文 🇨🇳' }, { value: 'ru', label: 'Русский 🇷🇺' } ];
     const aiModelOptions = useMemo(() => [ { value: 'brevetai', label: 'BrevetAI', disabled: false }, { value: 'brevetai-pro', label: 'BrevetAI Pro', disabled: subscriptionPlan === 'free', requiredPlan: 'pro' as const }, { value: 'brevetai-max', label: 'BrevetAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, ], [subscriptionPlan]);
     const imageModelOptions = useMemo(() => [ { value: 'faceai', label: 'FaceAI', disabled: false }, { value: 'faceai-pro', label: 'FaceAI Pro', disabled: subscriptionPlan === 'free', requiredPlan: 'pro' as const }, { value: 'faceai-max', label: 'FaceAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, ], [subscriptionPlan]);
     const canvasModelOptions = useMemo(() => [ { value: 'canvasai', label: 'CanvasAI', disabled: false }, { value: 'canvasai-pro', label: 'CanvasAI Pro', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, { value: 'canvasai-max', label: 'CanvasAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const }, ], [subscriptionPlan]);
@@ -415,13 +415,16 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
             <div className="space-y-8">
                 <SettingSection className="z-[90]" title={t('settings_appearance_title')} description={t('settings_appearance_desc')}>
                     <RadioGroup name="theme" options={themeOptions} selectedValue={theme} onChange={onThemeChange} />
-                    <StyledDropdown<Language>
-                        label={t('settings_language')}
-                        options={langOptions.map(o => o.value as Language)}
-                        value={language}
-                        onChange={setLanguage}
-                        renderOption={(val) => langOptions.find(o => o.value === val)?.label}
-                    />
+                    <div>
+                        <StyledDropdown<Language>
+                            label={t('settings_language')}
+                            options={langOptions.map(o => o.value as Language)}
+                            value={language}
+                            onChange={setLanguage}
+                            renderOption={(val) => langOptions.find(o => o.value === val)?.label}
+                        />
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">D'autres langues seront bientôt disponibles.</p>
+                    </div>
                 </SettingSection>
                 
                 <SettingSection className="z-[80]" title={t('settings_profile_title')} description={t('settings_profile_desc')}>
