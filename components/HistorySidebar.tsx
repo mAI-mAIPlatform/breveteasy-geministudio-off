@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { ChatSession, Folder, AiModel, CustomAiModel, SubscriptionPlan, ChatMessage } from '../types';
 import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '../constants';
 import { PremiumBadge } from './PremiumBadge';
+import { useLocalization } from '../hooks/useLocalization';
 
 // --- Custom Model Creator Modal ---
 interface CustomModelCreatorProps {
@@ -13,6 +14,7 @@ interface CustomModelCreatorProps {
 }
 
 const CustomModelCreator: React.FC<CustomModelCreatorProps> = ({ isOpen, onClose, onSave }) => {
+    const { t } = useLocalization();
     const [name, setName] = useState('');
     const [icon, setIcon] = useState('brain');
     const [version, setVersion] = useState('1.0');
@@ -50,7 +52,7 @@ const CustomModelCreator: React.FC<CustomModelCreatorProps> = ({ isOpen, onClose
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim() || !instructions.trim()) {
-            alert("Le nom et les instructions sont obligatoires.");
+            alert(t('custom_model_creator_error_required'));
             return;
         }
         onSave({ name, icon, version, description, baseModel, instructions });
@@ -63,27 +65,27 @@ const CustomModelCreator: React.FC<CustomModelCreatorProps> = ({ isOpen, onClose
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fade-in">
             <div ref={modalRef} className="relative w-full max-w-2xl bg-[#f0f2f5] dark:bg-slate-900/80 dark:backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8">
-                <button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-md z-10" aria-label="Fermer">
+                <button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-md z-10" aria-label={t('close')}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-                <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-6">Créer un Modèle d'IA Personnalisé</h2>
+                <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-6">{t('custom_model_creator_title')}</h2>
                 <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="model-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nom du modèle</label>
-                            <input id="model-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Assistant de Maths" required className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg"/>
+                            <label htmlFor="model-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('custom_model_creator_name')}</label>
+                            <input id="model-name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder={t('custom_model_creator_name_placeholder')} required className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg"/>
                         </div>
                         <div>
-                             <label htmlFor="model-version" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Version</label>
-                            <input id="model-version" type="text" value={version} onChange={e => setVersion(e.target.value)} placeholder="Ex: 1.0.0" className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg"/>
+                             <label htmlFor="model-version" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('version')}</label>
+                            <input id="model-version" type="text" value={version} onChange={e => setVersion(e.target.value)} placeholder={t('custom_model_creator_version_placeholder')} className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg"/>
                         </div>
                     </div>
                      <div>
-                        <label htmlFor="model-desc" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-                        <textarea id="model-desc" value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Une brève description du rôle de ce modèle." className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg resize-y"/>
+                        <label htmlFor="model-desc" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('description')}</label>
+                        <textarea id="model-desc" value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder={t('custom_model_creator_description_placeholder')} className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg resize-y"/>
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Icône</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('custom_model_creator_icon')}</label>
                         <div className="grid grid-cols-8 sm:grid-cols-12 gap-2">
                              {AVATAR_ICON_KEYS.map(key => (
                                 <button type="button" key={key} onClick={() => setIcon(key)} className={`flex items-center justify-center p-2 rounded-lg transition-all duration-200 aspect-square border-2 ${icon === key ? 'bg-indigo-500/80 border-indigo-500 text-white scale-110' : 'bg-white/10 dark:bg-slate-800/60 border-transparent hover:border-indigo-400 text-slate-700 dark:text-slate-300'}`} aria-label={`Select icon ${key}`}>
@@ -93,20 +95,20 @@ const CustomModelCreator: React.FC<CustomModelCreatorProps> = ({ isOpen, onClose
                         </div>
                     </div>
                     <div>
-                        <label htmlFor="model-base" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Modèle de base</label>
+                        <label htmlFor="model-base" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('custom_model_creator_base_model')}</label>
                         <select id="model-base" value={baseModel} onChange={e => setBaseModel(e.target.value as AiModel)} className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg">
-                            <option value="brevetai">BrevetAI</option>
-                            <option value="brevetai-pro">BrevetAI Pro</option>
-                            <option value="brevetai-max">BrevetAI Max</option>
+                            <option value="brevetai">{t('custom_model_creator_base_model_fast')}</option>
+                            <option value="brevetai-pro">{t('custom_model_creator_base_model_smart')}</option>
+                            <option value="brevetai-max">{t('custom_model_creator_base_model_powerful')}</option>
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="model-instructions" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Instructions personnalisées</label>
-                        <textarea id="model-instructions" value={instructions} onChange={e => setInstructions(e.target.value)} rows={5} placeholder="Ex: Tu es un expert en histoire-géographie. Tes réponses sont toujours structurées avec une introduction, un développement en deux parties et une conclusion." required className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg resize-y"/>
+                        <label htmlFor="model-instructions" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('custom_model_creator_instructions')}</label>
+                        <textarea id="model-instructions" value={instructions} onChange={e => setInstructions(e.target.value)} rows={5} placeholder={t('custom_model_creator_instructions_placeholder')} required className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg resize-y"/>
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700">Annuler</button>
-                        <button type="submit" className="px-4 py-2 text-sm font-semibold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50" disabled={!name.trim() || !instructions.trim()}>Créer le modèle</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-semibold bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700">{t('cancel')}</button>
+                        <button type="submit" className="px-4 py-2 text-sm font-semibold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50" disabled={!name.trim() || !instructions.trim()}>{t('custom_model_creator_create_button')}</button>
                     </div>
                 </form>
             </div>
@@ -156,6 +158,7 @@ const SessionItem: React.FC<{
     onDownload: () => void;
     inputRef: React.RefObject<HTMLInputElement>;
 }> = ({ session, isActive, isEditing, editingTitle, onTitleChange, onSaveTitle, onCancelEditing, onSelect, onStartEditing, onDelete, onDownload, inputRef }) => {
+    const { t } = useLocalization();
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         e.dataTransfer.setData('sessionId', session.id);
@@ -198,21 +201,21 @@ const SessionItem: React.FC<{
                     <button 
                         onClick={(e) => { e.stopPropagation(); onStartEditing(); }}
                         className="ml-2 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-500/20 hover:text-slate-800 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Renommer la discussion"
+                        title={t('chat_header_rename_title')}
                     >
                         <EditIcon className="h-4 w-4"/>
                     </button>
                     <button 
                         onClick={(e) => { e.stopPropagation(); onDownload(); }} 
                         className="ml-1 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-500/20 hover:text-slate-800 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Télécharger la discussion"
+                        title={t('history_sidebar_download_chat_tooltip')}
                     >
                         <DownloadIcon className="h-4 w-4" />
                     </button>
                     <button 
                         onClick={(e) => { e.stopPropagation(); onDelete(); }} 
                         className="ml-1 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Supprimer la discussion"
+                        title={t('history_sidebar_delete_chat_tooltip')}
                     >
                         <TrashIcon className="h-4 w-4" />
                     </button>
@@ -225,6 +228,7 @@ const SessionItem: React.FC<{
 
 export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
   const { sessions, folders, activeSessionId, onSelectChat, onDeleteChat, onDownloadChat, onNewChat, onUpdateSession, onNewFolder, onDeleteFolder, onUpdateFolder, onExitChat, subscriptionPlan, onNewCustomModel } = props;
+  const { t } = useLocalization();
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
@@ -391,8 +395,8 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
             <button 
                 onClick={onExitChat}
                 className="flex items-center justify-center w-10 h-10 bg-white/10 dark:bg-slate-900/60 backdrop-blur-lg border border-white/20 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-full shadow-lg hover:bg-white/20 dark:hover:bg-slate-800/60 transform hover:scale-105 transition-all duration-300"
-                title="Retour à l'accueil"
-                aria-label="Retourner à l'accueil"
+                title={t('header_back_home')}
+                aria-label={t('header_back_home')}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
@@ -401,10 +405,10 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
             <button
                 onClick={onNewChat}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-500 text-white font-semibold rounded-xl shadow-lg hover:bg-indigo-600 transition-colors"
-                title="Nouvelle discussion"
+                title={t('history_sidebar_new_chat')}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
-                <span>Nouvelle Discussion</span>
+                <span>{t('history_sidebar_new_chat')}</span>
             </button>
             <div className="flex gap-2">
                 <div className="flex-1 relative">
@@ -412,20 +416,20 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                         onClick={() => { if (subscriptionPlan === 'max') setIsCreatorOpen(true) }}
                         disabled={subscriptionPlan !== 'max'}
                         className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-xs disabled:opacity-60 disabled:cursor-not-allowed"
-                        title="Créer un modèle personnalisé (Forfait Max)"
+                        title={t('history_sidebar_new_model_tooltip')}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM12 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" /></svg>
-                        + Modèle
+                        {t('history_sidebar_new_model')}
                     </button>
                     {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" size="small" />}
                 </div>
                 <button
                     onClick={() => setIsCreatingFolder(true)}
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-xs"
-                    title="Nouveau dossier"
+                    title={t('history_sidebar_new_folder_tooltip')}
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-                    Dossier
+                    {t('history_sidebar_new_folder')}
                 </button>
             </div>
         </div>
@@ -434,7 +438,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 dark:text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input 
                 type="text" 
-                placeholder="Rechercher..." 
+                placeholder={t('history_sidebar_search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-black/5 dark:bg-slate-800/60 py-2.5 pl-10 pr-4 rounded-lg border border-transparent focus:bg-white/10 dark:focus:bg-slate-800/80 focus:border-indigo-500/50 focus:outline-none transition-colors text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-500"
@@ -447,7 +451,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
             onDragLeave={() => setDragOverUngrouped(false)}
             onDrop={(e) => handleDrop(e, null)}
         >
-             <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 px-2 my-2">Historique</h3>
+             <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 px-2 my-2">{t('history_sidebar_title')}</h3>
              {(visibleFolders.length > 0 || ungroupedSessions.length > 0 || isCreatingFolder) ? (
                 <ul className={`space-y-1 rounded-lg transition-colors p-1 ${dragOverUngrouped ? dragFeedbackClass : ''}`}>
                     {isCreatingFolder && (
@@ -483,10 +487,10 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                             </div>
                              <div className="flex justify-end gap-2">
                                 <button onClick={handleCancelNewFolder} className="px-3 py-1.5 text-xs font-semibold bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-md hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
-                                    Annuler
+                                    {t('cancel')}
                                 </button>
                                 <button onClick={handleConfirmNewFolder} className="px-3 py-1.5 text-xs font-semibold bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors disabled:opacity-50" disabled={!newFolderName.trim()}>
-                                    Créer
+                                    {t('add')}
                                 </button>
                             </div>
                         </li>
@@ -518,8 +522,8 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                             ))}
                                         </div>
                                         <div className="flex justify-end gap-2">
-                                            <button onClick={handleCancelEditing} className="px-3 py-1.5 text-xs font-semibold bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-md hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">Annuler</button>
-                                            <button onClick={handleSaveTitle} className="px-3 py-1.5 text-xs font-semibold bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors disabled:opacity-50" disabled={!editingTitle.trim()}>Enregistrer</button>
+                                            <button onClick={handleCancelEditing} className="px-3 py-1.5 text-xs font-semibold bg-slate-200 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 rounded-md hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">{t('cancel')}</button>
+                                            <button onClick={handleSaveTitle} className="px-3 py-1.5 text-xs font-semibold bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors disabled:opacity-50" disabled={!editingTitle.trim()}>{t('save')}</button>
                                         </div>
                                     </div>
                                 ) : (
@@ -535,8 +539,8 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                             <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{folder.name}</span>
                                         </div>
                                         <div className="flex flex-shrink-0">
-                                            <button onClick={(e) => { e.stopPropagation(); handleStartEditing(folder); }} className="ml-2 p-1 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100" title="Renommer"><EditIcon className="h-4 w-4"/></button>
-                                            <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }} className="ml-1 p-1 rounded-full text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-500 opacity-0 group-hover:opacity-100" title="Supprimer"><TrashIcon className="h-4 w-4"/></button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleStartEditing(folder); }} className="ml-2 p-1 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 opacity-0 group-hover:opacity-100" title={t('edit')}><EditIcon className="h-4 w-4"/></button>
+                                            <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }} className="ml-1 p-1 rounded-full text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-500 opacity-0 group-hover:opacity-100" title={t('delete')}><TrashIcon className="h-4 w-4"/></button>
                                         </div>
                                     </div>
                                 )}
@@ -558,7 +562,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                                 </li>
                                             ))
                                         ) : (
-                                            <li className="text-xs text-slate-500 dark:text-slate-400 px-3 py-2 italic">Ce dossier est vide.</li>
+                                            <li className="text-xs text-slate-500 dark:text-slate-400 px-3 py-2 italic">{t('history_sidebar_empty_folder')}</li>
                                         )}
                                     </ul>
                                 )}
@@ -582,7 +586,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                 </ul>
             ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{searchQuery ? 'Aucun résultat trouvé.' : 'Aucune conversation passée.'}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{searchQuery ? t('history_sidebar_no_results') : t('history_sidebar_empty')}</p>
                 </div>
             )}
         </div>

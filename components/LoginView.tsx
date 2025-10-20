@@ -5,8 +5,6 @@ interface LoginViewProps {
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-
   const handleGuestLogin = () => {
       onLogin('guest@breveteasy.com');
   }

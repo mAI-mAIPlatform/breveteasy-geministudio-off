@@ -189,6 +189,15 @@
         margin-left: 2px;
       }
 
+      /* New animation for loading icon */
+      @keyframes twinkle-sparkle {
+        0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        50% { transform: scale(1.2) rotate(15deg); opacity: 0.8; }
+      }
+      .animate-twinkle {
+        animation: twinkle-sparkle 2s ease-in-out infinite;
+      }
+
     </style>
   <script type="importmap">
 {

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { Question, SubscriptionPlan, FlashAiModel } from '../types';
 import { PremiumBadge } from './PremiumBadge';
-
+import { useLocalization } from '../hooks/useLocalization';
 
 interface FlashAIViewProps {
   onGenerate: (level: string, model: FlashAiModel) => void;
@@ -55,6 +55,7 @@ interface StyledDropdownProps<T extends string | number> {
 }
 
 const StyledDropdown = <T extends string | number>({ label, options, value, onChange, renderOption, disabled = false }: StyledDropdownProps<T>) => {
+    const { t } = useLocalization();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -105,7 +106,7 @@ const ModelSelector: React.FC<{
     onModelChange: (model: FlashAiModel) => void;
     subscriptionPlan: SubscriptionPlan;
 }> = ({ selectedModel, onModelChange, subscriptionPlan }) => {
-
+    const { t } = useLocalization();
     const modelNames: Record<FlashAiModel, string> = {
         flashai: 'FlashAI',
         'flashai-pro': 'FlashAI Pro',
@@ -119,21 +120,16 @@ const ModelSelector: React.FC<{
 
     return (
          <StyledDropdown<FlashAiModel>
-            label="Modèle"
-            options={models.map(m => m.id)}
+            label={t('settings_default_model')}
+            options={models.map(m => m.id).filter(id => {
+              const modelInfo = models.find(m => m.id === id)!;
+              if (modelInfo.requiredPlan === 'pro') return subscriptionPlan === 'pro' || subscriptionPlan === 'max';
+              if (modelInfo.requiredPlan === 'max') return subscriptionPlan === 'max';
+              return true;
+            })}
             value={selectedModel}
             onChange={onModelChange}
-            renderOption={(option) => (
-                <div className="flex items-center justify-between">
-                    <span>{modelNames[option]}</span>
-                    {((models.find(m => m.id === option)?.requiredPlan === 'pro' && subscriptionPlan === 'free') ||
-                     (models.find(m => m.id === option)?.requiredPlan === 'max' && subscriptionPlan !== 'max')) && (
-                        <span className="text-xs opacity-70">
-                            <PremiumBadge requiredPlan={models.find(m => m.id === option)!.requiredPlan as 'pro' | 'max'} size="small" />
-                        </span>
-                    )}
-                </div>
-            )}
+            renderOption={(option) => modelNames[option]}
         />
     );
 };
@@ -147,6 +143,7 @@ export const FlashAIView: React.FC<FlashAIViewProps> = ({
   subscriptionPlan,
   defaultFlashAiModel
 }) => {
+  const { t } = useLocalization();
   const [level, setLevel] = useState<string>('Brevet');
   const [model, setModel] = useState<FlashAiModel>(defaultFlashAiModel);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -201,15 +198,15 @@ export const FlashAIView: React.FC<FlashAIViewProps> = ({
     <div className="w-full max-w-2xl mx-auto">
       <Confetti particles={confetti} />
       <div className="text-center mb-10">
-        <h1 className="text-5xl font-bold text-slate-900 dark:text-white">FlashAI</h1>
-        <p className="text-xl text-slate-700 dark:text-slate-400 mt-2">Générez une question aléatoire pour un test rapide.</p>
+        <h1 className="text-5xl font-bold text-slate-900 dark:text-white">{t('flashai_title')}</h1>
+        <p className="text-xl text-slate-700 dark:text-slate-400 mt-2">{t('flashai_subtitle')}</p>
       </div>
 
       {!question && !isLoading && (
-        <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-700 p-6 sm:p-8 rounded-3xl shadow-xl space-y-6">
+        <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-xl space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <StyledDropdown<string>
-                label="Niveau"
+                label={t('flashai_choose_level')}
                 options={LEVELS}
                 value={level}
                 onChange={setLevel}
@@ -222,7 +219,7 @@ export const FlashAIView: React.FC<FlashAIViewProps> = ({
             className="w-full py-3 px-4 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-            Générer une question
+            {t('flashai_generate_button')}
           </button>
         </div>
       )}
@@ -230,14 +227,14 @@ export const FlashAIView: React.FC<FlashAIViewProps> = ({
       {isLoading && (
           <div className="text-center p-8">
               <div className="w-12 h-12 border-4 border-sky-300 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-lg text-slate-600 dark:text-slate-400">Génération de la question...</p>
+              <p className="text-lg text-slate-600 dark:text-slate-400">{t('flashai_generating')}</p>
           </div>
       )}
 
       {question && !isLoading && (
         <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-xl space-y-6 animate-fade-in">
           <div>
-            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Question Flash</p>
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">{t('flashai_question_title')}</p>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">{question.questionText}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {question.options.map((option, index) => {
@@ -255,7 +252,7 @@ export const FlashAIView: React.FC<FlashAIViewProps> = ({
                       }
                   } else {
                       if (isSelected) {
-                          buttonClass = 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-transparent shadow-[0_0_20px_rgba(167,139,250,0.5)] scale-105';
+                          buttonClass = isCorrect ? 'bg-green-500/80 text-white border-transparent shadow-[0_0_20px_rgba(74,222,128,0.5)] scale-105' : 'bg-red-500/80 text-white border-transparent shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-105';
                       } else {
                           buttonClass = 'bg-white/20 dark:bg-slate-800/60 border-white/30 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-400';
                       }
@@ -277,14 +274,14 @@ export const FlashAIView: React.FC<FlashAIViewProps> = ({
 
           {showAnswer && (
             <div className="p-4 bg-sky-500/10 border border-sky-500/20 rounded-xl animate-fade-in">
-                <h4 className="font-bold text-sky-800 dark:text-sky-300">Explication</h4>
+                <h4 className="font-bold text-sky-800 dark:text-sky-300">{t('results_explanation')}</h4>
                 <p className="text-sky-900 dark:text-sky-200 mt-1">{question.explanation}</p>
             </div>
           )}
             
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
             <button onClick={handleNewQuestion} className="w-full py-3 px-4 bg-white/20 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors">
-                Nouvelle question
+                {t('flashai_new_question')}
             </button>
             {!showAnswer && (
                  <button 
@@ -292,7 +289,7 @@ export const FlashAIView: React.FC<FlashAIViewProps> = ({
                     className="w-full py-3 px-4 bg-green-500 text-white font-bold rounded-xl shadow-lg hover:bg-green-600 transition-colors disabled:opacity-50"
                     disabled={!selectedAnswer}
                  >
-                    Révéler la réponse
+                    {t('flashai_reveal_answer')}
                 </button>
             )}
           </div>

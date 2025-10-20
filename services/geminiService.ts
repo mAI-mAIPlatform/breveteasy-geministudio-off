@@ -6,8 +6,8 @@ const apiKey = process.env.API_KEY;
 
 if (!apiKey) {
   throw new Error(
-    "La variable d'environnement API_KEY n'est pas définie. " +
-    "Veuillez vous assurer qu'elle est correctement configurée dans votre environnement de déploiement."
+    "The API_KEY environment variable is not set. " +
+    "Please ensure it is correctly configured in your deployment environment."
   );
 }
 
@@ -44,7 +44,7 @@ export const generateQuiz = async (
         required: ['subject', 'questions']
     };
 
-    const prompt = `Génère un quiz de ${count} questions sur le sujet "${subjectName}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. Les questions doivent être des QCM avec 4 options de réponse. Fournis une explication pour chaque bonne réponse.`;
+    const prompt = `Generate a ${count}-question quiz on the topic "${subjectName}" for the ${level} level, with ${difficulty} difficulty. ${customPrompt}. The questions should be multiple-choice with 4 answer options. Provide an explanation for each correct answer.`;
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -74,13 +74,13 @@ export const generateHtmlContent = async (
 };
 
 export const generateGame = async (subjectName: string, customPrompt: string, model: GamesAiModel, systemInstruction: string): Promise<string> => {
-    const prompt = `Crée un jeu éducatif simple et amusant sur le thème "${subjectName}" pour un élève de niveau Brevet des collèges (France).
-    Instruction de l'utilisateur : "${customPrompt}".
-    Le jeu doit être un fichier HTML unique et autonome, avec tout le CSS et JavaScript inclus dans des balises <style> et <script>.
-    N'utilise aucune bibliothèque externe ni d'URL d'image.
-    Le jeu doit être jouable, visuellement simple mais agréable, et inclure des instructions claires.
-    Exemples de types de jeux : un quiz avec feedback instantané, un jeu de paires (memory), un jeu de pendu avec des termes du sujet, un 'glisser-déposer' pour associer des concepts.
-    Assure-toi que la sortie est SEULEMENT le code HTML complet, en commençant par <!DOCTYPE html>.`;
+    const prompt = `Create a simple and fun educational game on the theme "${subjectName}" for a middle school student (Brevet level in France).
+    User instruction: "${customPrompt}".
+    The game must be a single, self-contained HTML file, with all CSS and JavaScript included in <style> and <script> tags.
+    Do not use any external libraries or image URLs.
+    The game should be playable, visually simple but pleasant, and include clear instructions.
+    Examples of game types: a quiz with instant feedback, a memory matching game, a hangman game with subject-related terms, a drag-and-drop to associate concepts.
+    Ensure the output is ONLY the full HTML code, starting with <!DOCTYPE html>.`;
 
     const geminiModel = (model === 'gamesai-pro' || model === 'gamesai-max') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
     
@@ -88,7 +88,7 @@ export const generateGame = async (subjectName: string, customPrompt: string, mo
         model: geminiModel,
         contents: prompt,
         config: {
-            systemInstruction: systemInstruction || "Tu es un développeur de jeux éducatifs expert qui crée des expériences d'apprentissage interactives et amusantes.",
+            systemInstruction: systemInstruction || "You are an expert educational game developer who creates interactive and fun learning experiences.",
         }
     });
     return response.text;
@@ -104,7 +104,7 @@ export const generateImage = async (
     negativePrompt: string
 ): Promise<{ data: string; mimeType: string; }> => {
     const qualityPrompt = model === 'faceai-pro' || model === 'faceai-max'
-        ? 'haute qualité, 4k, hyper-détaillé, photoréaliste'
+        ? 'high quality, 4k, hyper-detailed, photorealistic'
         : '';
     const stylePrompt = style !== 'none' ? `style ${style.replace('-', ' ')}` : '';
     const userInstruction = imageGenerationInstruction.trim();
@@ -134,13 +134,13 @@ export const generateInteractivePage = async (
 ): Promise<string> => {
     const geminiModel = model === 'canvasai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     
-    const fullPrompt = `${prompt}. La sortie doit être un fichier HTML unique, complet et valide, incluant le CSS dans une balise <style> et le JavaScript dans une balise <script>. Ne pas utiliser de bibliothèques externes. Le code doit être autonome.`;
+    const fullPrompt = `${prompt}. The output must be a single, complete, and valid HTML file, including CSS in a <style> tag and JavaScript in a <script> tag. Do not use external libraries. The code must be self-contained.`;
 
     const response = await ai.models.generateContent({
         model: geminiModel,
         contents: fullPrompt,
         config: {
-            systemInstruction: systemInstruction || "Tu es un développeur web expert qui crée des pages web interactives à partir de descriptions. Ton code doit être propre, efficace et contenu dans un seul fichier HTML.",
+            systemInstruction: systemInstruction || "You are an expert web developer who creates interactive web pages from descriptions. Your code must be clean, efficient, and contained in a single HTML file.",
         }
     });
     return response.text;
@@ -162,7 +162,7 @@ export const generateFlashQuestion = async (
         required: ['questionText', 'options', 'correctAnswer', 'explanation']
     };
 
-    const prompt = `Génère une seule question flash de type QCM (avec exactement 4 options) pour le niveau ${level}. Le sujet peut être n'importe quelle matière du Brevet des collèges. Fournis une explication pour la bonne réponse.`;
+    const prompt = `Generate a single multiple-choice flash question (with exactly 4 options) for the ${level} level. The topic can be any subject from the French Brevet curriculum. Provide an explanation for the correct answer.`;
     
     const geminiModel = model === 'flashai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
 
@@ -195,8 +195,17 @@ export const generatePlanning = async (
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        date: { type: Type.STRING, description: "Date au format YYYY-MM-DD" },
-                        tasks: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        date: { type: Type.STRING, description: "Date in YYYY-MM-DD format" },
+                        tasks: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    text: { type: Type.STRING }
+                                },
+                                required: ['text']
+                            }
+                        }
                     },
                     required: ['date', 'tasks']
                 }
@@ -205,7 +214,7 @@ export const generatePlanning = async (
         required: ['title', 'schedule']
     };
 
-    const prompt = `La date d'aujourd'hui est le ${new Date(todayDate + 'T00:00:00Z').toLocaleDateString('fr-FR', { timeZone: 'UTC' })}. Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Le planning doit commencer à partir d'aujourd'hui ou d'un jour futur, jamais dans le passé. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles jusqu'à la date limite. Le planning doit être réaliste. Assure-toi que les dates dans le JSON sont au format YYYY-MM-DD.`;
+    const prompt = `Today's date is ${new Date(todayDate + 'T00:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC' })}. Create a study schedule for the following task: "${task}". The deadline is ${dueDate}. The schedule must start from today or a future date, never in the past. Break down the task into logical steps and distribute them over the available days until the deadline. The schedule must be realistic. Ensure the dates in the JSON are in YYYY-MM-DD format.`;
 
     const geminiModel = model === 'planningai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     
@@ -220,12 +229,12 @@ export const generatePlanning = async (
     });
     
     const parsed = JSON.parse(response.text);
-    // Transform the flat task strings into task objects
-    const scheduleWithTaskObjects: PlanningDay[] = parsed.schedule.map((day: { date: string, tasks: string[] }) => ({
+
+    const scheduleWithTaskObjects: PlanningDay[] = parsed.schedule.map((day: { date: string, tasks: { text: string }[] }) => ({
         date: day.date,
-        tasks: day.tasks.map((taskText: string) => ({
+        tasks: day.tasks.map((taskObj: { text: string }) => ({
             id: `task_${Date.now()}_${Math.random()}`,
-            text: taskText,
+            text: taskObj.text,
             isCompleted: false,
         }))
     }));
@@ -239,7 +248,7 @@ export const generateConseils = async (
     systemInstruction: string,
     model: ConseilsAiModel,
 ): Promise<string> => {
-    const prompt = `Génère des conseils et des stratégies de révision pour la matière "${subject}" au niveau "${level}". La réponse doit être formatée en HTML simple (<h1>, <h2>, <p>, <ul>, <li>, <strong>) pour être affichée directement. Fournis des conseils pratiques et actionnables.`;
+    const prompt = `Generate revision tips and strategies for the subject "${subject}" at the "${level}" level. The response should be formatted in simple HTML (<h1>, <h2>, <p>, <ul>, <li>, <strong>) to be displayed directly. Provide practical and actionable advice.`;
 
     const geminiModel = model === 'conseilsai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     
@@ -247,7 +256,7 @@ export const generateConseils = async (
         model: geminiModel,
         contents: prompt,
         config: {
-            systemInstruction: systemInstruction || "Tu es un conseiller pédagogique expert qui aide les élèves à optimiser leurs révisions.",
+            systemInstruction: systemInstruction || "You are an expert educational advisor who helps students optimize their study habits.",
         }
     });
     return response.text;
@@ -278,7 +287,7 @@ export const generateContentWithSearch = async (history: ChatMessage[], currentP
 export const generateTitleForChat = async (prompt: string): Promise<string> => {
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `Génère un titre court et concis (4-5 mots maximum) pour une discussion qui commence par cette question : "${prompt}". Réponds uniquement avec le titre.`,
+        contents: `Generate a short, concise title (4-5 words max) for a discussion starting with this question: "${prompt}". Respond only with the title.`,
     });
     return response.text.trim().replace(/"/g, '');
 }
@@ -300,13 +309,13 @@ export const sendMessageStream = (
             }).filter(p => p.text || p.inlineData) as Part[]
         }));
 
-    const baseInstruction = "Tu es BrevetAI, un tuteur IA spécialisé dans l'aide aux révisions pour le Brevet des collèges en France. Tes réponses doivent être pédagogiques, encourageantes et adaptées au niveau d'un élève de 3ème. Sois concis et clair. Tu peux utiliser des listes à puces ou des exemples pour faciliter la compréhension. N'hésite pas à poser des questions pour vérifier la compréhension de l'élève.";
+    const baseInstruction = "You are BrevetAI, an AI tutor specializing in helping students revise for the French 'Brevet des collèges' exam. Your answers should be educational, encouraging, and adapted to a 9th-grade level. Be concise and clear. You can use bullet points or examples to facilitate understanding. Feel free to ask questions to check the student's comprehension.";
     let finalInstruction = baseInstruction;
     if (config.subscriptionPlan !== 'free' && config.systemInstruction.trim()) {
         finalInstruction = `${config.systemInstruction.trim()}\n\n---\n\n${baseInstruction}`;
     }
     if (config.userName.trim()) {
-        finalInstruction += `\n\nL'utilisateur s'appelle ${config.userName.trim()}. Adresse-toi à lui par son prénom de manière amicale.`;
+        finalInstruction += `\n\nThe user's name is ${config.userName.trim()}. Address them by their first name in a friendly manner.`;
     }
 
     const modelConfig: any = { systemInstruction: finalInstruction };

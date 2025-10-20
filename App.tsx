@@ -394,7 +394,6 @@ const App: React.FC = () => {
             if (defaultFlashAiModel === 'flashai-max') setDefaultFlashAiModel('flashai-pro');
             if (defaultPlanningAiModel === 'planningai-max') setDefaultPlanningAiModel('planningai-pro');
             if (defaultConseilsAiModel === 'conseilsai-max') setDefaultConseilsAiModel('conseilsai-pro');
-            // Fix: Corrected incomplete line causing a syntax error.
             if (defaultGamesAiModel === 'gamesai-max') setDefaultGamesAiModel('gamesai-pro');
         }
     }, [subscriptionPlan, defaultAiModel, defaultImageModel, defaultCanvasModel, defaultFlashAiModel, defaultPlanningAiModel, defaultConseilsAiModel, defaultGamesAiModel]);

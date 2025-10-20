@@ -50,28 +50,33 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
   const [timeLeft, setTimeLeft] = useState(() => isTimed ? totalTime : -1);
 
   const handleSubmit = React.useCallback(() => {
+    if (hasSubmitted.current) return;
+    hasSubmitted.current = true;
     onSubmit(answers);
   }, [answers, onSubmit]);
 
   useEffect(() => {
     if (!isTimed) return;
 
-    if (timeLeft === 0 && !hasSubmitted.current) {
-      hasSubmitted.current = true;
-      handleSubmit();
-      return;
-    }
-    
-    if (timeLeft < 0) {
-      return;
-    }
-
-    const timerId = setTimeout(() => {
-      setTimeLeft(t => t - 1);
+    const timerId = setInterval(() => {
+      setTimeLeft(prevTime => {
+        if (prevTime <= 1) {
+          clearInterval(timerId);
+          return 0;
+        }
+        return prevTime - 1;
+      });
     }, 1000);
 
-    return () => clearTimeout(timerId);
-  }, [isTimed, timeLeft, handleSubmit]);
+    return () => clearInterval(timerId);
+  }, [isTimed]);
+
+  useEffect(() => {
+    if (isTimed && timeLeft === 0 && !hasSubmitted.current) {
+        hasSubmitted.current = true;
+        onSubmit(answers);
+    }
+  }, [isTimed, timeLeft, answers, onSubmit]);
 
   const handleOptionSelect = (option: string) => {
     const newAnswers = [...answers];

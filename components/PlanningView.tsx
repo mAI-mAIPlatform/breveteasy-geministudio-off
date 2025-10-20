@@ -49,9 +49,9 @@ const Calendar: React.FC<{
     return (
         <div className="p-4 bg-white/5 dark:bg-black/20 rounded-2xl">
             <div className="flex justify-between items-center mb-4">
-                <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-slate-500/10">&lt;</button>
+                <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-slate-500/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
                 <h3 className="font-bold text-lg text-slate-900 dark:text-white">{monthNames[month]} {year}</h3>
-                <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-slate-500/10">&gt;</button>
+                <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-slate-500/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg></button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">
                 {dayNames.map(day => <div key={day}>{day}</div>)}
@@ -65,9 +65,14 @@ const Calendar: React.FC<{
                     const hasTasks = taskDays.has(date);
 
                     let classes = "w-full aspect-square rounded-full flex items-center justify-center cursor-pointer transition-colors text-sm ";
-                    if (isSelected) classes += 'bg-indigo-500 text-white font-bold ';
-                    else if (isToday) classes += 'bg-sky-500/30 text-sky-800 dark:text-sky-200 ';
-                    else classes += 'hover:bg-slate-500/20 ';
+                    if (isSelected) {
+                        classes += 'bg-indigo-500 text-white font-bold ';
+                    } else {
+                        classes += 'hover:bg-slate-500/20 ';
+                        if (isToday) {
+                            classes += 'ring-2 ring-sky-500 ';
+                        }
+                    }
 
                     return (
                         <div key={day} className="relative" onClick={() => onDateSelect(date)}>
@@ -154,7 +159,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
         return planning?.schedule.find(day => day.date === selectedDate);
     }, [planning, selectedDate]);
     
-    // Fix: Add useEffect to handle side effect of focusing on the input field
     useEffect(() => {
         if (editingTask && editInputRef.current) {
             editInputRef.current.focus();
@@ -169,7 +173,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
     const handleAddTask = () => {
         if (!newTaskText.trim() || !planning) return;
         const newTask: PlanningTask = {
-            id: `task_${Date.now()}`,
+            id: `task_${Date.now()}_${Math.random()}`,
             text: newTaskText.trim(),
             isCompleted: false,
         };

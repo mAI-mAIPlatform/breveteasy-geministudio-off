@@ -7,25 +7,35 @@ interface LoadingViewProps {
 }
 
 const LoadingSpinner: React.FC = () => (
-    <div className="w-24 h-24">
-        <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <div className="w-24 h-24 relative">
+        <svg className="w-full h-full animate-spin" style={{ animationDuration: '1.5s' }} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <linearGradient id="spinner-gradient-2" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style={{stopColor: 'rgb(129, 140, 248)'}} />
-                    <stop offset="100%" style={{stopColor: 'rgb(56, 189, 248)'}} />
+                <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="rgb(129, 140, 248)" />
+                    <stop offset="100%" stopColor="rgb(56, 189, 248)" />
                 </linearGradient>
             </defs>
-            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(129, 140, 248, 0.2)" strokeWidth="10" />
+            <circle 
+                cx="50" 
+                cy="50" 
+                r="45" 
+                fill="none" 
+                stroke="rgba(129, 140, 248, 0.15)" 
+                strokeWidth="8" 
+            />
             <path
                 d="M 50,5 A 45,45 0 1 1 5,50"
                 fill="none"
-                stroke="url(#spinner-gradient-2)"
-                strokeWidth="10"
+                stroke="url(#spinner-gradient)"
+                strokeWidth="8"
                 strokeLinecap="round"
-                className="animate-spin"
-                style={{ transformOrigin: '50% 50%', animationDuration: '1s' }}
             />
         </svg>
+         <div className="absolute inset-0 flex items-center justify-center text-indigo-400">
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 animate-twinkle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM18 18.75l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 24l-1.035-.259a3.375 3.375 0 00-2.456-2.456L18 20.25l-.259-1.035a3.375 3.375 0 00-2.456-2.456L14.25 18l1.035.259a3.375 3.375 0 002.456 2.456L18 21.75z" />
+            </svg>
+        </div>
     </div>
 );
 
