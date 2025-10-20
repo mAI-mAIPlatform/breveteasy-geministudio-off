@@ -335,19 +335,25 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                             messages: (prev) => {
                                 const newMessages = [...prev];
                                 if (newMessages.length > 0) {
-                                   newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
+                                    const lastMessage = newMessages[newMessages.length - 1];
+                                    if (lastMessage.role === 'model') {
+                                        lastMessage.parts = [{ text: fullResponse }];
+                                    }
                                 }
                                 return newMessages;
                             }
                         });
                     }
                 }
-                
+
                 onUpdateSession(session.id, {
                     messages: (prev) => {
                         const newMessages = [...prev];
-                         if (newMessages.length > 0) {
-                            newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: false };
+                        if (newMessages.length > 0) {
+                            const lastMessage = newMessages[newMessages.length - 1];
+                            if (lastMessage.role === 'model') {
+                                lastMessage.isGenerating = false;
+                            }
                         }
                         return newMessages;
                     }

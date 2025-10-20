@@ -2,12 +2,12 @@ import { GoogleGenAI, Type, Chat, Part } from "@google/genai";
 import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, PlanningTask, PlanningDay } from '../types';
 import type { GenerateContentResponse, Content } from '@google/genai';
 
-const apiKey = process.env.API_KEY;
+const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
 if (!apiKey) {
   throw new Error(
-    "The API_KEY environment variable is not set. " +
-    "Please ensure it is correctly configured in your deployment environment."
+    "The NEXT_PUBLIC_GEMINI_API_KEY environment variable is not set. " +
+    "Please create a .env.local file in the root of the project and add your API key."
   );
 }
 
