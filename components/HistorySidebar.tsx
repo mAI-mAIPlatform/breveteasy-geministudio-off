@@ -470,7 +470,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                         if (e.key === 'Escape') handleCancelNewFolder();
                                     }}
                                     className="flex-grow text-sm font-medium bg-white/20 dark:bg-slate-700/60 focus:outline-none w-full p-2 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-500"
-                                    placeholder="Nom du dossier..."
+                                    placeholder={t('history_sidebar_folder_name_placeholder')}
                                 />
                             </div>
                             <div className="grid grid-cols-6 sm:grid-cols-8 gap-1 mb-3">
@@ -490,7 +490,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = (props) => {
                                     {t('cancel')}
                                 </button>
                                 <button onClick={handleConfirmNewFolder} className="px-3 py-1.5 text-xs font-semibold bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors disabled:opacity-50" disabled={!newFolderName.trim()}>
-                                    {t('add')}
+                                    {t('create')}
                                 </button>
                             </div>
                         </li>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Quiz, Question } from '../types';
 
 interface QuizViewProps {
@@ -49,34 +49,33 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
   const totalTime = totalQuestions > 0 ? totalQuestions * 45 : 1; // 45 seconds per question
   const [timeLeft, setTimeLeft] = useState(() => isTimed ? totalTime : -1);
 
-  const handleSubmit = React.useCallback(() => {
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  const handleSubmit = useCallback(() => {
     if (hasSubmitted.current) return;
     hasSubmitted.current = true;
-    onSubmit(answers);
-  }, [answers, onSubmit]);
+    onSubmit(answersRef.current);
+  }, [onSubmit]);
 
   useEffect(() => {
     if (!isTimed) return;
-
-    const timerId = setInterval(() => {
-      setTimeLeft(prevTime => {
-        if (prevTime <= 1) {
-          clearInterval(timerId);
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timerId);
-  }, [isTimed]);
-
-  useEffect(() => {
-    if (isTimed && timeLeft === 0 && !hasSubmitted.current) {
-        hasSubmitted.current = true;
-        onSubmit(answers);
+  
+    if (timeLeft <= 0) {
+      if (!hasSubmitted.current) {
+        handleSubmit();
+      }
+      return;
     }
-  }, [isTimed, timeLeft, answers, onSubmit]);
+  
+    const timerId = setInterval(() => {
+      setTimeLeft(prevTime => prevTime - 1);
+    }, 1000);
+  
+    return () => clearInterval(timerId);
+  }, [isTimed, timeLeft, handleSubmit]);
 
   const handleOptionSelect = (option: string) => {
     const newAnswers = [...answers];

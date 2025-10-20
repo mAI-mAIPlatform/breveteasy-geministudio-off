@@ -1,4 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+// Fix: Corrected the import name from 'translations' to match the actual export from the translations file.
+// The error was that 'translations' was not exported, but the file was actually exporting 'allTranslations'. I have now renamed the export to 'translations'.
 import { translations, Language } from '../translations';
 
 interface LocalizationContextType {

@@ -50,7 +50,7 @@ const Calendar: React.FC<{
         <div className="p-4 bg-white/5 dark:bg-black/20 rounded-2xl">
             <div className="flex justify-between items-center mb-4">
                 <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-slate-500/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white">{monthNames[month]} {year}</h3>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white capitalize">{monthNames[month]} {year}</h3>
                 <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-slate-500/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg></button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">
@@ -140,10 +140,108 @@ const formatPlanningToHtml = (planning: Planning): string => {
     </html>`;
 };
 
+const DatePickerCalendar: React.FC<{
+    onClose: () => void;
+    onDateSelect: (date: string) => void;
+    onClear: () => void;
+    currentDate: string | null;
+}> = ({ onClose, onDateSelect, onClear, currentDate }) => {
+    const { t } = useLocalization();
+    const calendarRef = useRef<HTMLDivElement>(null);
+    const initialDate = currentDate ? new Date(currentDate + "T12:00:00Z") : new Date();
+    const [displayDate, setDisplayDate] = useState(initialDate);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+                onClose();
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onClose]);
+
+    const year = displayDate.getFullYear();
+    const month = displayDate.getMonth();
+
+    const changeMonth = (delta: number) => {
+        setDisplayDate(new Date(year, month + delta, 1));
+    };
+    
+    const selectToday = () => {
+        const today = new Date();
+        onDateSelect(today.toISOString().split('T')[0]);
+        onClose();
+    };
+
+    const monthNames = [ "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december" ].map(m => t(`month_${m}`));
+    const dayNames = [ "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" ].map(d => t(`day_short_${d}`));
+
+    const firstDayOfMonth = (new Date(year, month, 1).getDay() + 6) % 7; // 0 = Lundi
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    
+    const days = [];
+    for (let i = firstDayOfMonth; i > 0; i--) {
+        days.push({ day: daysInPrevMonth - i + 1, isCurrentMonth: false, month: month - 1, year: year });
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+        days.push({ day: i, isCurrentMonth: true, month: month, year: year });
+    }
+    const remainingDays = 42 - days.length; // 6 rows of 7 days
+    for (let i = 1; i <= remainingDays; i++) {
+        days.push({ day: i, isCurrentMonth: false, month: month + 1, year: year });
+    }
+
+    return (
+        <div ref={calendarRef} className="absolute z-10 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl shadow-lg p-3">
+             <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                    <button type="button" onClick={() => setDisplayDate(new Date(year - 1, month, 1))} className="p-1 rounded-full hover:bg-slate-500/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg></button>
+                    <button type="button" onClick={() => changeMonth(-1)} className="p-1 rounded-full hover:bg-slate-500/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
+                </div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-white capitalize">{monthNames[month]} {year}</h3>
+                 <div className="flex items-center">
+                    <button type="button" onClick={() => changeMonth(1)} className="p-1 rounded-full hover:bg-slate-500/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg></button>
+                    <button type="button" onClick={() => setDisplayDate(new Date(year + 1, month, 1))} className="p-1 rounded-full hover:bg-slate-500/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg></button>
+                </div>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">
+                {dayNames.map(day => <div key={day} className="w-9 h-9 flex items-center justify-center">{day}</div>)}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+                {days.map(({ day, isCurrentMonth, month: dMonth, year: dYear }, i) => {
+                    const thisDate = new Date(dYear, dMonth, day);
+                    const dateStr = `${thisDate.getFullYear()}-${String(thisDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const isSelected = dateStr === currentDate;
+                    const isToday = dateStr === new Date().toISOString().split('T')[0];
+                    return (
+                        <button
+                            key={i}
+                            type="button"
+                            onClick={() => onDateSelect(dateStr)}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors text-sm ${
+                                !isCurrentMonth ? 'text-slate-400 dark:text-slate-600' : 
+                                isSelected ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 font-bold' :
+                                isToday ? 'text-indigo-600 dark:text-indigo-400 font-bold' :
+                                'hover:bg-slate-200 dark:hover:bg-slate-700/50'
+                            }`}
+                        >{day}</button>
+                    );
+                })}
+            </div>
+            <div className="flex justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" onClick={onClear} className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">{t('planningai_datepicker_clear')}</button>
+                <button type="button" onClick={selectToday} className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold">{t('planningai_datepicker_today')}</button>
+            </div>
+        </div>
+    );
+};
+
 export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoading, planning, onClear, subscriptionPlan, defaultPlanningAiModel, onUpdate }) => {
     const { t } = useLocalization();
     const [task, setTask] = useState('');
-    const [dueDate, setDueDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    const [dueDate, setDueDate] = useState<string | null>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
     const [model, setModel] = useState<PlanningAiModel>(defaultPlanningAiModel);
     
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -154,6 +252,13 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
     const [newTaskText, setNewTaskText] = useState('');
     const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
     const editInputRef = useRef<HTMLInputElement>(null);
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+    const modelOptions = useMemo(() => [
+        { value: 'planningai', label: 'PlanningAI' },
+        { value: 'planningai-pro', label: 'PlanningAI Pro', disabled: subscriptionPlan === 'free', requiredPlan: 'pro' as const },
+        { value: 'planningai-max', label: 'PlanningAI Max', disabled: subscriptionPlan !== 'max', requiredPlan: 'max' as const },
+    ], [subscriptionPlan]);
 
     const selectedDayData = useMemo(() => {
         return planning?.schedule.find(day => day.date === selectedDate);
@@ -232,7 +337,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
         document.body.removeChild(link);
     };
 
-
     if (isLoading) {
         return (
             <div className="text-center p-8">
@@ -254,7 +358,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
                         <button onClick={onClear} className="px-4 py-2 bg-white/20 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 font-bold rounded-xl shadow-lg hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors text-sm">{t('planningai_new_planning_button')}</button>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[280px_1fr] gap-6">
                     <Calendar 
                         schedule={planning.schedule} 
                         selectedDate={selectedDate} 
@@ -318,11 +422,34 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
                     <label htmlFor="task-input" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">{t('planningai_task_label')}</label>
                     <textarea id="task-input" value={task} onChange={e => setTask(e.target.value)} placeholder={t('planningai_task_placeholder')} rows={4} className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500" />
                 </div>
-                 <div>
+                 <div className="relative">
                     <label htmlFor="due-date-input" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">{t('planningai_due_date_label')}</label>
-                    <input id="due-date-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100" />
+                    <button type="button" onClick={() => setIsDatePickerOpen(o => !o)} className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 text-left">
+                        {dueDate ? new Date(dueDate + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric'}) : t('planningai_due_date_placeholder')}
+                    </button>
+                    {isDatePickerOpen && <DatePickerCalendar onDateSelect={(d) => {setDueDate(d); setIsDatePickerOpen(false);}} onClose={() => setIsDatePickerOpen(false)} onClear={() => {setDueDate('');}} currentDate={dueDate} />}
                 </div>
-                <button onClick={() => onGenerate(task, dueDate, model)} disabled={isLoading || !task.trim()} className="w-full py-3 px-4 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <div>
+                    <label className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">{t('settings_default_model')}</label>
+                    <div className="flex flex-wrap gap-2">
+                        {modelOptions.map(option => (
+                             <div key={option.value} className="relative flex-1">
+                                <button
+                                    onClick={() => !option.disabled && setModel(option.value as PlanningAiModel)}
+                                    disabled={option.disabled}
+                                    className={`w-full text-center px-4 py-2 rounded-lg border-2 transition-all text-sm font-semibold ${
+                                        option.disabled ? 'opacity-60 cursor-not-allowed bg-white/10 dark:bg-slate-800/40 border-transparent' :
+                                        model === option.value ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white/20 dark:bg-slate-800/60 border-transparent hover:border-slate-400/50'
+                                    }`}
+                                >
+                                    {option.label}
+                                </button>
+                                {option.disabled && option.requiredPlan && <PremiumBadge requiredPlan={option.requiredPlan} size="small" />}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <button onClick={() => onGenerate(task, dueDate || '', model)} disabled={isLoading || !task.trim() || !dueDate} className="w-full py-3 px-4 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                     {isLoading ? t('planningai_generating') : t('planningai_generate_button')}
                 </button>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface LoginViewProps {
   onLogin: (email: string) => void;
@@ -12,7 +12,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 sm:p-10 rounded-3xl shadow-2xl">
-        <h2 className="text-4xl font-extrabold text-center text-slate-900 dark:text-white mb-8">Connexion</h2>
+        <h2 className="text-4xl font-extrabold text-center text-slate-900 dark:text-white mb-8">Bienvenue</h2>
         <div className="space-y-5 text-center">
             <p className="text-slate-700 dark:text-slate-300">
                 La fonctionnalité de connexion avec compte utilisateur est en cours de développement.

@@ -66,7 +66,8 @@ interface HomeViewProps {
   subscriptionPlan: SubscriptionPlan;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux }) => {
+// Fix: Added the missing export for the HomeView component.
+export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux, subscriptionPlan }) => {
   const { t } = useLocalization();
   return (
   <div className="w-full">

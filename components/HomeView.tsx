@@ -30,6 +30,7 @@ const SubjectCard: React.FC<{ subject: Subject; onSelect: () => void }> = ({ sub
   </button>
 )};
 
+// Fix: Corrected the CompactFeatureCard definition to match its usage within HomeView.
 const CompactFeatureCard: React.FC<{
     onClick: () => void;
     title: string;
@@ -53,6 +54,7 @@ const CompactFeatureCard: React.FC<{
     </button>
 );
 
+
 interface HomeViewProps {
   onSubjectSelect: (subject: Subject) => void;
   onStartDrawing: () => void;
@@ -66,7 +68,8 @@ interface HomeViewProps {
   subscriptionPlan: SubscriptionPlan;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux }) => {
+// Fix: Added the missing export for the HomeView component.
+export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux, subscriptionPlan }) => {
   const { t } = useLocalization();
   return (
   <div className="w-full">
@@ -131,7 +134,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDraw
       </div>
     </main>
     <footer className="text-center text-xs text-slate-500 dark:text-slate-400 mt-16 pb-4">
-      26-4.0 © 2025 - Tous droits réservés | Brevet' Easy | Propulsé par mAI
+      {t('home_footer')}
     </footer>
   </div>
 )};

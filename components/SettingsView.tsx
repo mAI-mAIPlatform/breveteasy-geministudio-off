@@ -429,7 +429,6 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                             onChange={setLanguage}
                             renderOption={(val) => langOptions.find(o => o.value === val)?.label}
                         />
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">D'autres langues seront bientôt disponibles.</p>
                     </div>
                 </SettingSection>
                 

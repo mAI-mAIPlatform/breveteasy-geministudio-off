@@ -29,7 +29,7 @@ export const JeuxView: React.FC<JeuxViewProps> = ({ onSelectSubject }) => {
   return (
     <div className="w-full max-w-4xl mx-auto">
       <header className="text-center mb-12">
-        <h1 className="text-6xl font-extrabold text-slate-900 dark:text-slate-100">Jeux Pédagogiques</h1>
+        <h1 className="text-6xl font-extrabold text-slate-900 dark:text-slate-100">{t('games_title')}</h1>
         <p className="text-xl text-slate-700 dark:text-slate-300 mt-2">
           {t('games_choose_subject')}
         </p>

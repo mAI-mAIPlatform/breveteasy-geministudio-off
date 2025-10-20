@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useLocalization } from '../hooks/useLocalization';
 
 // --- TYPE DEFINITIONS ---
 type Tool = 'pen' | 'eraser' | 'rectangle' | 'circle' | 'fill' | 'line' | 'text' | 'eyedropper';
@@ -48,6 +49,7 @@ const PREDEFINED_COLORS = ['#000000', '#FFFFFF', '#FF3B30', '#FF9500', '#FFCC00'
 const FONT_FACES = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Comic Sans MS'];
 
 export const DrawingView: React.FC = () => {
+  const { t } = useLocalization();
   // --- REFS ---
   const containerRef = useRef<HTMLDivElement>(null);
   const layerContainerRef = useRef<HTMLDivElement>(null);
@@ -76,15 +78,68 @@ export const DrawingView: React.FC = () => {
   const [fontFamily, setFontFamily] = useState('Arial');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
-
+  
   // --- HELPER FUNCTIONS ---
+    const colorToRgb = (colorStr: string): { r: number; g: number; b: number } | null => {
+        if (colorStr.startsWith('#')) {
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(colorStr);
+          return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        } else if (colorStr.startsWith('rgb')) {
+          const result = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(colorStr);
+          return result ? { r: parseInt(result[1], 10), g: parseInt(result[2], 10), b: parseInt(result[3], 10) } : null;
+        }
+        return null;
+    };
+
+    const floodFill = (ctx: CanvasRenderingContext2D, startX: number, startY: number, fillColor: { r: number; g: number; b: number }) => {
+        const canvas = ctx.canvas;
+        const { width, height } = canvas;
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        
+        const startPos = (startY * width + startX) * 4;
+        const startR = data[startPos];
+        const startG = data[startPos + 1];
+        const startB = data[startPos + 2];
+        const startA = data[startPos + 3];
+
+        const { r: fillR, g: fillG, b: fillB } = fillColor;
+        const fillA = 255;
+
+        if (startR === fillR && startG === fillG && startB === fillB && startA === fillA) {
+            return;
+        }
+
+        const pixelStack: [number, number][] = [[startX, startY]];
+
+        while (pixelStack.length) {
+            const [x, y] = pixelStack.pop()!;
+            
+            if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+            const currentPos = (y * width + x) * 4;
+            if (data[currentPos] === startR && data[currentPos + 1] === startG && data[currentPos + 2] === startB && data[currentPos + 3] === startA) {
+                data[currentPos] = fillR;
+                data[currentPos + 1] = fillG;
+                data[currentPos + 2] = fillB;
+                data[currentPos + 3] = fillA;
+
+                pixelStack.push([x + 1, y]);
+                pixelStack.push([x - 1, y]);
+                pixelStack.push([x, y + 1]);
+                pixelStack.push([x, y - 1]);
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+    };
+
   const getActiveCanvas = useCallback(() => layerCanvasRefs.current.get(activeLayerId), [activeLayerId]);
-  const getActiveContext = useCallback(() => getActiveCanvas()?.getContext('2d'), [getActiveCanvas]);
+  const getActiveContext = useCallback(() => getActiveCanvas()?.getContext('2d', { willReadFrequently: true }), [getActiveCanvas]);
   
   const getTransformedCoords = useCallback((e: MouseEvent | TouchEvent): {x: number, y: number} => {
       const canvas = getActiveCanvas();
-      if (!canvas) return { x: 0, y: 0 };
-      const rect = canvas.getBoundingClientRect();
+      if (!canvas || !containerRef.current) return { x: 0, y: 0 };
+      const rect = containerRef.current.getBoundingClientRect();
       const event = e instanceof MouseEvent ? e : e.touches[0];
       return { 
         x: (event.clientX - rect.left - transform.offsetX) / transform.scale, 
@@ -134,6 +189,21 @@ export const DrawingView: React.FC = () => {
     setHistoryIndex(prev => ({...prev, [activeLayerId]: newIndex}));
     getActiveContext()!.putImageData(layerHistory[newIndex], 0, 0);
   }, [activeLayerId, getActiveContext, history, historyIndex]);
+  
+    const finalizeText = useCallback(() => {
+        if (textElement?.isEditing && textElement.content.trim()) {
+          const ctx = getActiveContext();
+          if (ctx) {
+            ctx.font = `${textElement.size}px ${textElement.font}`;
+            ctx.fillStyle = textElement.color;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(textElement.content, textElement.x, textElement.y);
+            saveState();
+          }
+        }
+        setTextElement(null);
+    }, [textElement, getActiveContext, saveState]);
 
   // --- DRAWING LOGIC ---
   const startDrawing = useCallback((e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -141,35 +211,46 @@ export const DrawingView: React.FC = () => {
     const ctx = getActiveContext();
     if (!ctx) return;
     
+    if (textElement?.isEditing) {
+      finalizeText();
+    }
+    
     const { x, y } = getTransformedCoords(e.nativeEvent);
 
     if (tool === 'text') {
-      if (textElement?.isEditing) { // Finalize previous text
-          const prevCtx = getActiveContext();
-          if (prevCtx) {
-            prevCtx.font = `${textElement.size * transform.scale}px ${textElement.font}`;
-            prevCtx.fillStyle = textElement.color;
-            prevCtx.textAlign = 'left';
-            prevCtx.textBaseline = 'top';
-            prevCtx.fillText(textElement.content, textElement.x, textElement.y);
-            saveState();
-          }
-      }
       setTextElement({ x, y, content: '', color, size: fontSize, font: fontFamily, isEditing: true });
       return;
     }
+
+    if (tool === 'fill') {
+        const rgbColor = colorToRgb(color);
+        if (rgbColor) {
+            floodFill(ctx, Math.floor(x), Math.floor(y), rgbColor);
+            saveState();
+        }
+        return;
+    }
     
-    if(tool === 'eyedropper') {
-        const compositeCtx = compositeCanvasRef.current!.getContext('2d')!;
-        compositeCtx.clearRect(0, 0, compositeCanvasRef.current!.width, compositeCanvasRef.current!.height);
-        layers.forEach(layer => {
+    if (tool === 'eyedropper') {
+        let foundColor = false;
+        // Iterate from top layer to bottom to find the first visible pixel
+        for (let i = layers.length - 1; i >= 0; i--) {
+            const layer = layers[i];
             if (layer.isVisible) {
                 const canvas = layerCanvasRefs.current.get(layer.id);
-                if (canvas) compositeCtx.drawImage(canvas, 0, 0);
+                if (canvas) {
+                    const layerCtx = canvas.getContext('2d', { willReadFrequently: true });
+                    if(layerCtx) {
+                        const pixel = layerCtx.getImageData(x, y, 1, 1).data;
+                        if (pixel[3] > 128) { // Check if pixel is not mostly transparent
+                            setColor(`rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`);
+                            foundColor = true;
+                            break;
+                        }
+                    }
+                }
             }
-        });
-        const pixel = compositeCtx.getImageData((x * transform.scale) + transform.offsetX, (y * transform.scale) + transform.offsetY, 1, 1).data;
-        setColor(`rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`);
+        }
         setTool(previousTool);
         return;
     }
@@ -182,7 +263,7 @@ export const DrawingView: React.FC = () => {
     if (['rectangle', 'circle', 'line'].includes(tool)) {
         snapshotRef.current = ctx.getImageData(0, 0, getActiveCanvas()!.width, getActiveCanvas()!.height);
     }
-  }, [getActiveContext, getTransformedCoords, saveState, tool, previousTool, color, fontSize, fontFamily, textElement, transform, layers]);
+  }, [getActiveContext, getTransformedCoords, saveState, tool, previousTool, color, fontSize, fontFamily, textElement, layers, finalizeText]);
   
   const draw = useCallback((e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -262,7 +343,7 @@ export const DrawingView: React.FC = () => {
     compositeCtx.fillStyle = 'white';
     compositeCtx.fillRect(0, 0, width, height);
     
-    layers.forEach(layer => {
+    layers.slice().reverse().forEach(layer => {
         if (layer.isVisible) {
             const layerCanvas = layerCanvasRefs.current.get(layer.id);
             if (layerCanvas) {
@@ -296,6 +377,31 @@ export const DrawingView: React.FC = () => {
   }, [transform]);
   
   // --- LIFECYCLE & EVENT HANDLERS ---
+  useEffect(() => {
+    if (textElement?.isEditing && tool !== 'text') {
+      finalizeText();
+    }
+  }, [tool, textElement, finalizeText]);
+
+  useEffect(() => {
+    if (textElement?.isEditing) {
+      setTextElement(t => t ? { ...t, color } : null);
+    }
+  }, [color, textElement?.isEditing]);
+  
+  useEffect(() => {
+    if (textElement?.isEditing) {
+      setTextElement(t => t ? { ...t, size: fontSize } : null);
+    }
+  }, [fontSize, textElement?.isEditing]);
+
+  useEffect(() => {
+    if (textElement?.isEditing) {
+      setTextElement(t => t ? { ...t, font: fontFamily } : null);
+    }
+  }, [fontFamily, textElement?.isEditing]);
+
+
   useEffect(() => {
     const container = containerRef.current;
     if (container) {
@@ -353,41 +459,94 @@ export const DrawingView: React.FC = () => {
     layers.forEach(layer => {
         if (!layerCanvasRefs.current.has(layer.id)) {
             const canvas = document.createElement('canvas');
-            canvas.className = 'absolute top-0 left-0 w-full h-full';
+            canvas.className = 'absolute top-0 left-0 pointer-events-none';
             layerContainerRef.current?.appendChild(canvas);
             layerCanvasRefs.current.set(layer.id, canvas);
         }
     });
-    const container = containerRef.current;
-    if (container) {
-        const { width, height } = container.getBoundingClientRect();
-        [...layerCanvasRefs.current.entries()].forEach(([id, canvas]) => {
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d')!;
-            const layerHistory = history[id];
-            const layerIdx = historyIndex[id];
-            if (layerHistory && layerIdx > -1) {
-                ctx.putImageData(layerHistory[layerIdx], 0, 0);
-            }
-        });
-        if(compositeCanvasRef.current){
-             compositeCanvasRef.current.width = width;
-             compositeCanvasRef.current.height = height;
+    
+    // Cleanup removed layers
+    const layerIds = new Set(layers.map(l => l.id));
+    for (const id of layerCanvasRefs.current.keys()) {
+        if (!layerIds.has(id)) {
+            layerCanvasRefs.current.get(id)?.remove();
+            layerCanvasRefs.current.delete(id);
         }
     }
-  }, [layers, history, historyIndex]);
+  }, [layers]);
+  
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const resizeObserver = new ResizeObserver(entries => {
+            const { width, height } = entries[0].contentRect;
+            
+            const allImageData: Map<string, ImageData | undefined> = new Map();
+            layerCanvasRefs.current.forEach((canvas, id) => {
+                if (canvas.width > 0 && canvas.height > 0) {
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        allImageData.set(id, ctx.getImageData(0, 0, canvas.width, canvas.height));
+                    }
+                }
+            });
+
+            if (compositeCanvasRef.current) {
+                compositeCanvasRef.current.width = width;
+                compositeCanvasRef.current.height = height;
+            }
+
+            layerCanvasRefs.current.forEach((canvas, id) => {
+                canvas.width = width;
+                canvas.height = height;
+                const imageData = allImageData.get(id);
+                if (imageData) {
+                    canvas.getContext('2d')?.putImageData(imageData, 0, 0);
+                }
+            });
+        });
+
+        resizeObserver.observe(container);
+        return () => resizeObserver.disconnect();
+    }, []);
 
   // --- RENDER ---
   const toolsList = [
-    { id: 'pen', icon: <PenIcon />, label: 'Crayon' }, { id: 'eraser', icon: <EraserIcon />, label: 'Gomme' },
-    { id: 'line', icon: <LineIcon />, label: 'Ligne' }, { id: 'rectangle', icon: <RectangleIcon />, label: 'Rectangle' },
-    { id: 'circle', icon: <CircleIcon />, label: 'Cercle' }, { id: 'fill', icon: <FillIcon />, label: 'Remplissage' },
-    { id: 'text', icon: <TextIcon />, label: 'Texte' }, { id: 'eyedropper', icon: <EyedropperIcon />, label: 'Pipette' }
+    { id: 'pen', icon: <PenIcon />, label: t('drawing_tool_pen') }, { id: 'eraser', icon: <EraserIcon />, label: t('drawing_tool_eraser') },
+    { id: 'line', icon: <LineIcon />, label: t('drawing_tool_line') }, { id: 'rectangle', icon: <RectangleIcon />, label: t('drawing_tool_rectangle') },
+    { id: 'circle', icon: <CircleIcon />, label: t('drawing_tool_circle') }, { id: 'fill', icon: <FillIcon />, label: t('drawing_tool_fill') },
+    { id: 'text', icon: <TextIcon />, label: t('drawing_tool_text') }, { id: 'eyedropper', icon: <EyedropperIcon />, label: t('drawing_tool_eyedropper') }
   ];
   
   return (
-    <div ref={containerRef} className="w-full h-[calc(100vh-6rem)] flex flex-col gap-4 animate-fade-in touch-none select-none bg-slate-200 dark:bg-slate-950 p-4 rounded-3xl"
+    <div className="w-full h-[calc(100vh-6rem)] flex flex-col gap-4 animate-fade-in touch-none select-none">
+      <h1 className="text-4xl font-bold text-center text-slate-900 dark:text-white absolute top-0 left-1/2 -translate-x-1/2 mt-[-4rem]">{t('drawing_title')}</h1>
+      
+      {/* TOOLBARS */}
+      <div className="absolute top-2 left-2 right-2 z-10 flex flex-col gap-2 items-center">
+          {/* Main Toolbar */}
+          <div className="flex flex-wrap items-center justify-center gap-1 p-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-2xl shadow-lg">
+             {toolsList.map(({id, icon, label}) => <button key={id} onClick={() => { setPreviousTool(tool); setTool(id as Tool); }} className={`p-3 rounded-full transition-colors ${tool === id ? 'bg-indigo-500 text-white' : 'hover:bg-slate-200/50 dark:hover:bg-slate-700'}`} title={label}><span className="w-6 h-6 block">{icon}</span></button>)}
+              <div className="h-8 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
+              <button onClick={undo} disabled={(historyIndex[activeLayerId] ?? -1) < 0} className="p-3 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700 disabled:opacity-50" title={t('drawing_undo')}><UndoIcon /></button>
+              <button onClick={redo} disabled={(historyIndex[activeLayerId] ?? -1) >= (history[activeLayerId]?.length - 1)} className="p-3 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700 disabled:opacity-50" title={t('drawing_redo')}><RedoIcon /></button>
+              <div className="h-8 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
+              <button onClick={downloadImage} className="p-3 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700" title={t('drawing_download')}><DownloadIcon /></button>
+          </div>
+          {/* Tool Options */}
+          <div className="flex flex-wrap items-center justify-center gap-2 p-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-2xl shadow-lg">
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-9 h-9 p-0.5 bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-full cursor-pointer" title={t('drawing_color')}/>
+              <input id="brushSize" type="range" min="1" max="100" value={brushSize} onChange={(e) => setBrushSize(parseInt(e.target.value))} className="w-32 cursor-pointer" title={t('drawing_brush_size')}/>
+              {(tool === 'rectangle' || tool === 'circle') && <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 dark:bg-slate-800 rounded-full"><button onClick={() => setShapeMode('stroke')} className={`px-2 py-0.5 text-xs font-semibold rounded-full ${shapeMode === 'stroke' ? 'bg-white dark:bg-slate-600 shadow' : ''}`}>{t('drawing_shape_mode_stroke')}</button><button onClick={() => setShapeMode('fill')} className={`px-2 py-0.5 text-xs font-semibold rounded-full ${shapeMode === 'fill' ? 'bg-white dark:bg-slate-600 shadow' : ''}`}>{t('drawing_shape_mode_fill')}</button></div>}
+              {tool === 'text' && <><select value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="bg-white/50 dark:bg-slate-800/80 rounded-md text-xs p-1 border border-slate-300 dark:border-slate-700">{FONT_FACES.map(f => <option key={f}>{f}</option>)}</select><input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="w-14 text-xs p-1 bg-white/50 dark:bg-slate-800/80 rounded-md border border-slate-300 dark:border-slate-700"/></>}
+          </div>
+      </div>
+
+      {/* CANVAS AREA */}
+      <div 
+        ref={containerRef}
+        className="relative flex-grow w-full h-full bg-slate-200 dark:bg-slate-950 rounded-2xl shadow-inner overflow-hidden cursor-crosshair"
         onMouseDown={(e) => {
             if (e.button === 1 || e.nativeEvent.buttons === 4 || isSpacePressed) { 
                 isPanningRef.current = true;
@@ -417,32 +576,8 @@ export const DrawingView: React.FC = () => {
             }
         }}
         onMouseLeave={() => { isPanningRef.current = false; stopDrawing(); }}
-    >
-      <h1 className="text-4xl font-bold text-center text-slate-900 dark:text-white absolute top-0 left-1/2 -translate-x-1/2 mt-[-4rem]">Arts</h1>
-      
-      {/* TOOLBARS */}
-      <div className="absolute top-2 left-2 right-2 z-10 flex flex-col gap-2 items-center">
-          {/* Main Toolbar */}
-          <div className="flex flex-wrap items-center justify-center gap-1 p-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-2xl shadow-lg">
-             {toolsList.map(({id, icon, label}) => <button key={id} onClick={() => { setPreviousTool(tool); setTool(id as Tool); }} className={`p-3 rounded-full transition-colors ${tool === id ? 'bg-indigo-500 text-white' : 'hover:bg-slate-200/50 dark:hover:bg-slate-700'}`} title={label}><span className="w-6 h-6 block">{icon}</span></button>)}
-              <div className="h-8 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
-              <button onClick={undo} disabled={(historyIndex[activeLayerId] ?? -1) < 0} className="p-3 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700 disabled:opacity-50" title="Annuler (Ctrl+Z)"><UndoIcon /></button>
-              <button onClick={redo} disabled={(historyIndex[activeLayerId] ?? -1) >= (history[activeLayerId]?.length - 1)} className="p-3 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700 disabled:opacity-50" title="Rétablir (Ctrl+Y)"><RedoIcon /></button>
-              <div className="h-8 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
-              <button onClick={downloadImage} className="p-3 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700" title="Télécharger"><DownloadIcon /></button>
-          </div>
-          {/* Tool Options */}
-          <div className="flex flex-wrap items-center justify-center gap-2 p-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-2xl shadow-lg">
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-9 h-9 p-0.5 bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-full cursor-pointer" title="Couleur"/>
-              <input id="brushSize" type="range" min="1" max="100" value={brushSize} onChange={(e) => setBrushSize(parseInt(e.target.value))} className="w-32 cursor-pointer" title="Taille"/>
-              {(tool === 'rectangle' || tool === 'circle') && <div className="flex items-center gap-1 p-0.5 bg-slate-200/50 dark:bg-slate-800 rounded-full"><button onClick={() => setShapeMode('stroke')} className={`px-2 py-0.5 text-xs font-semibold rounded-full ${shapeMode === 'stroke' ? 'bg-white dark:bg-slate-600 shadow' : ''}`}>Contour</button><button onClick={() => setShapeMode('fill')} className={`px-2 py-0.5 text-xs font-semibold rounded-full ${shapeMode === 'fill' ? 'bg-white dark:bg-slate-600 shadow' : ''}`}>Rempli</button></div>}
-              {tool === 'text' && <><select value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="bg-white/50 dark:bg-slate-800/80 rounded-md text-xs p-1 border border-slate-300 dark:border-slate-700">{FONT_FACES.map(f => <option key={f}>{f}</option>)}</select><input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="w-14 text-xs p-1 bg-white/50 dark:bg-slate-800/80 rounded-md border border-slate-300 dark:border-slate-700"/></>}
-          </div>
-      </div>
-
-      {/* CANVAS AREA */}
-      <div ref={layerContainerRef} className="relative flex-grow w-full h-full bg-white dark:bg-slate-100 rounded-2xl shadow-inner overflow-hidden cursor-crosshair">
-          <div className="absolute inset-0" style={{ transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale})`, transformOrigin: 'top left' }}>
+        >
+          <div ref={layerContainerRef} className="absolute inset-0 bg-white" style={{ transform: `translate(${transform.offsetX}px, ${transform.offsetY}px) scale(${transform.scale})`, transformOrigin: 'top left' }}>
               {/* This is where canvas elements are appended dynamically */}
           </div>
            <canvas ref={compositeCanvasRef} className="hidden" />
@@ -450,7 +585,7 @@ export const DrawingView: React.FC = () => {
               <textarea ref={textInputRef}
                   value={textElement.content}
                   onChange={e => setTextElement(t => t ? {...t, content: e.target.value} : null)}
-                  onBlur={() => { /* Finalize text on blur */ }}
+                  onBlur={finalizeText}
                   style={{
                       position: 'absolute',
                       left: `${transform.offsetX + textElement.x * transform.scale}px`,
@@ -472,16 +607,16 @@ export const DrawingView: React.FC = () => {
       
       {/* SIDEBARS & OVERLAYS */}
       <div className="absolute top-1/2 right-2 -translate-y-1/2 z-10 w-48 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-2xl shadow-lg p-2 flex flex-col gap-2">
-          <h3 className="text-sm font-bold text-center mb-1">Calques</h3>
+          <h3 className="text-sm font-bold text-center mb-1">{t('drawing_layers_title')}</h3>
           <div className="flex-grow overflow-y-auto max-h-64">
              {layers.map(layer => <div key={layer.id} onClick={() => setActiveLayerId(layer.id)} className={`p-2 rounded-lg cursor-pointer flex items-center justify-between ${activeLayerId === layer.id ? 'bg-indigo-500/30' : 'hover:bg-slate-500/10'}`}><span>{layer.name}</span><button onClick={() => deleteLayer(layer.id)}><TrashIcon className="w-4 h-4 text-red-500"/></button></div>)}
           </div>
-          <button onClick={addLayer} className="text-sm font-semibold p-2 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/40">+ Ajouter un calque</button>
+          <button onClick={addLayer} className="text-sm font-semibold p-2 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/40">{t('drawing_add_layer')}</button>
       </div>
       <div className="absolute bottom-2 left-2 z-10 flex items-center gap-2 p-1 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-full shadow-lg">
-          <button onClick={() => setTransform({scale: 1, offsetX: 0, offsetY: 0})} className="p-2" title="Réinitialiser le zoom"><ResetZoomIcon /></button>
+          <button onClick={() => setTransform({scale: 1, offsetX: 0, offsetY: 0})} className="p-2" title={t('drawing_reset_zoom')}><ResetZoomIcon /></button>
           <span className="text-xs font-semibold px-2">{Math.round(transform.scale * 100)}%</span>
-          <button onClick={() => { isFullScreen ? document.exitFullscreen() : containerRef.current?.requestFullscreen(); setIsFullScreen(!isFullScreen); }} className="p-2" title="Plein écran">
+          <button onClick={() => { isFullScreen ? document.exitFullscreen() : containerRef.current?.requestFullscreen(); setIsFullScreen(!isFullScreen); }} className="p-2" title={t('drawing_fullscreen')}>
               {isFullScreen ? <FullscreenExitIcon/> : <FullscreenEnterIcon/>}
           </button>
       </div>
