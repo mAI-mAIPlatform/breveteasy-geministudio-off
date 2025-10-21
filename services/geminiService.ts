@@ -1,17 +1,47 @@
 import { GoogleGenAI, Type, Chat, Part } from "@google/genai";
-import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, PlanningTask, PlanningDay } from '../types';
+import type {
+    Quiz,
+    Question,
+    ImageModel,
+    CanvasModel,
+    Planning,
+    FlashAiModel,
+    PlanningAiModel,
+    ConseilsAiModel,
+    ChatMessage,
+    ChatPart,
+    GamesAiModel,
+    PlanningTask,
+    PlanningDay,
+} from '../types';
 import type { GenerateContentResponse, Content } from '@google/genai';
 
 const apiKey = process.env.API_KEY;
 
 if (!apiKey) {
-  throw new Error(
-    "The API_KEY environment variable is not set. " +
-    "Please ensure it is correctly configured in your deployment environment."
-  );
+    throw new Error(
+        "The API_KEY environment variable is not set. " +
+        "Please ensure it is correctly configured in your deployment environment."
+    );
 }
 
 const ai = new GoogleGenAI({ apiKey });
+
+function ensureText(response: { text?: string }): string {
+    const text = response.text?.trim();
+    if (!text) {
+        throw new Error('The model did not return any text content.');
+    }
+    return text;
+}
+
+function ensureImageBytes(response: { generatedImages?: { image?: { imageBytes?: string } }[] }, format: 'jpeg' | 'png'): { data: string; mimeType: string } {
+    const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+    if (!imageBytes) {
+        throw new Error('The model did not return any image data.');
+    }
+    return { data: imageBytes, mimeType: `image/${format}` };
+}
 
 export { ai, Type };
 
@@ -56,7 +86,8 @@ export const generateQuiz = async (
         }
     });
     
-    return JSON.parse(response.text);
+    const text = ensureText(response);
+    return JSON.parse(text);
 };
 
 export const generateHtmlContent = async (
@@ -70,7 +101,7 @@ export const generateHtmlContent = async (
             systemInstruction: systemInstruction,
         }
     });
-    return response.text;
+    return ensureText(response);
 };
 
 export const generateGame = async (subjectName: string, customPrompt: string, model: GamesAiModel, systemInstruction: string): Promise<string> => {
@@ -91,7 +122,7 @@ export const generateGame = async (subjectName: string, customPrompt: string, mo
             systemInstruction: systemInstruction || "You are an expert educational game developer who creates interactive and fun learning experiences.",
         }
     });
-    return response.text;
+    return ensureText(response);
 };
 
 export const generateImage = async (
@@ -122,9 +153,8 @@ export const generateImage = async (
           aspectRatio: aspectRatio,
         },
     });
-    
-    const imageBytes = response.generatedImages[0].image.imageBytes;
-    return { data: imageBytes, mimeType: `image/${format}`};
+
+    return ensureImageBytes(response, format);
 };
 
 export const generateInteractivePage = async (
@@ -143,7 +173,7 @@ export const generateInteractivePage = async (
             systemInstruction: systemInstruction || "You are an expert web developer who creates interactive web pages from descriptions. Your code must be clean, efficient, and contained in a single HTML file.",
         }
     });
-    return response.text;
+    return ensureText(response);
 };
 
 export const generateFlashQuestion = async (
@@ -176,7 +206,8 @@ export const generateFlashQuestion = async (
         }
     });
     
-    return JSON.parse(response.text);
+    const text = ensureText(response);
+    return JSON.parse(text);
 };
 
 export const generatePlanning = async (
@@ -227,8 +258,9 @@ export const generatePlanning = async (
             systemInstruction: systemInstruction,
         }
     });
-    
-    const parsed = JSON.parse(response.text);
+
+    const text = ensureText(response);
+    const parsed = JSON.parse(text);
 
     const scheduleWithTaskObjects: PlanningDay[] = parsed.schedule.map((day: { date: string, tasks: { text: string }[] }) => ({
         date: day.date,
@@ -259,7 +291,7 @@ export const generateConseils = async (
             systemInstruction: systemInstruction || "You are an expert educational advisor who helps students optimize their study habits.",
         }
     });
-    return response.text;
+    return ensureText(response);
 };
 
 export const generateContentWithSearch = async (history: ChatMessage[], currentParts: ChatPart[]): Promise<GenerateContentResponse> => {
@@ -289,7 +321,8 @@ export const generateTitleForChat = async (prompt: string): Promise<string> => {
         model: 'gemini-2.5-flash',
         contents: `Generate a short, concise title (4-5 words max) for a discussion starting with this question: "${prompt}". Respond only with the title.`,
     });
-    return response.text.trim().replace(/"/g, '');
+    const text = ensureText(response);
+    return text.replace(/"/g, '');
 }
 
 export const sendMessageStream = (
