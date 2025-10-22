@@ -8,6 +8,22 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+function ensureText(response: { text?: string }): string {
+    const text = response.text?.trim();
+    if (!text) {
+        throw new Error('The model did not return any text content.');
+    }
+    return text;
+}
+
+function ensureImageBytes(response: { generatedImages?: { image?: { imageBytes?: string } }[] }, format: 'jpeg' | 'png'): { data: string; mimeType: string } {
+    const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+    if (!imageBytes) {
+        throw new Error('The model did not return any image data.');
+    }
+    return { data: imageBytes, mimeType: `image/${format}` };
+}
+
 async function internalGenerateQuiz({ subjectName, count, difficulty, level, customPrompt, systemInstruction }: any): Promise<Quiz> {
     const quizSchema = {
         type: Type.OBJECT,
@@ -42,7 +58,8 @@ async function internalGenerateQuiz({ subjectName, count, difficulty, level, cus
         }
     });
     
-    return JSON.parse(response.text);
+    const text = ensureText(response);
+    return JSON.parse(text);
 }
 
 
@@ -56,7 +73,7 @@ async function internalGenerateHtmlContent({ prompt, systemInstruction, model }:
             systemInstruction: systemInstruction,
         }
     });
-    return response.text;
+    return ensureText(response);
 }
 
 // FIX: Add `negativePrompt` to the function parameters and use it to construct the final prompt.
@@ -88,9 +105,8 @@ async function internalGenerateImage({ prompt, model, style, format, aspectRatio
           aspectRatio: aspectRatio,
         },
     });
-    
-    const imageBytes = response.generatedImages[0].image.imageBytes;
-    return { data: imageBytes, mimeType: `image/${format}`};
+
+    return ensureImageBytes(response, format);
 }
 
 // Fix: Add implementation for generating a flash question.
@@ -120,7 +136,8 @@ async function internalGenerateFlashQuestion({ level, systemInstruction, model }
         }
     });
     
-    return JSON.parse(response.text);
+    const text = ensureText(response);
+    return JSON.parse(text);
 }
 
 // Fix: Add implementation for generating a planning schedule.
@@ -160,7 +177,8 @@ async function internalGeneratePlanning({ task, dueDate, todayDate, systemInstru
         }
     });
     
-    return JSON.parse(response.text);
+    const text = ensureText(response);
+    return JSON.parse(text);
 }
 
 async function internalGenerateConseils({ subject, level, systemInstruction, model }: { subject: string; level: string; systemInstruction: string; model: ConseilsAiModel }): Promise<string> {
@@ -174,7 +192,7 @@ async function internalGenerateConseils({ subject, level, systemInstruction, mod
             systemInstruction: systemInstruction || "Tu es un conseiller pédagogique expert qui aide les élèves à optimiser leurs révisions.",
         }
     });
-    return response.text;
+    return ensureText(response);
 }
 
 async function internalGenerateWithSearch({ history, currentParts }: { history: ChatMessage[], currentParts: ChatPart[] }) {
@@ -199,7 +217,7 @@ async function internalGenerateWithSearch({ history, currentParts }: { history: 
     
     // We need to return the full response object, not just text, to get grounding metadata
     return {
-        text: response.text,
+        text: ensureText(response),
         candidates: response.candidates,
     };
 }
