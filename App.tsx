@@ -1,6 +1,4 @@
-// Fix: Provide the implementation for the main App component.
-// Fix: Corrected React import to include necessary hooks.
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HomeView } from './components/HomeView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
 import { LoadingView } from './components/LoadingView';
@@ -24,11 +22,10 @@ import { JeuxDetailView } from './components/JeuxDetailView';
 import { GameDisplayView } from './components/GameDisplayView';
 import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from './services/geminiService';
 import { AVATAR_ICONS, SUBJECTS } from './constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatPart, PremadeGame, GamesAiModel, PlanningDay } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay } from './types';
 import { useLocalization } from './hooks/useLocalization';
 
 
-// Confetti and success message components
 interface ConfettiParticle {
   id: number;
   x: number;
@@ -72,9 +69,7 @@ const GeneralNotification: React.FC<{ message: string, type: 'success' | 'error'
 };
 
 
-// Fix: Add new view types for the new features.
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay';
-// Fix: Add new loading task types for the new features.
 type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
 
 interface ImageUsage {
@@ -166,7 +161,6 @@ const ScrollToTopButton: React.FC<{ onClick: () => void; isVisible: boolean }> =
 
 const App: React.FC = () => {
     const { t } = useLocalization();
-    // App State
     const [view, setView] = useState<View>('home');
     const [viewHistory, setViewHistory] = useState<View[]>([]);
     const [loadingTask, setLoadingTask] = useState<LoadingTask>('quiz');
@@ -180,12 +174,10 @@ const App: React.FC = () => {
     const [isQuizTimed, setIsQuizTimed] = useState(false);
     const [isAppLoading, setIsAppLoading] = useState(true);
 
-    // Generation default settings
     const [defaultItemCount, setDefaultItemCount] = useState<number>(5);
     const [defaultDifficulty, setDefaultDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>('Normal');
     const [defaultLevel, setDefaultLevel] = useState<string>('Brevet');
     
-    // Default Models & Instructions
     const [defaultAiModel, setDefaultAiModel] = useState<AiModel>('brevetai');
     const [defaultImageModel, setDefaultImageModel] = useState<ImageModel>('faceai');
     const [imageGenerationInstruction, setImageGenerationInstruction] = useState<string>('');
@@ -200,53 +192,41 @@ const App: React.FC = () => {
     const [defaultGamesAiModel, setDefaultGamesAiModel] = useState<GamesAiModel>('gamesai');
     const [gamesAiSystemInstruction, setGamesAiSystemInstruction] = useState<string>('');
 
-
-    // User/Profile State
     const [user, setUser] = useState<{email: string} | null>(null);
     const [userName, setUserName] = useState<string>('');
     const [userAvatar, setUserAvatar] = useState<string>('user');
     
-    // Quiz State
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<(string | null)[]>([]);
     const [score, setScore] = useState(0);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-    // Exercises & HTML Content State
     const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
     const [isDownloadingHtml, setIsDownloadingHtml] = useState(false);
 
-    // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
     const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
     const [folders, setFolders] = useState<Folder[]>([]);
     const [customAiModels, setCustomAiModels] = useState<CustomAiModel[]>([]);
 
-
-    // Image Generation State
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
     const [imageUsage, setImageUsage] = useState<ImageUsage>({ count: 0, date: new Date().toISOString().split('T')[0] });
-
-    // Canvas State
+    
     const [canvasVersions, setCanvasVersions] = useState<CanvasVersion[]>([]);
     const [activeCanvasVersionId, setActiveCanvasVersionId] = useState<string | null>(null);
     const [isGeneratingCanvas, setIsGeneratingCanvas] = useState(false);
 
-    // FlashAI State
     const [flashQuestion, setFlashQuestion] = useState<Question | null>(null);
     const [isGeneratingFlashQuestion, setIsGeneratingFlashQuestion] = useState(false);
     
-    // Planning State
     const [planning, setPlanning] = useState<Planning | null>(null);
     const [isGeneratingPlanning, setIsGeneratingPlanning] = useState(false);
 
-    // Conseils State
     const [conseils, setConseils] = useState<string | null>(null);
     const [isGeneratingConseils, setIsGeneratingConseils] = useState(false);
 
-    // Jeux State
     const [selectedGameSubject, setSelectedGameSubject] = useState<Subject | null>(null);
     const [gameHtml, setGameHtml] = useState<string | null>(null);
 
@@ -254,7 +234,6 @@ const App: React.FC = () => {
         rootRef.current?.scrollTo({ top: 0, behavior: 'auto' });
         setView(currentView => {
             if (currentView !== newView) {
-                // Don't add to history if going back to home, as it's the base
                 if (currentView !== 'home') {
                      setViewHistory(h => [...h, currentView]);
                 }
@@ -263,7 +242,6 @@ const App: React.FC = () => {
         });
     }, []);
 
-    // Load state from localStorage on initial mount
     useEffect(() => {
         const savedUser = localStorage.getItem('brevet-easy-user');
         if (savedUser) {
@@ -285,14 +263,12 @@ const App: React.FC = () => {
         setUserName(localStorage.getItem('brevet-easy-user-name') || '');
         setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
 
-        // Generation settings
         const loadedCount = parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10);
         setDefaultItemCount(Math.max(1, Math.min(10, loadedCount)));
         const savedDifficulty = localStorage.getItem('brevet-easy-default-difficulty');
         setDefaultDifficulty((savedDifficulty === 'Facile' || savedDifficulty === 'Normal' || savedDifficulty === 'Difficile' || savedDifficulty === 'Expert' ? savedDifficulty : 'Normal'));
         setDefaultLevel(localStorage.getItem('brevet-easy-default-level') || 'Brevet');
         
-        // AI Models & Instructions
         setAiSystemInstruction(localStorage.getItem('brevet-easy-ai-instruction') || '');
         setDefaultAiModel((localStorage.getItem('brevet-easy-default-ai-model') as AiModel) || 'brevetai');
         setImageGenerationInstruction(localStorage.getItem('brevet-easy-image-instruction') || '');
@@ -307,7 +283,6 @@ const App: React.FC = () => {
         setDefaultConseilsAiModel((localStorage.getItem('brevet-easy-default-conseilsai-model') as ConseilsAiModel) || 'conseilsai');
         setGamesAiSystemInstruction(localStorage.getItem('brevet-easy-gamesai-instruction') || '');
         setDefaultGamesAiModel((localStorage.getItem('brevet-easy-default-gamesai-model') as GamesAiModel) || 'gamesai');
-
 
         const savedSessions = localStorage.getItem('chatSessions');
         setChatSessions(savedSessions ? JSON.parse(savedSessions) : []);
@@ -334,11 +309,8 @@ const App: React.FC = () => {
         } else {
             setImageUsage({ count: 0, date: today });
         }
-
     }, []);
 
-
-    // Theme Management Effect
     useEffect(() => {
         localStorage.setItem('brevet-easy-theme', theme);
         if (theme === 'system') {
@@ -357,7 +329,6 @@ const App: React.FC = () => {
         }
     }, [theme]);
 
-    // Scroll-to-top button logic
     useEffect(() => {
         rootRef.current = document.getElementById('root');
         const container = rootRef.current;
@@ -375,7 +346,6 @@ const App: React.FC = () => {
         return () => container.removeEventListener('scroll', handleScroll);
     }, []);
     
-    // Persistence effects for all settings
     useEffect(() => { localStorage.setItem('brevet-easy-ai-instruction', aiSystemInstruction); }, [aiSystemInstruction]);
     useEffect(() => { localStorage.setItem('brevet-easy-user-name', userName); }, [userName]);
     useEffect(() => { localStorage.setItem('brevet-easy-user-avatar', userAvatar); }, [userAvatar]);
@@ -403,29 +373,26 @@ const App: React.FC = () => {
     useEffect(() => { localStorage.setItem('brevet-easy-default-gamesai-model', defaultGamesAiModel); }, [defaultGamesAiModel]);
     useEffect(() => { localStorage.setItem('brevet-easy-gamesai-instruction', gamesAiSystemInstruction); }, [gamesAiSystemInstruction]);
     
-
-    // Effect to handle model downgrades when subscription changes
     useEffect(() => {
         if (subscriptionPlan === 'free') {
-            if (defaultAiModel !== 'brevetai') setDefaultAiModel('brevetai');
-            if (defaultImageModel !== 'faceai') setDefaultImageModel('faceai');
-            if (defaultCanvasModel !== 'canvasai') setDefaultCanvasModel('canvasai');
-            if (defaultFlashAiModel !== 'flashai') setDefaultFlashAiModel('flashai');
-            if (defaultPlanningAiModel !== 'planningai') setDefaultPlanningAiModel('planningai');
-            if (defaultConseilsAiModel !== 'conseilsai') setDefaultConseilsAiModel('conseilsai');
-            if (defaultGamesAiModel !== 'gamesai') setDefaultGamesAiModel('gamesai');
+            setDefaultAiModel('brevetai');
+            setDefaultImageModel('faceai');
+            setDefaultCanvasModel('canvasai');
+            setDefaultFlashAiModel('flashai');
+            setDefaultPlanningAiModel('planningai');
+            setDefaultConseilsAiModel('conseilsai');
+            setDefaultGamesAiModel('gamesai');
         } else if (subscriptionPlan === 'pro') {
-            if (defaultAiModel === 'brevetai-max') setDefaultAiModel('brevetai-pro');
-            if (defaultImageModel === 'faceai-max') setDefaultImageModel('faceai-pro');
-            if (defaultCanvasModel === 'canvasai-max') setDefaultCanvasModel('canvasai-pro');
-            if (defaultFlashAiModel === 'flashai-max') setDefaultFlashAiModel('flashai-pro');
-            if (defaultPlanningAiModel === 'planningai-max') setDefaultPlanningAiModel('planningai-pro');
-            if (defaultConseilsAiModel === 'conseilsai-max') setDefaultConseilsAiModel('conseilsai-pro');
-            if (defaultGamesAiModel === 'gamesai-max') setDefaultGamesAiModel('gamesai-pro');
+            setDefaultAiModel(current => current === 'brevetai-max' ? 'brevetai-pro' : current);
+            setDefaultImageModel(current => current === 'faceai-max' ? 'faceai-pro' : current);
+            setDefaultCanvasModel(current => current === 'canvasai-max' ? 'canvasai-pro' : current);
+            setDefaultFlashAiModel(current => current === 'flashai-max' ? 'flashai-pro' : current);
+            setDefaultPlanningAiModel(current => current === 'planningai-max' ? 'planningai-pro' : current);
+            setDefaultConseilsAiModel(current => current === 'conseilsai-max' ? 'conseilsai-pro' : current);
+            setDefaultGamesAiModel(current => current === 'gamesai-max' ? 'gamesai-pro' : current);
         }
-    }, [subscriptionPlan, defaultAiModel, defaultImageModel, defaultCanvasModel, defaultFlashAiModel, defaultPlanningAiModel, defaultConseilsAiModel, defaultGamesAiModel]);
+    }, [subscriptionPlan]);
 
-    // ... The rest of the App component ...
     const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
 
     const handleBackToHome = () => {
@@ -438,11 +405,10 @@ const App: React.FC = () => {
         if (viewHistory.length > 0) {
             const previousView = viewHistory[viewHistory.length - 1];
             setViewHistory(h => h.slice(0, -1));
-            // Don't use navigate here to avoid pushing to history again
             rootRef.current?.scrollTo({ top: 0, behavior: 'auto' });
             setView(previousView);
         } else {
-            handleBackToHome(); // Fallback to home
+            handleBackToHome();
         }
     };
 
@@ -618,27 +584,14 @@ const App: React.FC = () => {
     
     const handleUpdateSession = (
         sessionId: string,
-        updates: {
-            messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
-            title?: string;
-            aiModel?: AiModel;
-            folderId?: string | null;
-        }
+        updates: Partial<Omit<ChatSession, 'id' | 'createdAt'>> & { messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[])}
     ) => {
         setChatSessions(prev =>
             prev.map(s => {
                 if (s.id === sessionId) {
-                    const newSession = { ...s };
-                    if (updates.title !== undefined) newSession.title = updates.title;
-                    if (updates.aiModel !== undefined) newSession.aiModel = updates.aiModel;
-                    if (updates.folderId !== undefined) newSession.folderId = updates.folderId;
-
-                    if (updates.messages) {
-                        if (typeof updates.messages === 'function') {
-                            newSession.messages = updates.messages(s.messages);
-                        } else {
-                            newSession.messages = updates.messages;
-                        }
+                    const newSession = { ...s, ...updates };
+                    if (updates.messages && typeof updates.messages === 'function') {
+                        newSession.messages = updates.messages(s.messages);
                     }
                     return newSession;
                 }
@@ -718,7 +671,7 @@ const App: React.FC = () => {
             setIsGeneratingImage(false);
         }
     }, [imageUsage, subscriptionPlan, imageGenerationInstruction]);
-    
+
     const remainingImageGenerations = () => {
         if (subscriptionPlan === 'max') return Infinity;
         const limit = subscriptionPlan === 'pro' ? 5 : 2;
@@ -856,7 +809,7 @@ const App: React.FC = () => {
 
 
     if (isAppLoading) {
-        return null; // Or a full-page loader to prevent any flash of content
+        return null;
     }
 
     let content;
@@ -1065,5 +1018,4 @@ const App: React.FC = () => {
     );
 };
 
-// Fix: Added default export to the component.
 export default App;

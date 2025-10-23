@@ -199,7 +199,7 @@ const Message: React.FC<{
     const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
 
     return (
-        <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'flex-row-reverse'}`}>
+        <div className={`group flex items-start gap-3 ${isModel ? 'self-start' : 'self-end flex-row-reverse'}`}>
             <div className={`max-w-xl lg:max-w-2xl px-5 py-3 shadow-md ${isModel ? 'bg-white/30 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-t-2xl rounded-br-2xl' : 'bg-indigo-500/80 backdrop-blur-md text-white rounded-t-2xl rounded-bl-2xl'}`}>
                 {message.isGenerating && (!message.parts || message.parts.length === 0 || !message.parts.some(p => p.text?.trim())) ? (
                     <div className="flex items-center">
@@ -477,7 +477,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                 />
             </div>
 
-            <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">
+            <main className="flex flex-col flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">
                 {session.messages.length === 0 && !attachment && (
                      <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 shadow-lg flex items-center justify-center mb-4">

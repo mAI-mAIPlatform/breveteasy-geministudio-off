@@ -30,7 +30,6 @@ const SubjectCard: React.FC<{ subject: Subject; onSelect: () => void }> = ({ sub
   </button>
 )};
 
-// Fix: Corrected the CompactFeatureCard definition to match its usage within HomeView.
 const CompactFeatureCard: React.FC<{
     onClick: () => void;
     title: string;
@@ -68,14 +67,13 @@ interface HomeViewProps {
   subscriptionPlan: SubscriptionPlan;
 }
 
-// Fix: Added the missing export for the HomeView component.
 export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux, subscriptionPlan }) => {
   const { t } = useLocalization();
   return (
   <div className="w-full">
     <Header />
     <main>
-       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-8 mb-8">
+       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 mb-8">
             <CompactFeatureCard 
                 onClick={onStartChat}
                 title={t('home_brevetai')}

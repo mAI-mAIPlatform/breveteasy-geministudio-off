@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Quiz, Question } from '../types';
 
 interface QuizViewProps {
@@ -43,28 +43,38 @@ const QuestionDisplay: React.FC<{
 export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuestionIndex, setCurrentQuestionIndex, isTimed }) => {
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(quiz.questions.length).fill(null));
   const [animationClass, setAnimationClass] = useState('animate-fade-in');
+  const hasSubmitted = useRef(false);
   
   const totalQuestions = quiz.questions.length;
-  const totalTime = totalQuestions * 45; // 45 seconds per question
+  const totalTime = totalQuestions > 0 ? totalQuestions * 45 : 1; // 45 seconds per question
   const [timeLeft, setTimeLeft] = useState(() => isTimed ? totalTime : -1);
 
-  const handleSubmit = React.useCallback(() => {
-    onSubmit(answers);
-  }, [answers, onSubmit]);
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  const handleSubmit = useCallback(() => {
+    if (hasSubmitted.current) return;
+    hasSubmitted.current = true;
+    onSubmit(answersRef.current);
+  }, [onSubmit]);
 
   useEffect(() => {
-    if (!isTimed || timeLeft <= 0) return;
-    const timer = setInterval(() => {
-        setTimeLeft(prev => {
-            if (prev <= 1) {
-                clearInterval(timer);
-                handleSubmit();
-                return 0;
-            }
-            return prev - 1;
-        });
+    if (!isTimed) return;
+  
+    if (timeLeft <= 0) {
+      if (!hasSubmitted.current) {
+        handleSubmit();
+      }
+      return;
+    }
+  
+    const timerId = setInterval(() => {
+      setTimeLeft(prevTime => prevTime - 1);
     }, 1000);
-    return () => clearInterval(timer);
+  
+    return () => clearInterval(timerId);
   }, [isTimed, timeLeft, handleSubmit]);
 
   const handleOptionSelect = (option: string) => {
@@ -109,10 +119,10 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
             </div>
             <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-1.5">
                 <div 
-                    className="bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 h-1.5 rounded-full transition-all duration-1000 ease-linear" 
+                    className="h-1.5 rounded-full transition-all duration-1000 ease-linear" 
                     style={{ 
                         width: `${timePercentage}%`,
-                        filter: `hue-rotate(${100 - timePercentage}deg)`
+                        backgroundColor: `hsl(${(timePercentage * 1.2)}, 80%, 50%)`
                     }}
                 ></div>
             </div>
