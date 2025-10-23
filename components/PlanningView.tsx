@@ -11,7 +11,7 @@ const TrashIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmln
 const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>;
 
 interface PlanningViewProps {
-  onGenerate: (task: string, dueDate: string, model: PlanningAiModel) => void;
+  onGenerate: (task: string, dueDate: string, todayDate: string, model: PlanningAiModel) => void;
   isLoading: boolean;
   planning: Planning | null;
   onClear: () => void;
@@ -336,6 +336,12 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
         link.click();
         document.body.removeChild(link);
     };
+    
+    const handleGenerate = () => {
+        if (isLoading || !task.trim() || !dueDate) return;
+        const todayDate = new Date().toISOString().split('T')[0];
+        onGenerate(task, dueDate, todayDate, model);
+    };
 
     if (isLoading) {
         return (
@@ -449,7 +455,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
                         ))}
                     </div>
                 </div>
-                <button onClick={() => onGenerate(task, dueDate || '', model)} disabled={isLoading || !task.trim() || !dueDate} className="w-full py-3 px-4 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <button onClick={handleGenerate} disabled={isLoading || !task.trim() || !dueDate} className="w-full py-3 px-4 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                     {isLoading ? t('planningai_generating') : t('planningai_generate_button')}
                 </button>
             </div>

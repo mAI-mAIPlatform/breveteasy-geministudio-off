@@ -301,7 +301,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
 
         const userInputMessage: ChatMessage = { role: 'user', parts: messageParts };
         onUpdateSession(session.id, {
-            messages: () => [...history, userInputMessage, { role: 'model', parts: [], isGenerating: true }],
+            messages: (prev) => [...prev, userInputMessage, { role: 'model', parts: [], isGenerating: true }],
         });
 
         setInput('');
@@ -477,7 +477,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                 />
             </div>
 
-            <main className="flex flex-col flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">
+            <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">
                 {session.messages.length === 0 && !attachment && (
                      <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 shadow-lg flex items-center justify-center mb-4">
