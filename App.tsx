@@ -22,7 +22,7 @@ import { JeuxDetailView } from './components/JeuxDetailView';
 import { GameDisplayView } from './components/GameDisplayView';
 import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from './services/geminiService';
 import { AVATAR_ICONS, SUBJECTS } from './constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay, PlanningTask } from './types';
 import { useLocalization } from './hooks/useLocalization';
 
 
@@ -354,7 +354,7 @@ const App: React.FC = () => {
 
     // Scroll-to-top button logic
     useEffect(() => {
-        rootRef.current = document.getElementById('root-scroll-container');
+        rootRef.current = document.getElementById('root');
         const container = rootRef.current;
         if (!container) return;
 
@@ -831,7 +831,8 @@ const App: React.FC = () => {
     const handleGeneratePlanning = useCallback(async (task: string, dueDate: string) => {
         setIsGeneratingPlanning(true);
         try {
-            const generatedPlan = await generatePlanning(task, dueDate, buildSystemInstruction(planningAiSystemInstruction), defaultPlanningAiModel);
+            const todayDate = new Date().toISOString().split('T')[0];
+            const generatedPlan = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), defaultPlanningAiModel);
             
             const scheduleWithTaskObjects: PlanningDay[] = generatedPlan.schedule.map((day: any) => ({
                 date: day.date,
@@ -839,7 +840,7 @@ const App: React.FC = () => {
                     id: `task_${Date.now()}_${Math.random()}`,
                     text: taskText,
                     isCompleted: false,
-                }))
+                })) as PlanningTask[]
             }));
 
             setPlanning({ ...generatedPlan, schedule: scheduleWithTaskObjects });
@@ -849,7 +850,7 @@ const App: React.FC = () => {
         } finally {
             setIsGeneratingPlanning(false);
         }
-    }, [buildSystemInstruction, planningAiSystemInstruction, t, defaultPlanningAiModel]);
+    }, [buildSystemInstruction, planningAiSystemInstruction, defaultPlanningAiModel]);
 
     const handleUpdatePlanning = (updatedPlanning: Planning) => {
         setPlanning(updatedPlanning);
@@ -1041,7 +1042,7 @@ const App: React.FC = () => {
     const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay'].includes(view);
 
     return (
-        <div id="root-scroll-container" className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>
+        <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>
              <Confetti particles={confetti} />
              {notification && <GeneralNotification message={notification.message} type={notification.type} />}
              {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}

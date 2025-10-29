@@ -199,11 +199,7 @@ export const generatePlanning = async (
                         tasks: {
                             type: Type.ARRAY,
                             items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    text: { type: Type.STRING }
-                                },
-                                required: ['text']
+                                type: Type.STRING,
                             }
                         }
                     },
@@ -228,18 +224,7 @@ export const generatePlanning = async (
         }
     });
     
-    const parsed = JSON.parse(response.text);
-
-    const scheduleWithTaskObjects: PlanningDay[] = parsed.schedule.map((day: { date: string, tasks: { text: string }[] }) => ({
-        date: day.date,
-        tasks: day.tasks.map((taskObj: { text: string }) => ({
-            id: `task_${Date.now()}_${Math.random()}`,
-            text: taskObj.text,
-            isCompleted: false,
-        }))
-    }));
-
-    return { ...parsed, schedule: scheduleWithTaskObjects };
+    return JSON.parse(response.text);
 };
 
 export const generateConseils = async (
