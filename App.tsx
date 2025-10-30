@@ -22,7 +22,7 @@ import { JeuxDetailView } from './components/JeuxDetailView';
 import { GameDisplayView } from './components/GameDisplayView';
 import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from './services/geminiService';
 import { AVATAR_ICONS, SUBJECTS } from './constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay, PlanningTask } from './types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay, PlanningTask, RawPlanning } from './types';
 import { useLocalization } from './hooks/useLocalization';
 
 
@@ -832,9 +832,9 @@ const App: React.FC = () => {
         setIsGeneratingPlanning(true);
         try {
             const todayDate = new Date().toISOString().split('T')[0];
-            const generatedPlan = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), defaultPlanningAiModel);
+            const generatedPlan: RawPlanning = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), defaultPlanningAiModel);
             
-            const scheduleWithTaskObjects: PlanningDay[] = generatedPlan.schedule.map((day: any) => ({
+            const scheduleWithTaskObjects: PlanningDay[] = generatedPlan.schedule.map(day => ({
                 date: day.date,
                 tasks: day.tasks.map((taskText: string) => ({
                     id: `task_${Date.now()}_${Math.random()}`,

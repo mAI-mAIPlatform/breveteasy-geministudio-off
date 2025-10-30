@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Chat, Part } from "@google/genai";
-import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, PlanningTask, PlanningDay } from '../types';
+import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, PlanningTask, PlanningDay, RawPlanning } from '../types';
 import type { GenerateContentResponse, Content } from '@google/genai';
 
 const apiKey = process.env.API_KEY;
@@ -185,7 +185,7 @@ export const generatePlanning = async (
     todayDate: string,
     systemInstruction: string,
     model: PlanningAiModel,
-): Promise<Planning> => {
+): Promise<RawPlanning> => {
     const planningSchema = {
         type: Type.OBJECT,
         properties: {

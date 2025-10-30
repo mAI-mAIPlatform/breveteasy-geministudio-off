@@ -161,3 +161,13 @@ export interface PremadeGame {
   html: string;
   subjectNameKey: string;
 }
+
+export interface RawPlanningDay {
+    date: string;
+    tasks: string[];
+}
+
+export interface RawPlanning {
+    title: string;
+    schedule: RawPlanningDay[];
+}
