@@ -11,7 +11,7 @@ const TrashIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmln
 const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>;
 
 interface PlanningViewProps {
-  onGenerate: (task: string, dueDate: string, todayDate: string, model: PlanningAiModel) => void;
+  onGenerate: (task: string, dueDate: string, model: PlanningAiModel) => void;
   isLoading: boolean;
   planning: Planning | null;
   onClear: () => void;
@@ -339,8 +339,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
     
     const handleGenerate = () => {
         if (isLoading || !task.trim() || !dueDate) return;
-        const todayDate = new Date().toISOString().split('T')[0];
-        onGenerate(task, dueDate, todayDate, model);
+        onGenerate(task, dueDate, model);
     };
 
     if (isLoading) {
@@ -433,7 +432,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onGenerate, isLoadin
                     <button type="button" onClick={() => setIsDatePickerOpen(o => !o)} className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 text-slate-900 dark:text-slate-100 text-left">
                         {dueDate ? new Date(dueDate + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric'}) : t('planningai_due_date_placeholder')}
                     </button>
-                    {isDatePickerOpen && <DatePickerCalendar onDateSelect={(d) => {setDueDate(d); setIsDatePickerOpen(false);}} onClose={() => setIsDatePickerOpen(false)} onClear={() => {setDueDate('');}} currentDate={dueDate} />}
+                    {isDatePickerOpen && <DatePickerCalendar onDateSelect={(d) => {setDueDate(d); setIsDatePickerOpen(false);}} onClose={() => setIsDatePickerOpen(false)} onClear={() => {setDueDate(null);}} currentDate={dueDate} />}
                 </div>
                 <div>
                     <label className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">{t('settings_default_model')}</label>

@@ -828,11 +828,11 @@ const App: React.FC = () => {
         }
     }, [buildSystemInstruction, flashAiSystemInstruction, t]);
     
-    const handleGeneratePlanning = useCallback(async (task: string, dueDate: string) => {
+    const handleGeneratePlanning = useCallback(async (task: string, dueDate: string, model: PlanningAiModel) => {
         setIsGeneratingPlanning(true);
         try {
             const todayDate = new Date().toISOString().split('T')[0];
-            const generatedPlan: RawPlanning = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), defaultPlanningAiModel);
+            const generatedPlan: RawPlanning = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), model);
             
             const scheduleWithTaskObjects: PlanningDay[] = generatedPlan.schedule.map(day => ({
                 date: day.date,
@@ -850,7 +850,7 @@ const App: React.FC = () => {
         } finally {
             setIsGeneratingPlanning(false);
         }
-    }, [buildSystemInstruction, planningAiSystemInstruction, defaultPlanningAiModel]);
+    }, [buildSystemInstruction, planningAiSystemInstruction]);
 
     const handleUpdatePlanning = (updatedPlanning: Planning) => {
         setPlanning(updatedPlanning);
