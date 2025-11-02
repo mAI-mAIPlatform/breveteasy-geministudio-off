@@ -5,33 +5,76 @@
 // Fix: Provide the implementation for the main App component.
 // Fix: Corrected React import to include necessary hooks.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { HomeView } from '@/components/HomeView';
-import { SubjectOptionsView } from '@/components/SubjectOptionsView';
-import { LoadingView } from '@/components/LoadingView';
-import { QuizView } from '@/components/QuizView';
-import { ResultsView } from '@/components/ResultsView';
-import { ChatView } from '@/components/ChatView';
-import { HistorySidebar } from '@/components/HistorySidebar';
-import { SettingsView } from '@/components/SettingsView';
-import { LoginView } from '@/components/LoginView';
-import { ExercisesView } from '@/components/ExercisesView';
-import { SubscriptionView } from '@/components/SubscriptionView';
-import { ImageGenerationView } from '@/components/ImageGenerationView';
-import { WelcomeView } from '@/components/WelcomeView';
-import { CanvasView } from '@/components/CanvasView';
-import { FlashAIView } from '@/components/FlashAIView';
-import { PlanningView } from '@/components/PlanningView';
-import { ConseilsView } from '@/components/ConseilsView';
-import { DrawingView } from '@/components/DrawingView';
-import { JeuxView } from '@/components/JeuxView';
-import { JeuxDetailView } from '@/components/JeuxDetailView';
-import { GameDisplayView } from '@/components/GameDisplayView';
-import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateContentWithSearch, generateGame } from '@/services/geminiService';
-import { AVATAR_ICONS, SUBJECTS } from '@/lib/constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatPart, GamesAiModel, PremadeGame } from '@/lib/types';
-import { useLocalization } from '@/hooks/useLocalization';
+import { HomeView } from '../components/HomeView';
+import { SubjectOptionsView } from '../components/SubjectOptionsView';
+import { LoadingView } from '../components/LoadingView';
+import { QuizView } from '../components/QuizView';
+import { ResultsView } from '../components/ResultsView';
+import { ChatView } from '../components/ChatView';
+import { HistorySidebar } from '../components/HistorySidebar';
+import { SettingsView } from '../components/SettingsView';
+import { LoginView } from '../components/LoginView';
+import { ExercisesView } from '../components/ExercisesView';
+import { SubscriptionView } from '../components/SubscriptionView';
+import { ImageGenerationView } from '../components/ImageGenerationView';
+import { WelcomeView } from '../components/WelcomeView';
+import { CanvasView } from '../components/CanvasView';
+import { FlashAIView } from '../components/FlashAIView';
+import { PlanningView } from '../components/PlanningView';
+import { ConseilsView } from '../components/ConseilsView';
+import { DrawingView } from '../components/DrawingView';
+import { JeuxView } from '../components/JeuxView';
+import { JeuxDetailView } from '../components/JeuxDetailView';
+import { GameDisplayView } from '../components/GameDisplayView';
+import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from '../services/geminiService';
+import { AVATAR_ICONS, SUBJECTS } from '../constants';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay, PlanningTask, RawPlanning } from '../types';
+import { useLocalization } from '../hooks/useLocalization';
 
-// Fix: Add new view types
+
+interface ConfettiParticle {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  endX: number;
+  endY: number;
+}
+
+const Confetti: React.FC<{ particles: ConfettiParticle[] }> = ({ particles }) => (
+  <div className="fixed inset-0 pointer-events-none z-[9999]">
+    {particles.map(p => (
+      <div
+        key={p.id}
+        className="confetti"
+        style={{
+          left: `${p.x}px`,
+          top: `${p.y}px`,
+          backgroundColor: p.color,
+          // @ts-ignore
+          '--x-end': `${p.endX}px`,
+          '--y-end': `${p.endY}px`,
+        }}
+      />
+    ))}
+  </div>
+);
+
+const GeneralNotification: React.FC<{ message: string, type: 'success' | 'error' }> = ({ message, type }) => {
+    const icon = {
+        success: <svg className="w-16 h-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+        error: <svg className="w-16 h-16 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    };
+
+    return (
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] bg-white/30 dark:bg-slate-800/80 backdrop-blur-lg p-8 rounded-2xl shadow-2xl text-center animate-fade-in">
+             <div className="flex justify-center mb-4">{icon[type]}</div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{message}</h2>
+        </div>
+    );
+};
+
+
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay';
 type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
 
@@ -141,11 +184,12 @@ const ScrollToTopButton: React.FC<{ onClick: () => void; isVisible: boolean }> =
 const App: React.FC = () => {
     const { t } = useLocalization();
     // App State
-    const [view, setView] = useState<View>('home');
+    const [view, setView] = useState<View>('login');
     const [loadingTask, setLoadingTask] = useState<LoadingTask>('quiz');
     const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
     const [aiSystemInstruction, setAiSystemInstruction] = useState<string>('');
     const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>('free');
+    const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const rootRef = useRef<HTMLElement | null>(null);
 
@@ -185,6 +229,7 @@ const App: React.FC = () => {
     // Exercises & HTML Content State
     const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
     const [isDownloadingHtml, setIsDownloadingHtml] = useState(false);
+    const [confetti, setConfetti] = useState<ConfettiParticle[]>([]);
 
     // Chat State
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -218,6 +263,9 @@ const App: React.FC = () => {
     // Jeux State
     const [selectedGameSubject, setSelectedGameSubject] = useState<Subject | null>(null);
     const [gameHtml, setGameHtml] = useState<string | null>(null);
+
+    // Other state
+    const [quizUseTimer, setQuizUseTimer] = useState(false);
 
 
     // Load state from localStorage on initial mount
@@ -276,6 +324,20 @@ const App: React.FC = () => {
 
     }, []);
 
+    // Notification handler
+    useEffect(() => {
+        if (notification) {
+            const timer = setTimeout(() => {
+                setNotification(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
+    const showNotification = (message: string, type: 'success' | 'error') => {
+        setNotification({ message, type });
+    };
+
 
     // Theme Management Effect
     useEffect(() => {
@@ -298,7 +360,7 @@ const App: React.FC = () => {
 
     // Scroll-to-top button logic
     useEffect(() => {
-        rootRef.current = document.getElementById('root-scroll-container');
+        rootRef.current = document.getElementById('root');
         const container = rootRef.current;
         if (!container) return;
 
@@ -365,6 +427,11 @@ const App: React.FC = () => {
 
 
     // Navigation Handlers
+    const handleLogin = (email: string) => {
+        setUser({ email });
+        setView('home');
+    };
+
     const handleSubjectSelect = (subject: Subject) => {
         setSelectedSubject(subject);
         setView('subjectOptions');
@@ -431,17 +498,20 @@ const App: React.FC = () => {
     // Subscription Handler
     const handleUpgradePlan = (code: string) => {
         const upperCaseCode = code.toUpperCase();
+        let planName = '';
         if (upperCaseCode === 'BVTPRO') {
             setSubscriptionPlan('pro');
-            alert('Félicitations ! Vous avez activé le forfait Brevet Pro.');
-            return true;
-        }
-        if (upperCaseCode === 'BVTMAX') {
+            planName = 'Brevet Pro';
+        } else if (upperCaseCode === 'BVTMAX') {
             setSubscriptionPlan('max');
-            alert('Félicitations ! Vous avez activé le forfait Brevet Max.');
+            planName = 'Brevet Max';
+        }
+
+        if (planName) {
+            showNotification(`Forfait ${planName} activé !`, 'success');
             return true;
         }
-        alert('Code invalide. Veuillez réessayer.');
+        showNotification('Code invalide.', 'error');
         return false;
     };
 
@@ -455,10 +525,11 @@ const App: React.FC = () => {
     }, [userName]);
 
     // Quiz Flow Handlers
-    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string) => {
+    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean, fileContents: string[]) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask('quiz');
+        setQuizUseTimer(useTimer);
         setCurrentQuestionIndex(0);
         
         try {
@@ -469,7 +540,8 @@ const App: React.FC = () => {
                 difficulty,
                 level,
                 customPrompt,
-                systemInstruction
+                systemInstruction,
+                fileContents
             );
             setQuiz(generatedQuiz);
             setQuizAnswers(Array(generatedQuiz.questions.length).fill(null));
@@ -477,10 +549,23 @@ const App: React.FC = () => {
 
         } catch (error) {
             console.error("Error generating quiz:", error);
-            alert("Une erreur est survenue lors de la génération du quiz. Veuillez réessayer.");
+            showNotification(t('error_generating'), 'error');
             handleBackToHome();
         }
     }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t]);
+    
+    const triggerConfetti = () => {
+        const newParticles = Array.from({ length: 150 }).map((_, i) => ({
+          id: Date.now() + i,
+          x: Math.random() * window.innerWidth,
+          y: -20,
+          color: ['#a5b4fc', '#7dd3fc', '#f472b6', '#4ade80', '#facc15'][Math.floor(Math.random() * 5)],
+          endX: (Math.random() - 0.5) * 500,
+          endY: Math.random() * 300 + 400,
+        }));
+        setConfetti(newParticles);
+        setTimeout(() => setConfetti([]), 5000);
+      };
 
     const handleQuizSubmit = (answers: (string | null)[]) => {
         if (!quiz) return;
@@ -493,36 +578,39 @@ const App: React.FC = () => {
         setScore(correctAnswers);
         setQuizAnswers(answers);
         setView('results');
+        if (correctAnswers / quiz.questions.length >= 0.8) {
+            triggerConfetti();
+        }
     };
 
-    const handleGenericHtmlGeneration = useCallback(async (task: LoadingTask, prompt: string) => {
+    const handleGenericHtmlGeneration = useCallback(async (task: LoadingTask, prompt: string, fileContents: string[]) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask(task);
         try {
-            const html = await generateHtmlContent(prompt, buildSystemInstruction(aiSystemInstruction));
+            const html = await generateHtmlContent(prompt, buildSystemInstruction(aiSystemInstruction), fileContents);
             setGeneratedHtml(html);
             setView('exercises');
         } catch (error) {
             console.error(`Error generating ${task}:`, error);
-            alert(`Une erreur est survenue lors de la génération. Veuillez réessayer.`);
+            showNotification(t('error_generating'), 'error');
             handleBackToHome();
         }
     }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t]);
 
-    const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string) => {
+    const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
         const prompt = `Génère une fiche de ${count} exercices sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
-        handleGenericHtmlGeneration('exercises', prompt);
+        handleGenericHtmlGeneration('exercises', prompt, fileContents);
     };
     
-    const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string) => {
+    const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
         const prompt = `Génère une fiche de cours sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquojte), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
-        handleGenericHtmlGeneration('cours', prompt);
+        handleGenericHtmlGeneration('cours', prompt, fileContents);
     };
     
-    const handleGenerateFicheRevisions = (customPrompt: string, count: number, difficulty: string, level: string) => {
+    const handleGenerateFicheRevisions = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
         const prompt = `Génère une fiche de révisions synthétique sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}. ${customPrompt}. La fiche doit résumer les points essentiels à connaître pour le brevet. La sortie doit être un fichier HTML bien formaté, utilisant des titres, des listes à puces, du gras pour les termes importants, et un code couleur simple pour mettre en évidence les différentes sections. Le contenu doit être concis et aller à l'essentiel.`;
-        handleGenericHtmlGeneration('fiche-revisions', prompt);
+        handleGenericHtmlGeneration('fiche-revisions', prompt, fileContents);
     };
 
     const handleDownloadHtml = () => {
@@ -538,7 +626,7 @@ const App: React.FC = () => {
             document.body.removeChild(link);
         } catch (error) {
             console.error("Error downloading HTML:", error);
-            alert("Le téléchargement a échoué.");
+            showNotification("Le téléchargement a échoué.", 'error');
         } finally {
             setIsDownloadingHtml(false);
         }
@@ -548,7 +636,7 @@ const App: React.FC = () => {
         if (!generatedHtml) return;
         navigator.clipboard.writeText(generatedHtml).catch(err => {
             console.error('Failed to copy HTML: ', err);
-            alert("La copie a échoué.");
+            showNotification("La copie a échoué.", 'error');
         });
     };
 
@@ -684,7 +772,7 @@ const App: React.FC = () => {
     const handleGenerateImage = useCallback(async (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png', aspectRatio: string, negativePrompt: string) => {
         const generationLimit = subscriptionPlan === 'free' ? 2 : subscriptionPlan === 'pro' ? 5 : Infinity;
         if (imageUsage.count >= generationLimit) {
-            alert("Vous avez atteint votre limite de générations d'images pour aujourd'hui.");
+            showNotification("Vous avez atteint votre limite de générations d'images pour aujourd'hui.", 'error');
             return;
         }
 
@@ -707,7 +795,7 @@ const App: React.FC = () => {
 
         } catch (error) {
             console.error("Error generating image:", error);
-            alert("Une erreur est survenue lors de la génération de l'image.");
+            showNotification("Une erreur est survenue lors de la génération de l'image.", 'error');
         } finally {
             setIsGeneratingImage(false);
         }
@@ -728,11 +816,11 @@ const App: React.FC = () => {
             setActiveCanvasVersionId(newVersion.id);
         } catch (error) {
             console.error("Error generating canvas page:", error);
-            alert("Une erreur est survenue lors de la génération. Veuillez réessayer.");
+            showNotification(t('error_generating'), 'error');
         } finally {
             setIsGeneratingCanvas(false);
         }
-    }, [buildSystemInstruction, canvasSystemInstruction]);
+    }, [buildSystemInstruction, canvasSystemInstruction, t]);
 
     const handleGenerateFlashQuestion = useCallback(async (level: string, model: FlashAiModel) => {
         setIsGeneratingFlashQuestion(true);
@@ -741,27 +829,35 @@ const App: React.FC = () => {
             setFlashQuestion(question);
         } catch (error) {
             console.error("Error generating flash question:", error);
-            alert("Une erreur est survenue. Veuillez réessayer.");
+            showNotification(t('error_generating'), 'error');
         } finally {
             setIsGeneratingFlashQuestion(false);
         }
-    }, [buildSystemInstruction, flashAiSystemInstruction]);
-
-    // Fix: Update `handleGeneratePlanning` to accept the model as an argument and remove `defaultPlanningAiModel` from the dependency array.
+    }, [buildSystemInstruction, flashAiSystemInstruction, t]);
+    
     const handleGeneratePlanning = useCallback(async (task: string, dueDate: string, model: PlanningAiModel) => {
         setIsGeneratingPlanning(true);
         try {
-            // FIX: Add today's date to the generatePlanning call, as it's required for context.
             const todayDate = new Date().toISOString().split('T')[0];
-            const generatedPlan = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), model);
-            setPlanning(generatedPlan);
+            const generatedPlan: RawPlanning = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), model);
+            
+            const scheduleWithTaskObjects: PlanningDay[] = generatedPlan.schedule.map(day => ({
+                date: day.date,
+                tasks: day.tasks.map((taskText: string) => ({
+                    id: `task_${Date.now()}_${Math.random()}`,
+                    text: taskText,
+                    isCompleted: false,
+                })) as PlanningTask[]
+            }));
+
+            setPlanning({ ...generatedPlan, schedule: scheduleWithTaskObjects });
         } catch (error) {
             console.error("Error generating planning:", error);
-            alert("Une erreur est survenue lors de la création du planning. Veuillez réessayer.");
+            showNotification("Une erreur est survenue lors de la création du planning.", 'error');
         } finally {
             setIsGeneratingPlanning(false);
         }
-    }, [buildSystemInstruction, planningAiSystemInstruction, t]);
+    }, [buildSystemInstruction, planningAiSystemInstruction]);
 
     const handleUpdatePlanning = (updatedPlanning: Planning) => {
         setPlanning(updatedPlanning);
@@ -774,7 +870,7 @@ const App: React.FC = () => {
             setConseils(generatedConseils);
         } catch (error) {
             console.error("Error generating conseils:", error);
-            alert("Une erreur est survenue lors de la génération des conseils. Veuillez réessayer.");
+            showNotification(t('error_generating'), 'error');
         } finally {
             setIsGeneratingConseils(false);
         }
@@ -790,10 +886,11 @@ const App: React.FC = () => {
             setView('gameDisplay');
         } catch (error) {
             console.error(`Error generating game:`, error);
-            alert(`Une erreur est survenue lors de la génération. Veuillez réessayer.`);
+            showNotification(t('error_generating'), 'error');
             handleBackToHome();
         }
     }, [t, handleBackToHome, buildSystemInstruction, gamesAiSystemInstruction]);
+
 
     const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
     
@@ -804,6 +901,14 @@ const App: React.FC = () => {
     };
 
     const quizProgress = quiz ? ((currentQuestionIndex + 1) / (quiz.questions.length || 1)) * 100 : 0;
+    
+    if (!user) {
+        return (
+            <div className="w-full min-h-full flex items-center justify-center p-4">
+                <LoginView onLogin={handleLogin} />
+            </div>
+        )
+    }
 
     if (view === 'loading') {
         return <LoadingView subject={selectedSubject?.nameKey ? t(selectedSubject.nameKey) : ''} task={loadingTask} onCancel={handleBackToHome} />;
@@ -816,7 +921,7 @@ const App: React.FC = () => {
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
-                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} />;
+                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} isTimed={quizUseTimer} />;
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
             case 'settings':
@@ -897,7 +1002,6 @@ const App: React.FC = () => {
                                     onNavigateToFlashAI={handleStartFlashAI}
                                     onNavigateToPlanning={handleStartPlanning}
                                     onNavigateToConseils={handleStartConseils}
-                                    generateContentWithSearch={generateContentWithSearch}
                                 />
                             ) : (
                                 <WelcomeView />
@@ -906,12 +1010,12 @@ const App: React.FC = () => {
                     </div>
                 );
             case 'login':
-                return <LoginView onLogin={(email) => setUser({email})} />;
+                return <LoginView onLogin={handleLogin} />;
             case 'exercises':
                 const contentConfig = {
-                    exercises: { title: "Exercices générés !", description: "Votre fiche d'exercices est prête à être téléchargée.", buttonText: "Télécharger les exercices" },
-                    cours: { title: "Cours généré !", description: "Votre fiche de cours est prête à être téléchargée.", buttonText: "Télécharger le cours" },
-                    'fiche-revisions': { title: "Fiche générée !", description: "Votre fiche de révisions est prête.", buttonText: "Télécharger la fiche" },
+                    exercises: { title: t('exercises_generated'), description: t('exercises_generated_desc'), buttonText: t('exercises_download_button') },
+                    cours: { title: t('course_generated'), description: t('course_generated_desc'), buttonText: t('course_download_button') },
+                    'fiche-revisions': { title: t('summary_generated'), description: t('summary_generated_desc'), buttonText: t('summary_download_button') },
                 }[loadingTask] || { title: "Contenu généré !", description: "Votre contenu est prêt.", buttonText: "Télécharger" };
                 
                 return <ExercisesView onDownload={handleDownloadHtml} onCopy={handleCopyHtml} {...contentConfig} />;
@@ -940,19 +1044,21 @@ const App: React.FC = () => {
         }
     };
     
-    const showHeader = !['chat', 'drawing'].includes(view);
-    const showExitButton = !['home', 'chat'].includes(view);
+    const showHeader = !['login', 'chat', 'drawing'].includes(view);
+    const showExitButton = !['login', 'home', 'chat'].includes(view);
     const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay'].includes(view);
 
     return (
-        <div id="root-scroll-container" className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-start justify-center'}`}>
+        <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>
+             <Confetti particles={confetti} />
+             {notification && <GeneralNotification message={notification.message} type={notification.type} />}
              {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
              {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
              {view === 'quiz' && quiz && (
                 <div className="w-full max-w-4xl mx-auto pt-20">
                     <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-2.5">
-                        <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${quizProgress}%`, boxShadow: '0 0 10px theme(colors.sky.400)' }}></div>
+                        <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${quizProgress}%`, boxShadow: '0 0 10px rgba(96, 165, 250, 0.7)' }}></div>
                     </div>
                 </div>
              )}
@@ -962,5 +1068,4 @@ const App: React.FC = () => {
         </div>
     );
 };
-
 export default App;

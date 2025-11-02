@@ -5,10 +5,10 @@ import { useLocalization } from '../hooks/useLocalization';
 
 interface SubjectOptionsViewProps {
   subject: Subject;
-  onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean) => void;
-  onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string) => void;
-  onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string) => void;
-  onGenerateFicheRevisions: (customPrompt: string, count: number, difficulty: string, level: string) => void;
+  onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean, fileContents: string[]) => void;
+  onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => void;
+  onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => void;
+  onGenerateFicheRevisions: (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => void;
   subscriptionPlan: SubscriptionPlan;
   defaultItemCount: number;
   defaultDifficulty: 'Facile' | 'Normal' | 'Difficile' | 'Expert';
@@ -145,6 +145,9 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   const [difficulty, setDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>(defaultDifficulty);
   const [level, setLevel] = useState<string>(defaultLevel);
   const [useTimer, setUseTimer] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [fileContents, setFileContents] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [itemCount, setItemCount] = useState<number>(() => {
     const defaultCount = defaultItemCount;
@@ -159,20 +162,50 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   const currentLevel = isFreePlan ? 'Brevet' : level;
   const currentDifficulty = isFreePlan ? 'Normal' : difficulty;
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+        const files = Array.from(event.target.files);
+        setUploadedFiles(prev => [...prev, ...files]);
+        try {
+            const contents = await Promise.all(
+                files.map((file: File) => {
+                    if (file.type.startsWith('text/')) {
+                        return file.text();
+                    }
+                    return Promise.resolve(`[Contenu du fichier non textuel '${file.name}' ignoré]`);
+                })
+            );
+            setFileContents(prev => [...prev, ...contents]);
+        } catch (error) {
+            console.error("Error reading files:", error);
+            alert("Erreur lors de la lecture d'un fichier.");
+        }
+    }
+    if (event.target) {
+        event.target.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setFileContents(prev => prev.filter((_, i) => i !== index));
+  };
+
+
   const handleGenerateQuizClick = () => {
-    onGenerateQuiz(customPrompt, itemCount, currentDifficulty, currentLevel, useTimer);
+    onGenerateQuiz(customPrompt, itemCount, currentDifficulty, currentLevel, useTimer, fileContents);
   };
 
   const handleGenerateExercisesClick = () => {
-    onGenerateExercises(customPrompt, itemCount, currentDifficulty, currentLevel);
+    onGenerateExercises(customPrompt, itemCount, currentDifficulty, currentLevel, fileContents);
   };
   
   const handleGenerateCoursClick = () => {
-    onGenerateCours(customPrompt, itemCount, currentDifficulty, currentLevel);
+    onGenerateCours(customPrompt, itemCount, currentDifficulty, currentLevel, fileContents);
   };
 
   const handleGenerateFicheRevisionsClick = () => {
-    onGenerateFicheRevisions(customPrompt, itemCount, currentDifficulty, currentLevel);
+    onGenerateFicheRevisions(customPrompt, itemCount, currentDifficulty, currentLevel, fileContents);
   };
   
   return (
@@ -199,7 +232,46 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('subject_options_general_content_note')}</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="mt-6 pt-6 border-t border-white/10 dark:border-slate-700/50">
+                <label className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">
+                    S'inspirer de fichiers (facultatif)
+                </label>
+                <div className="flex items-start gap-4">
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        multiple 
+                        accept="text/*,.md"
+                    />
+                    <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-white/20 dark:bg-slate-800/60 rounded-full shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors"
+                        title="Importer des fichiers"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                    <div className="flex-1 flex flex-col gap-2 overflow-hidden">
+                        {uploadedFiles.length === 0 ? (
+                            <p className="text-sm text-slate-600 dark:text-slate-400 h-12 flex items-center">Importez des cours, des exercices, etc.</p>
+                        ) : (
+                            uploadedFiles.map((file, index) => (
+                                <div key={index} className="flex items-center gap-2 bg-black/5 dark:bg-slate-900/50 p-2 rounded-lg text-sm">
+                                    <span className="truncate flex-1 text-slate-800 dark:text-slate-200">{file.name}</span>
+                                    <button onClick={() => removeFile(index)} className="p-1 rounded-full hover:bg-red-500/20 text-red-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-white/10 dark:border-slate-700/50">
                 <StyledDropdown<string>
                     label={t('level')}
                     options={LEVELS}

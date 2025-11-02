@@ -1,4 +1,4 @@
-import type { Quiz, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Question, Planning, ChatMessage, ChatPart } from '@/lib/types';
+import type { Quiz, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Question, Planning, ChatMessage, ChatPart, GamesAiModel, RawPlanning } from '@/lib/types';
 import type { GenerateContentResponse } from '@google/genai';
 
 async function callGeminiApi<T>(action: string, payload: any): Promise<T> {
@@ -25,8 +25,9 @@ export const generateQuiz = async (
     level: string,
     customPrompt: string,
     systemInstruction: string,
+    fileContents: string[]
 ): Promise<Quiz> => {
-    return callGeminiApi<Quiz>('generateQuiz', { subjectName, count, difficulty, level, customPrompt, systemInstruction });
+    return callGeminiApi<Quiz>('generateQuiz', { subjectName, count, difficulty, level, customPrompt, systemInstruction, fileContents });
 };
 
 export const generateHtmlContent = async (
@@ -73,17 +74,14 @@ export const generateFlashQuestion = async (
     return callGeminiApi<Question>('generateFlashQuestion', { level, systemInstruction, model });
 };
 
-// Fix: Add missing generatePlanning export
 export const generatePlanning = async (
     task: string,
     dueDate: string,
-    // FIX: Add `todayDate` to the function signature to be passed to the API.
     todayDate: string,
     systemInstruction: string,
     model: PlanningAiModel,
-): Promise<Planning> => {
-    // FIX: Pass `todayDate` in the payload.
-    return callGeminiApi<Planning>('generatePlanning', { task, dueDate, todayDate, systemInstruction, model });
+): Promise<RawPlanning> => {
+    return callGeminiApi<RawPlanning>('generatePlanning', { task, dueDate, todayDate, systemInstruction, model });
 };
 
 export const generateConseils = async (
@@ -93,6 +91,16 @@ export const generateConseils = async (
     model: ConseilsAiModel,
 ): Promise<string> => {
     return callGeminiApi<{html: string}>('generateConseils', { subject, level, systemInstruction, model }).then(res => res.html);
+};
+
+export const generateGame = async (
+    subjectName: string,
+    customPrompt: string,
+    model: GamesAiModel,
+    systemInstruction: string,
+): Promise<string> => {
+    const result = await callGeminiApi<{ html: string }>('generateGame', { subjectName, customPrompt, model, systemInstruction });
+    return result.html;
 };
 
 export const generateContentWithSearch = async (history: ChatMessage[], currentParts: ChatPart[]): Promise<GenerateContentResponse> => {

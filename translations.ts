@@ -70,7 +70,7 @@ const frTranslations: Record<string, string> = {
   home_planningai_desc: "Organisez vos révisions",
   home_conseilsai: "ConseilsAI",
   home_conseilsai_desc: "Stratégies d'experts",
-  home_footer: "26-4.0 © 2025 - Tous droits réservés | Brevet' Easy | Propulsé par mAI",
+  home_footer: "26-4.1 © 2025 - Tous droits réservés | Brevet' Easy | Propulsé par mAI",
 
   // Header
   header_upgrade: "Mettre à niveau",

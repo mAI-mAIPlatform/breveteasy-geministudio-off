@@ -519,7 +519,7 @@ const App: React.FC = () => {
     }, [userName]);
 
     // Quiz Flow Handlers
-    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean) => {
+    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean, fileContents: string[]) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask('quiz');
@@ -534,7 +534,8 @@ const App: React.FC = () => {
                 difficulty,
                 level,
                 customPrompt,
-                systemInstruction
+                systemInstruction,
+                fileContents
             );
             setQuiz(generatedQuiz);
             setQuizAnswers(Array(generatedQuiz.questions.length).fill(null));
@@ -576,12 +577,12 @@ const App: React.FC = () => {
         }
     };
 
-    const handleGenericHtmlGeneration = useCallback(async (task: LoadingTask, prompt: string) => {
+    const handleGenericHtmlGeneration = useCallback(async (task: LoadingTask, prompt: string, fileContents: string[]) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask(task);
         try {
-            const html = await generateHtmlContent(prompt, buildSystemInstruction(aiSystemInstruction));
+            const html = await generateHtmlContent(prompt, buildSystemInstruction(aiSystemInstruction), fileContents);
             setGeneratedHtml(html);
             setView('exercises');
         } catch (error) {
@@ -591,19 +592,19 @@ const App: React.FC = () => {
         }
     }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t]);
 
-    const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string) => {
+    const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
         const prompt = `Génère une fiche de ${count} exercices sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
-        handleGenericHtmlGeneration('exercises', prompt);
+        handleGenericHtmlGeneration('exercises', prompt, fileContents);
     };
     
-    const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string) => {
+    const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
         const prompt = `Génère une fiche de cours sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquojte), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
-        handleGenericHtmlGeneration('cours', prompt);
+        handleGenericHtmlGeneration('cours', prompt, fileContents);
     };
     
-    const handleGenerateFicheRevisions = (customPrompt: string, count: number, difficulty: string, level: string) => {
+    const handleGenerateFicheRevisions = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
         const prompt = `Génère une fiche de révisions synthétique sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}. ${customPrompt}. La fiche doit résumer les points essentiels à connaître pour le brevet. La sortie doit être un fichier HTML bien formaté, utilisant des titres, des listes à puces, du gras pour les termes importants, et un code couleur simple pour mettre en évidence les différentes sections. Le contenu doit être concis et aller à l'essentiel.`;
-        handleGenericHtmlGeneration('fiche-revisions', prompt);
+        handleGenericHtmlGeneration('fiche-revisions', prompt, fileContents);
     };
 
     const handleDownloadHtml = () => {

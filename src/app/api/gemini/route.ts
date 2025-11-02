@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextResponse } from 'next/server';
-import type { Quiz, ImageModel, Question, Planning, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart } from '@/lib/types';
+import type { Quiz, ImageModel, Question, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, RawPlanning } from '@/lib/types';
 
 if (!process.env.API_KEY) {
   throw new Error("Missing API_KEY environment variable");
@@ -8,7 +8,7 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-async function internalGenerateQuiz({ subjectName, count, difficulty, level, customPrompt, systemInstruction }: any): Promise<Quiz> {
+async function internalGenerateQuiz({ subjectName, count, difficulty, level, customPrompt, systemInstruction, fileContents }: any): Promise<Quiz> {
     const quizSchema = {
         type: Type.OBJECT,
         properties: {
@@ -30,7 +30,12 @@ async function internalGenerateQuiz({ subjectName, count, difficulty, level, cus
         required: ['subject', 'questions']
     };
 
-    const prompt = `Génère un quiz de ${count} questions sur le sujet "${subjectName}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. Les questions doivent être des QCM avec 4 options de réponse. Fournis une explication pour chaque bonne réponse.`;
+    let prompt = `Génère un quiz de ${count} questions sur le sujet "${subjectName}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. Les questions doivent être des QCM avec 4 options de réponse. Fournis une explication pour chaque bonne réponse.`;
+
+    if (fileContents && fileContents.length > 0) {
+        const fileContext = fileContents.map((content: string, index: number) => `--- DOCUMENT D'INSPIRATION ${index + 1} ---\n${content}`).join('\n\n');
+        prompt = `En t'inspirant des documents suivants fournis par l'utilisateur :\n\n${fileContext}\n\n--- FIN DES DOCUMENTS ---\n\nTa mission est de répondre à la demande suivante :\n${prompt}`;
+    }
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -47,7 +52,6 @@ async function internalGenerateQuiz({ subjectName, count, difficulty, level, cus
 
 
 async function internalGenerateHtmlContent({ prompt, systemInstruction, model }: any): Promise<string> {
-    // Fix: Use the provided model to select the correct Gemini model, making the function more flexible.
     const geminiModel = (model === 'canvasai' || model === 'conseilsai' || !model) ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     const response = await ai.models.generateContent({
         model: geminiModel,
@@ -59,7 +63,6 @@ async function internalGenerateHtmlContent({ prompt, systemInstruction, model }:
     return response.text;
 }
 
-// FIX: Add `negativePrompt` to the function parameters and use it to construct the final prompt.
 async function internalGenerateImage({ prompt, model, style, format, aspectRatio, imageGenerationInstruction, negativePrompt }: any): Promise<{ data: string; mimeType: string; }> {
     const qualityPrompt = model === 'faceai-pro' || model === 'faceai-max'
         ? 'haute qualité, 4k, hyper-détaillé, photoréaliste'
@@ -76,7 +79,7 @@ async function internalGenerateImage({ prompt, model, style, format, aspectRatio
     ].filter(Boolean).join(', ');
     
     const finalPrompt = negativePrompt?.trim()
-        ? `${mainPrompt}, negative_prompt: [${negativePrompt.trim()}]`
+        ? `${mainPrompt} --no ${negativePrompt.trim()}`
         : mainPrompt;
     
     const response = await ai.models.generateImages({
@@ -93,7 +96,6 @@ async function internalGenerateImage({ prompt, model, style, format, aspectRatio
     return { data: imageBytes, mimeType: `image/${format}`};
 }
 
-// Fix: Add implementation for generating a flash question.
 async function internalGenerateFlashQuestion({ level, systemInstruction, model }: { level: string; systemInstruction: string; model: FlashAiModel }): Promise<Question> {
     const questionSchema = {
         type: Type.OBJECT,
@@ -123,9 +125,7 @@ async function internalGenerateFlashQuestion({ level, systemInstruction, model }
     return JSON.parse(response.text);
 }
 
-// Fix: Add implementation for generating a planning schedule.
-// FIX: Add `todayDate` to the function parameters and use it to construct a more context-aware prompt.
-async function internalGeneratePlanning({ task, dueDate, todayDate, systemInstruction, model }: { task: string; dueDate: string; todayDate: string; systemInstruction: string; model: PlanningAiModel }): Promise<Planning> {
+async function internalGeneratePlanning({ task, dueDate, todayDate, systemInstruction, model }: { task: string; dueDate: string; todayDate: string; systemInstruction: string; model: PlanningAiModel }): Promise<RawPlanning> {
     const planningSchema = {
         type: Type.OBJECT,
         properties: {
@@ -145,7 +145,6 @@ async function internalGeneratePlanning({ task, dueDate, todayDate, systemInstru
         required: ['title', 'schedule']
     };
 
-    // FIX: Update the prompt to include today's date for better context and scheduling logic.
     const prompt = `La date d'aujourd'hui est le ${new Date(todayDate + 'T00:00:00Z').toLocaleDateString('fr-FR', { timeZone: 'UTC' })}. Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Le planning doit commencer à partir d'aujourd'hui ou d'un jour futur, jamais dans le passé. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles jusqu'à la date limite. Le planning doit être réaliste. Assure-toi que les dates dans le JSON sont au format YYYY-MM-DD.`;
 
     const geminiModel = model === 'planningai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
@@ -172,6 +171,27 @@ async function internalGenerateConseils({ subject, level, systemInstruction, mod
         contents: prompt,
         config: {
             systemInstruction: systemInstruction || "Tu es un conseiller pédagogique expert qui aide les élèves à optimiser leurs révisions.",
+        }
+    });
+    return response.text;
+}
+
+async function internalGenerateGame({ subjectName, customPrompt, model, systemInstruction }: { subjectName: string, customPrompt: string, model: GamesAiModel, systemInstruction: string }): Promise<string> {
+    const prompt = `Create a simple and fun educational game on the theme "${subjectName}" for a middle school student (Brevet level in France).
+    User instruction: "${customPrompt}".
+    The game must be a single, self-contained HTML file, with all CSS and JavaScript included in <style> and <script> tags.
+    Do not use any external libraries or image URLs.
+    The game should be playable, visually simple but pleasant, and include clear instructions.
+    Examples of game types: a quiz with instant feedback, a memory matching game, a hangman game with subject-related terms, a drag-and-drop to associate concepts.
+    Ensure the output is ONLY the full HTML code, starting with <!DOCTYPE html>.`;
+
+    const geminiModel = (model === 'gamesai-pro' || model === 'gamesai-max') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    
+    const response = await ai.models.generateContent({
+        model: geminiModel,
+        contents: prompt,
+        config: {
+            systemInstruction: systemInstruction || "You are an expert educational game developer who creates interactive and fun learning experiences.",
         }
     });
     return response.text;
@@ -233,6 +253,10 @@ export async function POST(req: Request) {
             case 'generateConseils':
                 const conseils = await internalGenerateConseils(payload);
                 return NextResponse.json({ html: conseils });
+
+            case 'generateGame':
+                const gameHtml = await internalGenerateGame(payload);
+                return NextResponse.json({ html: gameHtml });
 
             case 'generateWithSearch':
                 const searchResult = await internalGenerateWithSearch(payload);

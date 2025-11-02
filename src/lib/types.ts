@@ -1,10 +1,9 @@
-// Fix: Provide the implementation for the main App component.
 import React from 'react';
 
+export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'zh' | 'ru' | 'uk' | 'pl' | 'nl' | 'sv' | 'hr' | 'hu';
+
 export interface Subject {
-  // Fix: Changed `name` to `nameKey` to match usage in constants and components.
   nameKey: string;
-  // Fix: Specify that the icon can accept a className prop for styling via React.cloneElement.
   icon: React.ReactElement<{ className?: string }>;
   color: string;
   bgColor: string;
@@ -45,7 +44,6 @@ export type CanvasModel = 'canvasai' | 'canvasai-pro' | 'canvasai-max';
 export type FlashAiModel = 'flashai' | 'flashai-pro' | 'flashai-max';
 export type PlanningAiModel = 'planningai' | 'planningai-pro' | 'planningai-max';
 export type ConseilsAiModel = 'conseilsai' | 'conseilsai-pro' | 'conseilsai-max';
-// Fix: Added GamesAiModel type.
 export type GamesAiModel = 'gamesai' | 'gamesai-pro' | 'gamesai-max';
 
 
@@ -141,19 +139,35 @@ export interface CanvasVersion {
 }
 
 export interface PlanningTask {
+    id: string;
+    text: string;
+    isCompleted: boolean;
+}
+
+export interface PlanningDay {
     date: string; // e.g., "2025-10-27"
-    tasks: string[]; // List of tasks for the day
+    tasks: PlanningTask[];
 }
 
 export interface Planning {
     title: string;
-    schedule: PlanningTask[];
+    schedule: PlanningDay[];
 }
 
-// Fix: Add PremadeGame interface
+
 export interface PremadeGame {
   nameKey: string;
   descriptionKey: string;
   html: string;
   subjectNameKey: string;
+}
+
+export interface RawPlanningDay {
+    date: string;
+    tasks: string[];
+}
+
+export interface RawPlanning {
+    title: string;
+    schedule: RawPlanningDay[];
 }

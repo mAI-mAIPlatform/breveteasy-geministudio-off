@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Chat, Part } from "@google/genai";
+import { GoogleGenAI, Type, Chat, Part, Modality } from "@google/genai";
 import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, PlanningTask, PlanningDay, RawPlanning } from '../types';
 import type { GenerateContentResponse, Content } from '@google/genai';
 
@@ -22,6 +22,7 @@ export const generateQuiz = async (
     level: string,
     customPrompt: string,
     systemInstruction: string,
+    fileContents: string[]
 ): Promise<Quiz> => {
     const quizSchema = {
         type: Type.OBJECT,
@@ -44,7 +45,12 @@ export const generateQuiz = async (
         required: ['subject', 'questions']
     };
 
-    const prompt = `Generate a ${count}-question quiz on the topic "${subjectName}" for the ${level} level, with ${difficulty} difficulty. ${customPrompt}. The questions should be multiple-choice with 4 answer options. Provide an explanation for each correct answer.`;
+    let prompt = `Generate a ${count}-question quiz on the topic "${subjectName}" for the ${level} level, with ${difficulty} difficulty. ${customPrompt}. The questions should be multiple-choice with 4 answer options. Provide an explanation for each correct answer.`;
+
+    if (fileContents && fileContents.length > 0) {
+        const fileContext = fileContents.map((content, index) => `--- DOCUMENT D'INSPIRATION ${index + 1} ---\n${content}`).join('\n\n');
+        prompt = `En t'inspirant des documents suivants fournis par l'utilisateur :\n\n${fileContext}\n\n--- FIN DES DOCUMENTS ---\n\nTa mission est de répondre à la demande suivante :\n${prompt}`;
+    }
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -62,10 +68,17 @@ export const generateQuiz = async (
 export const generateHtmlContent = async (
     prompt: string,
     systemInstruction: string,
+    fileContents: string[]
 ): Promise<string> => {
+    let finalPrompt = prompt;
+    if (fileContents && fileContents.length > 0) {
+        const fileContext = fileContents.map((content, index) => `--- DOCUMENT D'INSPIRATION ${index + 1} ---\n${content}`).join('\n\n');
+        finalPrompt = `En t'inspirant des documents suivants fournis par l'utilisateur :\n\n${fileContext}\n\n--- FIN DES DOCUMENTS ---\n\nTa mission est de répondre à la demande suivante :\n${prompt}`;
+    }
+
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: prompt,
+        contents: finalPrompt,
         config: {
             systemInstruction: systemInstruction,
         }
@@ -125,6 +138,34 @@ export const generateImage = async (
     
     const imageBytes = response.generatedImages[0].image.imageBytes;
     return { data: imageBytes, mimeType: `image/${format}`};
+};
+
+export const editImage = async (base64Data: string, mimeType: string, prompt: string): Promise<{ data: string; mimeType: string; }> => {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType,
+            },
+          },
+          {
+            text: prompt,
+          },
+        ],
+      },
+      config: {
+          responseModalities: [Modality.IMAGE],
+      },
+    });
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return { data: part.inlineData.data, mimeType: part.inlineData.mimeType || 'image/png' };
+      }
+    }
+    throw new Error("Aucune image n'a été générée par l'IA.");
 };
 
 export const generateInteractivePage = async (
@@ -210,7 +251,7 @@ export const generatePlanning = async (
         required: ['title', 'schedule']
     };
 
-    const prompt = `Today's date is ${new Date(todayDate + 'T00:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC' })}. Create a study schedule for the following task: "${task}". The deadline is ${dueDate}. The schedule must start from today or a future date, never in the past. Break down the task into logical steps and distribute them over the available days until the deadline. The schedule must be realistic. Ensure the dates in the JSON are in YYYY-MM-DD format.`;
+    const prompt = `Today's date is ${new Date(todayDate + 'T00:00:00Z').toLocaleDateString('fr-FR', { timeZone: 'UTC' })}. Create a study schedule for the following task: "${task}". The deadline is ${dueDate}. The schedule must start from today or a future date, never in the past. Break down the task into logical steps and distribute them over the available days until the deadline. The schedule must be realistic. Ensure the dates in the JSON are in YYYY-MM-DD format.`;
 
     const geminiModel = model === 'planningai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
     
