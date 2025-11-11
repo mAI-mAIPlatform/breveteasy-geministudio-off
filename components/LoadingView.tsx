@@ -33,7 +33,7 @@ const LoadingSpinner: React.FC = () => (
         </svg>
          <div className="absolute inset-0 flex items-center justify-center text-indigo-400">
              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 animate-twinkle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-               <path strokeLinecap="round" strokeLinejoin="round" d="M9 18h6M10 22h4M12 2a5 5 0 0 1 5 5c0 2-2 4-2 4H9s-2-2-2-4a5 5 0 0 1 5-5z" />
+               <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
             </svg>
         </div>
     </div>
