@@ -1,6 +1,4 @@
-// Fix: Provide the implementation for the HistorySidebar component.
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-// FIX: Added 'ChatMessage' to imports to correctly type the 'onUpdateSession' prop.
 import type { ChatSession, Folder, AiModel, CustomAiModel, SubscriptionPlan, ChatMessage } from '../types';
 import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '../constants';
 import { PremiumBadge } from './PremiumBadge';

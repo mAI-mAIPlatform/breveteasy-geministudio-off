@@ -1,5 +1,4 @@
 
-
 "use client";
 
 // Fix: Provide the implementation for the main App component.
@@ -724,4 +723,404 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
             setActiveChatSessionId(null);
             const remainingSessions = chatSessions.filter(s => s.id !== sessionId);
             if(remainingSessions.length > 0) {
-                 const sorted = [...remainingSessions].sort((a,b
+// FIX: Corrected a typo in the sort function from `(a,b =>` to `(a, b) =>`.
+                 const sorted = [...remainingSessions].sort((a, b) => b.createdAt - a.createdAt);
+                 setActiveChatSessionId(sorted[0].id);
+            }
+        }
+    };
+    
+    const handleUpdateSession = (
+        sessionId: string,
+        updates: {
+            messages?: ChatMessage[] | ((prevMessages: ChatMessage[]) => ChatMessage[]);
+            title?: string;
+            aiModel?: AiModel;
+            folderId?: string | null;
+        }
+    ) => {
+        setChatSessions(prev =>
+            prev.map(s => {
+                if (s.id === sessionId) {
+                    const newSession = { ...s };
+                    if (updates.title !== undefined) newSession.title = updates.title;
+                    if (updates.aiModel !== undefined) newSession.aiModel = updates.aiModel;
+                    if (updates.folderId !== undefined) newSession.folderId = updates.folderId;
+
+                    if (updates.messages) {
+                        if (typeof updates.messages === 'function') {
+                            newSession.messages = updates.messages(s.messages);
+                        } else {
+                            newSession.messages = updates.messages;
+                        }
+                    }
+                    return newSession;
+                }
+                return s;
+            })
+        );
+    };
+
+    const handleDownloadChat = (sessionId: string) => {
+        const session = chatSessions.find(s => s.id === sessionId);
+        if (!session) return;
+    
+        const sanitizedTitle = session.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filename = `brevetai_discussion_${sanitizedTitle || 'sans_titre'}.txt`;
+    
+        let content = `Titre: ${session.title}\n`;
+        content += `Date: ${new Date(session.createdAt).toLocaleString('fr-FR')}\n`;
+        content += `Modèle: ${session.aiModel}\n`;
+        content += '------------------------------------\n\n';
+    
+        session.messages.forEach(message => {
+            const role = message.role === 'user' ? 'Utilisateur' : 'BrevetAI';
+            const textParts = message.parts.map(p => p.text).filter(Boolean).join('\n');
+            if (textParts) {
+                content += `${role}:\n${textParts}\n\n`;
+            }
+        });
+    
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Folder Handlers
+    const handleNewFolder = (name: string, emoji: string) => {
+        const newFolder: Folder = {
+            id: `folder_${Date.now()}`,
+            name,
+            emoji,
+            createdAt: Date.now(),
+        };
+        setFolders(prev => [newFolder, ...prev]);
+    };
+    
+    const handleDeleteFolder = (folderId: string) => {
+        setFolders(prev => prev.filter(f => f.id !== folderId));
+        setChatSessions(prev => prev.map(s => s.folderId === folderId ? {...s, folderId: null} : s));
+    };
+
+    const handleUpdateFolder = (folderId: string, updates: Partial<Folder>) => {
+        setFolders(prev =>
+            prev.map(f => (f.id === folderId ? { ...f, ...updates } : f))
+        );
+    };
+
+    // Custom Model Handlers
+    const handleAddNewCustomModel = (modelData: Omit<CustomAiModel, 'id' | 'createdAt'>) => {
+        const newModel: CustomAiModel = {
+            ...modelData,
+            id: `custom_${Date.now()}`,
+            createdAt: Date.now(),
+        };
+        setCustomAiModels(prev => [newModel, ...prev]);
+    };
+
+    // Image Generation Handlers
+    const handleGenerateImage = useCallback(async (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png', aspectRatio: string, negativePrompt: string) => {
+        const generationLimit = subscriptionPlan === 'free' ? 2 : subscriptionPlan === 'pro' ? 5 : Infinity;
+        if (imageUsage.count >= generationLimit) {
+            showNotification("Vous avez atteint votre limite de générations d'images pour aujourd'hui.", 'error');
+            return;
+        }
+
+        setIsGeneratingImage(true);
+        setGeneratedImage(null);
+        
+        try {
+            const imageData = await generateImage(
+                prompt,
+                model,
+                style,
+                format,
+                aspectRatio,
+                imageGenerationInstruction,
+                negativePrompt
+            );
+            
+            setGeneratedImage(imageData);
+            setImageUsage(prev => ({ ...prev, count: prev.count + 1 }));
+
+        } catch (error) {
+            console.error("Error generating image:", error);
+            showNotification("Une erreur est survenue lors de la génération de l'image.", 'error');
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    }, [imageUsage, subscriptionPlan, imageGenerationInstruction]);
+
+    // Canvas, FlashAI, Planning & Conseils Handlers
+    const handleGenerateCanvas = useCallback(async (prompt: string, model: CanvasModel) => {
+        setIsGeneratingCanvas(true);
+        try {
+            const html = await generateInteractivePage(prompt, model, buildSystemInstruction(canvasSystemInstruction));
+            const newVersion: CanvasVersion = {
+                id: `canvas_${Date.now()}`,
+                htmlContent: html,
+                prompt: prompt,
+                createdAt: Date.now()
+            };
+            setCanvasVersions(prev => [...prev, newVersion]);
+            setActiveCanvasVersionId(newVersion.id);
+        } catch (error) {
+            console.error("Error generating canvas page:", error);
+            showNotification(t('error_generating'), 'error');
+        } finally {
+            setIsGeneratingCanvas(false);
+        }
+    }, [buildSystemInstruction, canvasSystemInstruction, t]);
+
+    const handleGenerateFlashQuestion = useCallback(async (level: string, model: FlashAiModel) => {
+        setIsGeneratingFlashQuestion(true);
+        try {
+            const question = await generateFlashQuestion(level, buildSystemInstruction(flashAiSystemInstruction), model);
+            setFlashQuestion(question);
+        } catch (error) {
+            console.error("Error generating flash question:", error);
+            showNotification(t('error_generating'), 'error');
+        } finally {
+            setIsGeneratingFlashQuestion(false);
+        }
+    }, [buildSystemInstruction, flashAiSystemInstruction, t]);
+    
+    const handleGeneratePlanning = useCallback(async (task: string, dueDate: string, model: PlanningAiModel) => {
+        setIsGeneratingPlanning(true);
+        try {
+            const todayDate = new Date().toISOString().split('T')[0];
+            const generatedPlan: RawPlanning = await generatePlanning(task, dueDate, todayDate, buildSystemInstruction(planningAiSystemInstruction), model);
+            
+            const scheduleWithTaskObjects: PlanningDay[] = generatedPlan.schedule.map(day => ({
+                date: day.date,
+                tasks: day.tasks.map((taskText: string) => ({
+                    id: `task_${Date.now()}_${Math.random()}`,
+                    text: taskText,
+                    isCompleted: false,
+                })) as PlanningTask[]
+            }));
+
+            setPlanning({ ...generatedPlan, schedule: scheduleWithTaskObjects });
+        } catch (error) {
+            console.error("Error generating planning:", error);
+            showNotification("Une erreur est survenue lors de la création du planning.", 'error');
+        } finally {
+            setIsGeneratingPlanning(false);
+        }
+    }, [buildSystemInstruction, planningAiSystemInstruction]);
+
+    const handleUpdatePlanning = (updatedPlanning: Planning) => {
+        setPlanning(updatedPlanning);
+    };
+
+    const handleGenerateConseils = useCallback(async (subject: string, level: string, model: ConseilsAiModel) => {
+        setIsGeneratingConseils(true);
+        try {
+            const generatedConseils = await generateConseils(subject, level, buildSystemInstruction(conseilsAiSystemInstruction), model);
+            setConseils(generatedConseils);
+        } catch (error) {
+            console.error("Error generating conseils:", error);
+            showNotification(t('error_generating'), 'error');
+        } finally {
+            setIsGeneratingConseils(false);
+        }
+    }, [buildSystemInstruction, conseilsAiSystemInstruction, t]);
+    
+    const handleGenerateAIGame = useCallback(async (subject: Subject, prompt: string, model: GamesAiModel) => {
+        setView('loading');
+        setLoadingTask('gamesAI');
+        try {
+            const html = await generateGame(t(subject.nameKey), prompt, model, buildSystemInstruction(gamesAiSystemInstruction));
+            setGameHtml(html);
+            setSelectedGameSubject(subject);
+            setView('gameDisplay');
+        } catch (error) {
+            console.error(`Error generating game:`, error);
+            showNotification(t('error_generating'), 'error');
+            handleBackToHome();
+        }
+    }, [t, handleBackToHome, buildSystemInstruction, gamesAiSystemInstruction]);
+
+
+    const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
+    
+    const remainingImageGenerations = () => {
+        if (subscriptionPlan === 'max') return Infinity;
+        const limit = subscriptionPlan === 'pro' ? 5 : 2;
+        return Math.max(0, limit - imageUsage.count);
+    };
+
+    const quizProgress = quiz ? ((currentQuestionIndex + 1) / (quiz.questions.length || 1)) * 100 : 0;
+    
+    if (!user) {
+        return (
+            <div className="w-full min-h-full flex items-center justify-center p-4">
+                <LoginView onLogin={handleLogin} />
+            </div>
+        )
+    }
+
+    if (view === 'loading') {
+        return <LoadingView subject={selectedSubject?.nameKey ? t(selectedSubject.nameKey) : ''} task={loadingTask} onCancel={handleBackToHome} />;
+    }
+    
+    const renderContent = () => {
+        switch (view) {
+            case 'home':
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
+            case 'subjectOptions':
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
+            case 'quiz':
+                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} isTimed={quizUseTimer} />;
+            case 'results':
+                return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
+            case 'settings':
+                return (
+                    <SettingsView
+                        theme={theme}
+                        onThemeChange={setTheme}
+                        aiSystemInstruction={aiSystemInstruction}
+                        onAiSystemInstructionChange={setAiSystemInstruction}
+                        subscriptionPlan={subscriptionPlan}
+                        userName={userName}
+                        onUserNameChange={setUserName}
+                        userAvatar={userAvatar}
+                        onUserAvatarChange={setUserAvatar}
+                        defaultAiModel={defaultAiModel}
+                        onDefaultAiModelChange={setDefaultAiModel}
+                        defaultImageModel={defaultImageModel}
+                        onDefaultImageModelChange={setDefaultImageModel}
+                        imageGenerationInstruction={imageGenerationInstruction}
+                        onImageGenerationInstructionChange={setImageGenerationInstruction}
+                        defaultItemCount={defaultItemCount}
+                        onDefaultItemCountChange={setDefaultItemCount}
+                        defaultDifficulty={defaultDifficulty}
+                        onDefaultDifficultyChange={setDefaultDifficulty}
+                        defaultLevel={defaultLevel}
+                        onDefaultLevelChange={setDefaultLevel}
+                        defaultCanvasModel={defaultCanvasModel}
+                        onDefaultCanvasModelChange={setDefaultCanvasModel}
+                        canvasSystemInstruction={canvasSystemInstruction}
+                        onCanvasSystemInstructionChange={setCanvasSystemInstruction}
+                        defaultFlashAiModel={defaultFlashAiModel}
+                        onDefaultFlashAiModelChange={setDefaultFlashAiModel}
+                        flashAiSystemInstruction={flashAiSystemInstruction}
+                        onFlashAiSystemInstructionChange={setFlashAiSystemInstruction}
+                        defaultPlanningAiModel={defaultPlanningAiModel}
+                        onDefaultPlanningAiModelChange={setDefaultPlanningAiModel}
+                        planningAiSystemInstruction={planningAiSystemInstruction}
+                        onPlanningAiSystemInstructionChange={setPlanningAiSystemInstruction}
+                        defaultConseilsAiModel={defaultConseilsAiModel}
+                        onDefaultConseilsAiModelChange={setDefaultConseilsAiModel}
+                        conseilsAiSystemInstruction={conseilsAiSystemInstruction}
+                        onConseilsAiSystemInstructionChange={setConseilsAiSystemInstruction}
+                        defaultGamesAiModel={defaultGamesAiModel}
+                        onDefaultGamesAiModelChange={setDefaultGamesAiModel}
+                        gamesAiSystemInstruction={gamesAiSystemInstruction}
+                        onGamesAiSystemInstructionChange={setGamesAiSystemInstruction}
+                    />
+                );
+            case 'chat':
+                return (
+                    <div className="w-full h-full flex flex-row">
+                        <HistorySidebar 
+                            sessions={chatSessions}
+                            folders={folders}
+                            activeSessionId={activeChatSessionId}
+                            onSelectChat={handleSelectChat}
+                            onDeleteChat={handleDeleteChat}
+                            onDownloadChat={handleDownloadChat}
+                            onNewChat={handleNewChat}
+                            onUpdateSession={handleUpdateSession}
+                            onNewFolder={handleNewFolder}
+                            onDeleteFolder={handleDeleteFolder}
+                            onUpdateFolder={handleUpdateFolder}
+                            onExitChat={handleBackToHome}
+                            subscriptionPlan={subscriptionPlan}
+                            onNewCustomModel={handleAddNewCustomModel}
+                        />
+                        <div className="flex-grow h-full">
+                            {activeSession ? (
+                                <ChatView 
+                                    session={activeSession} 
+                                    onUpdateSession={handleUpdateSession} 
+                                    systemInstruction={aiSystemInstruction}
+                                    subscriptionPlan={subscriptionPlan}
+                                    userName={userName}
+                                    onNavigateToImageGeneration={handleGoToImageGeneration}
+                                    onNavigateToCanvas={handleStartCanvas}
+                                    onNavigateToFlashAI={handleStartFlashAI}
+                                    onNavigateToPlanning={handleStartPlanning}
+                                    onNavigateToConseils={handleStartConseils}
+                                />
+                            ) : (
+                                <WelcomeView />
+                            )}
+                        </div>
+                    </div>
+                );
+            case 'login':
+                return <LoginView onLogin={handleLogin} />;
+            case 'exercises':
+                const contentConfig = {
+                    exercises: { title: t('exercises_generated'), description: t('exercises_generated_desc'), buttonText: t('exercises_download_button') },
+                    cours: { title: t('course_generated'), description: t('course_generated_desc'), buttonText: t('course_download_button') },
+                    'fiche-revisions': { title: t('summary_generated'), description: t('summary_generated_desc'), buttonText: t('summary_download_button') },
+                }[loadingTask] || { title: "Contenu généré !", description: "Votre contenu est prêt.", buttonText: "Télécharger" };
+                
+                return <ExercisesView onDownload={handleDownloadHtml} onCopy={handleCopyHtml} {...contentConfig} />;
+            case 'subscription':
+                return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
+            case 'imageGeneration':
+                 return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
+            case 'canvas':
+                return <CanvasView versions={canvasVersions} activeVersionId={activeCanvasVersionId} onGenerate={handleGenerateCanvas} onSelectVersion={setActiveCanvasVersionId} isGenerating={isGeneratingCanvas} subscriptionPlan={subscriptionPlan} defaultCanvasModel={defaultCanvasModel} />;
+            case 'flashAI':
+                return <FlashAIView onGenerate={handleGenerateFlashQuestion} isLoading={isGeneratingFlashQuestion} question={flashQuestion} onClear={() => setFlashQuestion(null)} subscriptionPlan={subscriptionPlan} defaultFlashAiModel={defaultFlashAiModel} />;
+            case 'planning':
+                return <PlanningView onGenerate={handleGeneratePlanning} isLoading={isGeneratingPlanning} planning={planning} onClear={() => setPlanning(null)} subscriptionPlan={subscriptionPlan} defaultPlanningAiModel={defaultPlanningAiModel} onUpdate={handleUpdatePlanning}/>;
+            case 'conseils':
+                return <ConseilsView onGenerate={handleGenerateConseils} isLoading={isGeneratingConseils} conseils={conseils} onClear={() => setConseils(null)} subscriptionPlan={subscriptionPlan} defaultConseilsAiModel={defaultConseilsAiModel} />;
+            case 'drawing':
+                return <DrawingView />;
+            case 'jeux':
+                return <JeuxView onSelectSubject={handleSelectGameSubject} />;
+            case 'jeuxDetail':
+                return selectedGameSubject && <JeuxDetailView subject={selectedGameSubject} onSelectPremadeGame={handleSelectPremadeGame} onGenerateAIGame={handleGenerateAIGame} subscriptionPlan={subscriptionPlan} defaultGamesAiModel={defaultGamesAiModel} />;
+            case 'gameDisplay':
+                return <GameDisplayView htmlContent={gameHtml} subject={selectedGameSubject} onGenerateAnother={(subject) => { setView('jeuxDetail'); setSelectedGameSubject(subject); }} />;
+            default:
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
+        }
+    };
+    
+    const showHeader = !['login', 'chat', 'drawing'].includes(view);
+    const showExitButton = !['login', 'home', 'chat'].includes(view);
+    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay'].includes(view);
+
+    return (
+        <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>
+             <Confetti particles={confetti} />
+             {notification && <GeneralNotification message={notification.message} type={notification.type} />}
+             {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
+             {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
+             <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
+             {view === 'quiz' && quiz && (
+                <div className="w-full max-w-4xl mx-auto pt-20">
+                    <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-2.5">
+                        <div className="bg-gradient-to-r from-indigo-400 to-sky-400 h-2.5 rounded-full transition-all duration-500" style={{ width: `${quizProgress}%`, boxShadow: '0 0 10px rgba(96, 165, 250, 0.7)' }}></div>
+                    </div>
+                </div>
+             )}
+             <div className={`${view === 'quiz' ? 'pt-6' : ''}`}>
+                {renderContent()}
+             </div>
+        </div>
+    );
+};
+// FIX: Added default export
+export default App;

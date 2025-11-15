@@ -713,15 +713,18 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
     };
 
     const handleDeleteChat = (sessionId: string) => {
-        setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-        if (activeChatSessionId === sessionId) {
-            setActiveChatSessionId(null);
-            const remainingSessions = chatSessions.filter(s => s.id !== sessionId);
-            if(remainingSessions.length > 0) {
-                 const sorted = [...remainingSessions].sort((a,b) => b.createdAt - a.createdAt);
-                 setActiveChatSessionId(sorted[0].id);
+        setChatSessions(prev => {
+            const remainingSessions = prev.filter(s => s.id !== sessionId);
+            if (activeChatSessionId === sessionId) {
+                if (remainingSessions.length > 0) {
+                    const sorted = [...remainingSessions].sort((a, b) => b.createdAt - a.createdAt);
+                    setActiveChatSessionId(sorted[0].id);
+                } else {
+                    setActiveChatSessionId(null);
+                }
             }
-        }
+            return remainingSessions;
+        });
     };
     
     const handleUpdateSession = (
@@ -1116,5 +1119,4 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
         </div>
     );
 };
-// FIX: Added default export
 export default App;

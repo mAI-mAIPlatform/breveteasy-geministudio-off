@@ -317,24 +317,4 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
              <OptionCard
                 title={t('subject_options_generate_exercises')}
                 description={t('subject_options_generate_exercises_desc', { count: itemCount })}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" /></svg>}
-                onClick={handleGenerateExercisesClick}
-            />
-            <OptionCard
-                title={t('subject_options_generate_course')}
-                description={t('subject_options_generate_course_desc', { count: itemCount })}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" /></svg>}
-                onClick={handleGenerateCoursClick}
-                isProFeature={isFreePlan}
-            />
-            <OptionCard
-                title={t('subject_options_generate_summary')}
-                description={t('subject_options_generate_summary_desc')}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>}
-                onClick={handleGenerateFicheRevisionsClick}
-                isProFeature={isFicheRevisionsLocked}
-            />
-        </main>
-    </div>
-  );
-};
+                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.
