@@ -314,7 +314,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                 onUpdateSession(session.id, {
                     messages: (prev) => {
                         const newMessages = [...prev.slice(0, -1)];
-                        newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata: groundingMetadata, isGenerating: false });
+                        newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata, isGenerating: false });
                         return newMessages;
                     },
                 });
@@ -477,7 +477,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                 />
             </div>
 
-            <main className="flex-grow overflow-y-auto p-4 sm:p-6 flex flex-col space-y-6">
+            <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6 flex flex-col">
                 {session.messages.length === 0 && !attachment && (
                      <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 shadow-lg flex items-center justify-center mb-4">
