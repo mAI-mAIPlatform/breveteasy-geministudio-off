@@ -1,4 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
+
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { NextResponse } from 'next/server';
 import type { Quiz, ImageModel, Question, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, RawPlanning } from '@/lib/types';
 
@@ -94,6 +95,35 @@ async function internalGenerateImage({ prompt, model, style, format, aspectRatio
     
     const imageBytes = response.generatedImages[0].image.imageBytes;
     return { data: imageBytes, mimeType: `image/${format}`};
+}
+
+// FIX: Added 'internalEditImage' function to handle image editing requests from the frontend.
+async function internalEditImage({ base64Data, mimeType, prompt }: { base64Data: string, mimeType: string, prompt: string }): Promise<{ data: string; mimeType: string; }> {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType,
+            },
+          },
+          {
+            text: prompt,
+          },
+        ],
+      },
+      config: {
+          responseModalities: [Modality.IMAGE],
+      },
+    });
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return { data: part.inlineData.data, mimeType: part.inlineData.mimeType || 'image/png' };
+      }
+    }
+    throw new Error("Aucune image n'a été générée par l'IA.");
 }
 
 async function internalGenerateFlashQuestion({ level, systemInstruction, model }: { level: string; systemInstruction: string; model: FlashAiModel }): Promise<Question> {
@@ -242,6 +272,11 @@ export async function POST(req: Request) {
                 const image = await internalGenerateImage(payload);
                 return NextResponse.json(image);
             
+            // FIX: Added 'editImage' case to handle API requests for image editing.
+            case 'editImage':
+                const editedImage = await internalEditImage(payload);
+                return NextResponse.json(editedImage);
+
             case 'generateFlashQuestion':
                 const question = await internalGenerateFlashQuestion(payload);
                 return NextResponse.json(question);

@@ -32,9 +32,7 @@ const LoadingSpinner: React.FC = () => (
             />
         </svg>
          <div className="absolute inset-0 flex items-center justify-center text-indigo-400">
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 animate-twinkle" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-               <path strokeLinecap="round" strokeLinejoin="round" d="M18 8 L19.25 5.25 L22 4 L19.25 2.75 L18 0 L16.75 2.75 L14 4 L16.75 5.25 Z M10 22 L11.25 19.25 L14 18 L11.25 16.75 L10 14 L8.75 16.75 L6 18 L8.75 19.25 Z M18 22 L16.75 19.25 L14 18 L16.75 16.75 L18 14 L19.25 16.75 L22 18 L19.25 19.25 Z M4 8 L2.75 5.25 L0 4 L2.75 2.75 L4 0 L5.25 2.75 L8 4 L5.25 5.25 Z" />
-            </svg>
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 animate-twinkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8 L19.25 5.25 L22 4 L19.25 2.75 L18 0 L16.75 2.75 L14 4 L16.75 5.25 Z M10 22 L11.25 19.25 L14 18 L11.25 16.75 L10 14 L8.75 16.75 L6 18 L8.75 19.25 Z M18 22 L16.75 19.25 L14 18 L16.75 16.75 L18 14 L19.25 16.75 L22 18 L19.25 19.25 Z M4 8 L2.75 5.25 L0 4 L2.75 2.75 L4 0 L5.25 2.75 L8 4 L5.25 5.25 Z"/></svg>
         </div>
     </div>
 );

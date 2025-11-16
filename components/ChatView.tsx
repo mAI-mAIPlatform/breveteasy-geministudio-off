@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '../types';
 import { PremiumBadge } from './PremiumBadge';
@@ -416,7 +417,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         if (isLoading || session.messages[index]?.role !== 'model') return;
 
         const historyForRegen = session.messages.slice(0, index);
-        const userMessageIndex = historyForRegen.findLastIndex(m => m.role === 'user');
+        
+        let userMessageIndex = -1;
+        for (let i = historyForRegen.length - 1; i >= 0; i--) {
+            if (historyForRegen[i].role === 'user') {
+                userMessageIndex = i;
+                break;
+            }
+        }
 
         if (userMessageIndex === -1) return;
 
@@ -442,7 +450,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     }, [isLoading, session.messages, session.id, onUpdateSession, handleSendMessage]);
     
     const handleRegenerateLast = (modification: 'longer' | 'shorter') => {
-        const lastModelIndex = session.messages.findLastIndex(m => m.role === 'model' && !m.isGenerating);
+        let lastModelIndex = -1;
+        for (let i = session.messages.length - 1; i >= 0; i--) {
+            if (session.messages[i].role === 'model' && !session.messages[i].isGenerating) {
+                lastModelIndex = i;
+                break;
+            }
+        }
+        
         if (lastModelIndex !== -1) {
             handleRegenerateResponse(lastModelIndex, modification);
         }

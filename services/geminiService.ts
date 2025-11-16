@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Chat, Part, Modality } from "@google/genai";
 import type { Quiz, Question, ImageModel, CanvasModel, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, PlanningTask, PlanningDay, RawPlanning } from '../types';
 import type { GenerateContentResponse, Content } from '@google/genai';

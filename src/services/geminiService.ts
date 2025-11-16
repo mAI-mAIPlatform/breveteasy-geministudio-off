@@ -1,3 +1,4 @@
+
 import type { Quiz, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Question, Planning, ChatMessage, ChatPart, GamesAiModel, RawPlanning } from '@/lib/types';
 import type { GenerateContentResponse } from '@google/genai';
 
@@ -51,6 +52,15 @@ export const generateImage = async (
 ): Promise<{ data: string; mimeType: string; }> => {
     // FIX: Pass `negativePrompt` in the payload to the API.
     return callGeminiApi<{ data: string; mimeType: string; }>('generateImage', { prompt, model, style, format, aspectRatio, imageGenerationInstruction, negativePrompt });
+};
+
+// FIX: Added exported 'editImage' function to fix import error in App.tsx.
+export const editImage = async (
+    base64Data: string,
+    mimeType: string,
+    prompt: string
+): Promise<{ data: string; mimeType: string; }> => {
+    return callGeminiApi<{ data: string; mimeType: string; }>('editImage', { base64Data, mimeType, prompt });
 };
 
 export const generateInteractivePage = async (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HomeView } from './components/HomeView';
 import { SubjectOptionsView } from './components/SubjectOptionsView';
@@ -20,7 +21,10 @@ import { DrawingView } from './components/DrawingView';
 import { JeuxView } from './components/JeuxView';
 import { JeuxDetailView } from './components/JeuxDetailView';
 import { GameDisplayView } from './components/GameDisplayView';
-import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from './services/geminiService';
+// FIX: Added ImageEditingView and VoiceAIView imports
+import { ImageEditingView } from './components/ImageEditingView';
+import { VoiceAIView } from './components/VoiceAIView';
+import { generateQuiz, generateHtmlContent, generateImage, editImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from './services/geminiService';
 import { AVATAR_ICONS, SUBJECTS } from './constants';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay, PlanningTask, RawPlanning } from './types';
 import { useLocalization } from './hooks/useLocalization';
@@ -69,7 +73,7 @@ const GeneralNotification: React.FC<{ message: string, type: 'success' | 'error'
 };
 
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay' | 'imageEditing' | 'voiceAI';
 type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
 
 interface ImageUsage {
@@ -236,6 +240,10 @@ const App: React.FC = () => {
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
     const [imageUsage, setImageUsage] = useState<ImageUsage>({ count: 0, date: new Date().toISOString().split('T')[0] });
+    
+    // Image Editing State
+    const [isEditingImage, setIsEditingImage] = useState(false);
+    const [editedImage, setEditedImage] = useState<{ data: string; mimeType: string } | null>(null);
 
     // Canvas State
     const [canvasVersions, setCanvasVersions] = useState<CanvasVersion[]>([]);
@@ -488,6 +496,10 @@ const App: React.FC = () => {
         setSelectedGameSubject(SUBJECTS.find(s => s.nameKey === game.subjectNameKey) || null);
         setView('gameDisplay');
     };
+    
+    const handleStartImageEditing = () => setView('imageEditing');
+    const handleStartVoiceAI = () => setView('voiceAI');
+
 
     // Subscription Handler
     const handleUpgradePlan = (code: string) => {
@@ -546,7 +558,7 @@ const App: React.FC = () => {
             showNotification(t('error_generating'), 'error');
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t, handleBackToHome]);
     
     const triggerConfetti = () => {
         const newParticles = Array.from({ length: 150 }).map((_, i) => ({
@@ -590,7 +602,7 @@ const App: React.FC = () => {
             showNotification(t('error_generating'), 'error');
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t, handleBackToHome]);
 
     const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
         const prompt = `Génère une fiche de ${count} exercices sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}.
@@ -847,7 +859,21 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [imageUsage, subscriptionPlan, imageGenerationInstruction]);
+    }, [imageUsage.count, subscriptionPlan, imageGenerationInstruction]);
+
+    const handleEditImage = useCallback(async (base64Data: string, mimeType: string, prompt: string) => {
+        setIsEditingImage(true);
+        setEditedImage(null);
+        try {
+            const imageData = await editImage(base64Data, mimeType, prompt);
+            setEditedImage(imageData);
+        } catch (error) {
+            console.error("Error editing image:", error);
+            showNotification("Une erreur est survenue lors de la modification de l'image.", 'error');
+        } finally {
+            setIsEditingImage(false);
+        }
+    }, []);
 
     // Canvas, FlashAI, Planning & Conseils Handlers
     const handleGenerateCanvas = useCallback(async (prompt: string, model: CanvasModel) => {
@@ -965,7 +991,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
     const renderContent = () => {
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
@@ -1071,6 +1097,10 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'imageGeneration':
                  return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
+            case 'imageEditing':
+                 return <ImageEditingView onGenerate={handleEditImage} isGenerating={isEditingImage} generatedImage={editedImage} onClear={() => setEditedImage(null)} />;
+            case 'voiceAI':
+                 return <VoiceAIView />;
             case 'canvas':
                 return <CanvasView versions={canvasVersions} activeVersionId={activeCanvasVersionId} onGenerate={handleGenerateCanvas} onSelectVersion={setActiveCanvasVersionId} isGenerating={isGeneratingCanvas} subscriptionPlan={subscriptionPlan} defaultCanvasModel={defaultCanvasModel} />;
             case 'flashAI':
@@ -1088,13 +1118,13 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
             case 'gameDisplay':
                 return <GameDisplayView htmlContent={gameHtml} subject={selectedGameSubject} onGenerateAnother={(subject) => { setView('jeuxDetail'); setSelectedGameSubject(subject); }} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />;
         }
     };
     
     const showHeader = !['login', 'chat', 'drawing'].includes(view);
     const showExitButton = !['login', 'home', 'chat'].includes(view);
-    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay'].includes(view);
+    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay', 'imageEditing', 'voiceAI'].includes(view);
 
     return (
         <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>

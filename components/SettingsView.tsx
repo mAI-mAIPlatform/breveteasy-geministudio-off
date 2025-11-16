@@ -516,7 +516,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
 
                 <SettingSection title={t('settings_about_title')} description={t('settings_about_desc')}>
                     <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">26-4.2</span>
+                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">26-4.3</span>
                         <a href="https://github.com/mAI-mAIPlatform/breveteasy-geministudio-off/releases/" target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors text-sm">{t('settings_about_version_notes')}</a>
                     </div>
                 </SettingSection>

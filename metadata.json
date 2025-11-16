@@ -1,5 +1,7 @@
 {
   "name": "Brevet' Easy",
   "description": "An AI-powered quiz generator to help students revise for the French Brevet exam. Select a subject and Brevet AI will create a 15-question quiz for you.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

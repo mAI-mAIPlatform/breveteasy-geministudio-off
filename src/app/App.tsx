@@ -1,5 +1,6 @@
 
 
+
 "use client";
 
 // Fix: Provide the implementation for the main App component.
@@ -17,6 +18,8 @@ import { LoginView } from '../components/LoginView';
 import { ExercisesView } from '../components/ExercisesView';
 import { SubscriptionView } from '../components/SubscriptionView';
 import { ImageGenerationView } from '../components/ImageGenerationView';
+import { ImageEditingView } from '../components/ImageEditingView';
+import { VoiceAIView } from '../components/VoiceAIView';
 import { WelcomeView } from '../components/WelcomeView';
 import { CanvasView } from '../components/CanvasView';
 import { FlashAIView } from '../components/FlashAIView';
@@ -26,7 +29,7 @@ import { DrawingView } from '../components/DrawingView';
 import { JeuxView } from '../components/JeuxView';
 import { JeuxDetailView } from '../components/JeuxDetailView';
 import { GameDisplayView } from '../components/GameDisplayView';
-import { generateQuiz, generateHtmlContent, generateImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from '../services/geminiService';
+import { generateQuiz, generateHtmlContent, generateImage, editImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from '../services/geminiService';
 import { AVATAR_ICONS, SUBJECTS } from '../constants';
 import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay, PlanningTask, RawPlanning } from '../types';
 import { useLocalization } from '../hooks/useLocalization';
@@ -75,7 +78,7 @@ const GeneralNotification: React.FC<{ message: string, type: 'success' | 'error'
 };
 
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'imageEditing' | 'voiceAI' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay';
 type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
 
 interface ImageUsage {
@@ -242,6 +245,10 @@ const App: React.FC = () => {
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<{ data: string; mimeType: string; } | null>(null);
     const [imageUsage, setImageUsage] = useState<ImageUsage>({ count: 0, date: new Date().toISOString().split('T')[0] });
+    
+    // Image Editing State
+    const [isEditingImage, setIsEditingImage] = useState(false);
+    const [editedImage, setEditedImage] = useState<{ data: string; mimeType: string } | null>(null);
 
     // Canvas State
     const [canvasVersions, setCanvasVersions] = useState<CanvasVersion[]>([]);
@@ -360,7 +367,7 @@ const App: React.FC = () => {
 
     // Scroll-to-top button logic
     useEffect(() => {
-        rootRef.current = document.getElementById('root');
+        rootRef.current = document.getElementById('root-scroll-container');
         const container = rootRef.current;
         if (!container) return;
 
@@ -494,6 +501,10 @@ const App: React.FC = () => {
         setSelectedGameSubject(SUBJECTS.find(s => s.nameKey === game.subjectNameKey) || null);
         setView('gameDisplay');
     };
+    
+    const handleStartImageEditing = () => setView('imageEditing');
+    const handleStartVoiceAI = () => setView('voiceAI');
+
 
     // Subscription Handler
     const handleUpgradePlan = (code: string) => {
@@ -552,7 +563,7 @@ const App: React.FC = () => {
             showNotification(t('error_generating'), 'error');
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t, handleBackToHome]);
     
     const triggerConfetti = () => {
         const newParticles = Array.from({ length: 150 }).map((_, i) => ({
@@ -596,20 +607,74 @@ const App: React.FC = () => {
             showNotification(t('error_generating'), 'error');
             handleBackToHome();
         }
-    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t]);
+    }, [selectedSubject, buildSystemInstruction, aiSystemInstruction, t, handleBackToHome]);
 
     const handleGenerateExercises = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
-        const prompt = `Génère une fiche de ${count} exercices sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, incluant les énoncés numérotés, un espace pour la réponse, et un corrigé détaillé à la fin. Utilise des balises sémantiques (h1, h2, p, ul, li, etc.) et un peu de style CSS dans une balise <style> pour la lisibilité (couleurs, marges, etc.).`;
+        const prompt = `Génère une fiche de ${count} exercices sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}.
+La sortie doit être un fichier HTML unique, complet et bien formaté.
+
+**CONSIGNES STRICTES POUR LE HTML & CSS :**
+
+1.  **Structure HTML :**
+    *   Utilise une structure sémantique: \`<!DOCTYPE html>\`, \`<html>\`, \`<head>\`, \`<body>\`.
+    *   Dans \`<head>\`, inclure \`<meta charset="UTF-8">\`, \`<meta name="viewport" content="width=device-width, initial-scale=1.0">\`, et un \`<title>\` pertinent.
+    *   Le corps (\`<body>\`) doit contenir un conteneur principal (\`div class="container"\`).
+    *   Le titre principal (\`<h1>\`) doit être "Exercices de ${t(selectedSubject?.nameKey || '')}". Un sous-titre \`<p>\` peut indiquer le niveau et la difficulté.
+    *   Chaque exercice doit être dans une \`<section class="exercise">\` avec un titre \`<h2>\` (ex: "Exercice 1").
+    *   La section des corrigés doit être à la fin, dans une balise \`<details class="correction-details">\`. Le titre "Corrigés" sera dans une balise \`<summary>\`. Chaque corrigé d'exercice sera dans un \`<div class="correction-item">\`.
+
+2.  **CSS (dans une balise \`<style>\` dans le \`<head>\`) :**
+    *   Importe la police 'Poppins' de Google Fonts: \`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');\`
+    *   Style le \`body\` avec la police 'Poppins'.
+    *   Crée un design moderne, épuré et aéré. Utilise un fond de couleur claire.
+    *   Centre le \`.container\` avec une largeur maximale (\`max-width: 800px;\`) et des marges.
+    *   **Supporte le mode sombre :** Ajoute des styles dans une media query \`@media (prefers-color-scheme: dark)\`. Change les couleurs du fond, du texte, des bordures, etc., pour un thème sombre agréable.
+    *   Style les titres, paragraphes et listes pour une lisibilité optimale.
+    *   Style la section \`.exercise\` avec une bordure subtile et un peu de marge.
+    *   Style la section des corrigés (\`.correction-details\`) avec un fond légèrement différent. Style le \`<summary>\` pour qu'il ressemble à un bouton interactif.
+
+3.  **Contenu :**
+    *   Les énoncés doivent être clairs.
+    *   Les corrigés doivent être détaillés et pédagogiques.
+    *   Ajoute un pied de page discret \`<footer>\` avec le texte "Généré par Brevet' Easy".
+
+**Exemple de structure CSS pour le mode sombre :**
+\`\`\`css
+@media (prefers-color-scheme: dark) {
+  body { background-color: #121212; color: #e0e0e0; }
+  .container { background-color: #1e1e1e; }
+  /* ... autres styles pour le mode sombre ... */
+}
+\`\`\`
+`;
         handleGenericHtmlGeneration('exercises', prompt, fileContents);
     };
     
     const handleGenerateCours = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
-        const prompt = `Génère une fiche de cours sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}, en se concentrant sur ${count} concepts clés. ${customPrompt}. La sortie doit être un fichier HTML bien formaté, avec un titre principal, des sections pour chaque concept (h2), des définitions claires (p), des exemples (ul/li ou blockquojte), et un résumé. Utilise des balises sémantiques et du CSS dans une balise <style> pour rendre le cours visuellement agréable et facile à lire (couleurs, typographie, espacements).`;
+        const prompt = `Génère une fiche de cours sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, en se concentrant sur ${count} concepts clés. ${customPrompt}.
+La sortie doit être un fichier HTML unique, complet et bien formaté, suivant les mêmes consignes de design (police Poppins, conteneur centré, support mode sombre, etc.) que pour une fiche d'exercices.
+
+**Structure spécifique pour le cours :**
+*   Le titre principal \`<h1>\` sera "Fiche de Cours : ${t(selectedSubject?.nameKey || '')}".
+*   Chaque concept clé doit être une \`<section>\` avec un titre \`<h2>\`.
+*   Utilise des paragraphes \`<p>\`, des listes \`<ul>\`/\`<li>\`, et des balises \`<strong>\` ou \`<em>\` pour mettre en évidence les termes importants.
+*   Inclus une section de résumé à la fin dans un \`<div class="summary">\` avec un style distinctif (par exemple, un fond de couleur ou une bordure).
+*   Pas de section de corrigés ici, mais maintiens le design général et le pied de page.
+`;
         handleGenericHtmlGeneration('cours', prompt, fileContents);
     };
     
     const handleGenerateFicheRevisions = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
-        const prompt = `Génère une fiche de révisions synthétique sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}. ${customPrompt}. La fiche doit résumer les points essentiels à connaître pour le brevet. La sortie doit être un fichier HTML bien formaté, utilisant des titres, des listes à puces, du gras pour les termes importants, et un code couleur simple pour mettre en évidence les différentes sections. Le contenu doit être concis et aller à l'essentiel.`;
+        const prompt = `Génère une fiche de révisions synthétique sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}. ${customPrompt}. La fiche doit résumer les points essentiels à connaître pour le brevet.
+La sortie doit être un fichier HTML unique, complet et bien formaté, suivant les mêmes consignes de design (police Poppins, conteneur centré, support mode sombre, etc.) que pour une fiche d'exercices.
+
+**Structure spécifique pour la fiche de révisions :**
+*   Le titre principal \`<h1>\` sera "Fiche de Révisions : ${t(selectedSubject?.nameKey || '')}".
+*   La fiche doit être très concise, utilisant principalement des listes à puces \`<ul>\`/\`<li>\` et des titres \`<h2>\` pour organiser les thèmes.
+*   Les mots-clés et définitions importantes doivent être mis en évidence avec \`<strong>\`.
+*   Tu peux utiliser des boîtes d'information ou "tips" avec une classe CSS spéciale (\`.info-box\`) et un style distinct pour attirer l'attention sur des points cruciaux.
+*   Maintiens le design général et le pied de page.
+`;
         handleGenericHtmlGeneration('fiche-revisions', prompt, fileContents);
     };
 
@@ -799,7 +864,21 @@ const App: React.FC = () => {
         } finally {
             setIsGeneratingImage(false);
         }
-    }, [imageUsage, subscriptionPlan, imageGenerationInstruction]);
+    }, [imageUsage.count, subscriptionPlan, imageGenerationInstruction]);
+
+    const handleEditImage = useCallback(async (base64Data: string, mimeType: string, prompt: string) => {
+        setIsEditingImage(true);
+        setEditedImage(null);
+        try {
+            const imageData = await editImage(base64Data, mimeType, prompt);
+            setEditedImage(imageData);
+        } catch (error) {
+            console.error("Error editing image:", error);
+            showNotification("Une erreur est survenue lors de la modification de l'image.", 'error');
+        } finally {
+            setIsEditingImage(false);
+        }
+    }, []);
 
     // Canvas, FlashAI, Planning & Conseils Handlers
     const handleGenerateCanvas = useCallback(async (prompt: string, model: CanvasModel) => {
@@ -917,7 +996,7 @@ const App: React.FC = () => {
     const renderContent = () => {
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />;
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
@@ -1023,6 +1102,10 @@ const App: React.FC = () => {
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'imageGeneration':
                  return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
+            case 'imageEditing':
+                 return <ImageEditingView onGenerate={handleEditImage} isGenerating={isEditingImage} generatedImage={editedImage} onClear={() => setEditedImage(null)} />;
+            case 'voiceAI':
+                 return <VoiceAIView />;
             case 'canvas':
                 return <CanvasView versions={canvasVersions} activeVersionId={activeCanvasVersionId} onGenerate={handleGenerateCanvas} onSelectVersion={setActiveCanvasVersionId} isGenerating={isGeneratingCanvas} subscriptionPlan={subscriptionPlan} defaultCanvasModel={defaultCanvasModel} />;
             case 'flashAI':
@@ -1040,13 +1123,13 @@ const App: React.FC = () => {
             case 'gameDisplay':
                 return <GameDisplayView htmlContent={gameHtml} subject={selectedGameSubject} onGenerateAnother={(subject) => { setView('jeuxDetail'); setSelectedGameSubject(subject); }} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />;
         }
     };
     
     const showHeader = !['login', 'chat', 'drawing'].includes(view);
     const showExitButton = !['login', 'home', 'chat'].includes(view);
-    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay'].includes(view);
+    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay', 'imageEditing', 'voiceAI'].includes(view);
 
     return (
         <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>
@@ -1068,4 +1151,5 @@ const App: React.FC = () => {
         </div>
     );
 };
+// FIX: Added a default export to the App component to resolve the import error in page.tsx.
 export default App;
