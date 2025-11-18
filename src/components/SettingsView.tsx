@@ -1,8 +1,9 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { SubscriptionPlan, AiModel, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Language, GamesAiModel } from '@/lib/types';
-import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '@/lib/constants';
+import type { SubscriptionPlan, AiModel, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Language, GamesAiModel } from '../types';
+import { AVATAR_ICONS, AVATAR_ICON_KEYS } from '../constants';
 import { PremiumBadge } from './PremiumBadge';
-import { useLocalization } from '@/hooks/useLocalization';
+import { useLocalization } from '../hooks/useLocalization';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -103,6 +104,148 @@ const ShareAppModal: React.FC<{ isOpen: boolean; onClose: () => void; }> = ({ is
         </div>
     );
 };
+
+const FeedbackModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const { t } = useLocalization();
+    const [feedbackName, setFeedbackName] = useState('');
+    const [feedbackMessage, setFeedbackMessage] = useState('');
+    const [feedbackRating, setFeedbackRating] = useState(15);
+    const [feedbackTerms, setFeedbackTerms] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [feedbackCode, setFeedbackCode] = useState('');
+    const [codeCopied, setCodeCopied] = useState(false);
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        const handleClickOutside = (event: MouseEvent) => {
+            if (modalRef.current && !modalRef.current.contains(event.target as Node)) onClose();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [onClose]);
+
+    const handleFeedbackSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!feedbackMessage.trim() || !feedbackTerms) {
+            alert('Veuillez remplir le message et accepter les conditions.');
+            return;
+        }
+        const code = 'BVTEY-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        setFeedbackCode(code);
+        setIsSubmitted(true);
+    };
+    
+    const handleCopyCode = () => {
+        navigator.clipboard.writeText(feedbackCode).then(() => {
+            setCodeCopied(true);
+            setTimeout(() => setCodeCopied(false), 2000);
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-fade-in">
+            <div ref={modalRef} className="relative w-full max-w-lg bg-[#f0f2f5] dark:bg-slate-900/80 dark:backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8">
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-800 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-md z-10"
+                    aria-label={t('close')}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                {isSubmitted ? (
+                    <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-green-500/20 text-green-500 dark:text-green-300 rounded-full flex items-center justify-center">
+                            <CheckIcon className="w-10 h-10" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-2">{t('settings_feedback_modal_success')}</h2>
+                        <p className="text-slate-600 dark:text-slate-400 mb-6">{t('settings_feedback_modal_success_desc')}</p>
+                        <div className="flex items-center gap-2 p-3 bg-white/50 dark:bg-slate-800/60 rounded-xl mb-6">
+                            <p className="flex-1 font-mono text-slate-800 dark:text-slate-300 text-sm text-left">{feedbackCode}</p>
+                            <button onClick={handleCopyCode} className="flex items-center justify-center px-3 py-1 border-2 border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-200/50 dark:hover:bg-slate-700/60 transition-colors text-xs">
+                                {codeCopied ? <CheckIcon className="w-4 h-4 text-green-500 mr-1.5"/> : <CopyIcon className="w-4 h-4 mr-1.5"/>}
+                                {codeCopied ? t('copied') : t('copy')}
+                            </button>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-md font-semibold text-white bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        <h2 className="text-2xl font-bold text-center text-slate-900 dark:text-white mb-6">{t('settings_feedback_modal_title')}</h2>
+                        <form onSubmit={handleFeedbackSubmit} className="space-y-5">
+                            <div>
+                                <label htmlFor="feedback-name-modal" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    {t('settings_feedback_modal_name')}
+                                </label>
+                                <input
+                                    id="feedback-name-modal" type="text" value={feedbackName} onChange={(e) => setFeedbackName(e.target.value)}
+                                    className="mt-2 w-full p-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 placeholder-slate-400 dark:placeholder-slate-500"
+                                    placeholder={t('settings_feedback_modal_name_placeholder')}
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="feedback-message-modal" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    {t('settings_feedback_modal_message')}
+                                </label>
+                                <textarea
+                                    id="feedback-message-modal" rows={5} value={feedbackMessage} onChange={(e) => setFeedbackMessage(e.target.value)}
+                                    className="mt-2 w-full p-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-400 resize-y placeholder-slate-400 dark:placeholder-slate-500"
+                                    placeholder={t('settings_feedback_modal_message_placeholder')} required
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="feedback-rating-modal" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    {t('settings_feedback_modal_rating', { rating: feedbackRating })}
+                                </label>
+                                <input
+                                    id="feedback-rating-modal" type="range" min="0" max="20" value={feedbackRating}
+                                    onChange={(e) => setFeedbackRating(parseInt(e.target.value, 10))}
+                                    className="mt-2 w-full h-2 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                                />
+                            </div>
+
+                            <div className="flex items-center pt-2">
+                                <input
+                                    id="feedback-terms-modal" type="checkbox" checked={feedbackTerms} onChange={(e) => setFeedbackTerms(e.target.checked)}
+                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-400 dark:border-slate-600 rounded bg-white dark:bg-slate-800" required
+                                />
+                                <label htmlFor="feedback-terms-modal" className="ml-3 block text-sm text-slate-700 dark:text-slate-400">
+                                    {t('settings_feedback_modal_terms')}
+                                </label>
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-md font-semibold text-white bg-violet-400 hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={!feedbackTerms || !feedbackMessage.trim()}
+                            >
+                                Envoyer
+                            </button>
+                        </form>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
 interface SettingsViewProps {
     theme: Theme;
     onThemeChange: (theme: Theme) => void;
@@ -301,7 +444,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                             id="default-item-count-slider"
                             type="range"
                             min="1"
-                            max="10"
+                            max="20"
                             value={defaultItemCount}
                             onChange={(e) => onDefaultItemCountChange(Number(e.target.value))}
                             className="w-full h-2 bg-slate-300/50 dark:bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-indigo-500"
@@ -374,7 +517,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
 
                 <SettingSection title={t('settings_about_title')} description={t('settings_about_desc')}>
                     <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">26-3.9</span>
+                        <span className="text-lg font-bold text-slate-800 dark:text-slate-200">26-4.3</span>
                         <a href="https://github.com/mAI-mAIPlatform/breveteasy-geministudio-off/releases/" target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-white/20 dark:bg-slate-800/60 backdrop-blur-lg border border-white/30 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors text-sm">{t('settings_about_version_notes')}</a>
                     </div>
                 </SettingSection>
@@ -384,7 +527,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
                    <button onClick={() => setIsShareModalOpen(true)} className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-medium text-white bg-sky-500 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all transform hover:scale-105"><ShareIcon /> {t('settings_share_app_button')}</button>
                 </SettingSection>
             </div>
-            {/* {isFeedbackModalOpen && <FeedbackModal onClose={() => setIsFeedbackModalOpen(false)} />} */}
+            {isFeedbackModalOpen && <FeedbackModal onClose={() => setIsFeedbackModalOpen(false)} />}
             {isShareModalOpen && <ShareAppModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} />}
         </div>
     );

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { Quiz, Question } from '@/lib/types';
 
 interface QuizViewProps {
@@ -6,6 +7,8 @@ interface QuizViewProps {
   onSubmit: (answers: (string | null)[]) => void;
   currentQuestionIndex: number;
   setCurrentQuestionIndex: React.Dispatch<React.SetStateAction<number>>;
+  isTimed?: boolean;
+  timerPerQuestion?: number;
 }
 
 const QuestionDisplay: React.FC<{
@@ -39,11 +42,43 @@ const QuestionDisplay: React.FC<{
   </div>
 );
 
-export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuestionIndex, setCurrentQuestionIndex }) => {
+export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuestionIndex, setCurrentQuestionIndex, isTimed, timerPerQuestion }) => {
   const [answers, setAnswers] = useState<(string | null)[]>(() => Array(quiz.questions.length).fill(null));
   const [animationClass, setAnimationClass] = useState('animate-fade-in');
+  const hasSubmitted = useRef(false);
   
   const totalQuestions = quiz.questions.length;
+  const timePerQuestion = timerPerQuestion || 45;
+  const totalTime = totalQuestions > 0 ? totalQuestions * timePerQuestion : 1;
+  const [timeLeft, setTimeLeft] = useState(() => isTimed ? totalTime : -1);
+
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  const handleSubmit = useCallback(() => {
+    if (hasSubmitted.current) return;
+    hasSubmitted.current = true;
+    onSubmit(answersRef.current);
+  }, [onSubmit]);
+
+  useEffect(() => {
+    if (!isTimed) return;
+  
+    if (timeLeft <= 0) {
+      if (!hasSubmitted.current) {
+        handleSubmit();
+      }
+      return;
+    }
+  
+    const timerId = setInterval(() => {
+      setTimeLeft(prevTime => prevTime - 1);
+    }, 1000);
+  
+    return () => clearInterval(timerId);
+  }, [isTimed, timeLeft, handleSubmit]);
 
   const handleOptionSelect = (option: string) => {
     const newAnswers = [...answers];
@@ -71,14 +106,31 @@ export const QuizView: React.FC<QuizViewProps> = ({ quiz, onSubmit, currentQuest
     }
   };
   
-  const handleSubmit = () => {
-    onSubmit(answers);
-  };
-
   const currentQuestion = quiz.questions[currentQuestionIndex];
+  
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const timePercentage = (timeLeft / totalTime) * 100;
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col">
+    <div className="w-full max-w-4xl mx-auto flex flex-col relative">
+      {isTimed && (
+        <div className="absolute top-[-4.5rem] left-0 w-full px-8">
+            <div className="flex justify-center items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span className="text-xl font-bold text-slate-800 dark:text-slate-200">{minutes}:{seconds < 10 ? `0${seconds}` : seconds}</span>
+            </div>
+            <div className="w-full bg-black/10 dark:bg-slate-800/50 rounded-full h-1.5">
+                <div 
+                    className="h-1.5 rounded-full transition-all duration-1000 ease-linear" 
+                    style={{ 
+                        width: `${timePercentage}%`,
+                        backgroundColor: `hsl(${(timePercentage * 1.2)}, 80%, 50%)`
+                    }}
+                ></div>
+            </div>
+        </div>
+      )}
       <div className={`bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 p-8 rounded-3xl shadow-lg flex-grow flex items-center justify-center ${animationClass} mt-6`}>
         <QuestionDisplay
           question={currentQuestion}

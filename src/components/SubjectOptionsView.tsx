@@ -1,15 +1,15 @@
-// Fix: Provide the implementation for the SubjectOptionsView component.
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { Subject, SubscriptionPlan } from '@/lib/types';
+import type { Subject, SubscriptionPlan } from '../types';
 import { PremiumBadge } from './PremiumBadge';
-import { useLocalization } from '@/hooks/useLocalization';
+import { useLocalization } from '../hooks/useLocalization';
 
 interface SubjectOptionsViewProps {
   subject: Subject;
-  onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string) => void;
-  onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string) => void;
-  onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string) => void;
-  onGenerateFicheRevisions: (customPrompt: string, count: number, difficulty: string, level: string) => void;
+  onGenerateQuiz: (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean, timerDuration: number, fileContents: string[]) => void;
+  onGenerateExercises: (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => void;
+  onGenerateCours: (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => void;
+  onGenerateFicheRevisions: (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => void;
   subscriptionPlan: SubscriptionPlan;
   defaultItemCount: number;
   defaultDifficulty: 'Facile' | 'Normal' | 'Difficile' | 'Expert';
@@ -22,12 +22,13 @@ const OptionCard: React.FC<{
     icon: React.ReactNode; 
     onClick: () => void; 
     isProFeature?: boolean;
-}> = ({ title, description, icon, onClick, isProFeature = false }) => (
+    children?: React.ReactNode;
+}> = ({ title, description, icon, onClick, isProFeature = false, children }) => (
     <div className="relative">
         <button
             onClick={onClick}
             disabled={isProFeature}
-            className={`group w-full text-left p-6 bg-white/10 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-3xl shadow-lg transition-all duration-300 ease-in-out flex items-center space-x-5 ${
+            className={`group w-full text-left p-6 bg-white/5 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-slate-700/80 rounded-3xl shadow-lg transition-all duration-300 ease-in-out flex items-center space-x-5 ${
                 isProFeature 
                     ? 'opacity-60 cursor-not-allowed' 
                     : 'hover:shadow-2xl hover:-translate-y-1'
@@ -36,12 +37,13 @@ const OptionCard: React.FC<{
             <div className="p-3 bg-indigo-500/20 text-indigo-500 dark:text-indigo-300 rounded-full">
                 {icon}
             </div>
-            <div>
+            <div className="flex-grow">
                 <h3 className={`text-xl font-bold text-slate-900 dark:text-slate-100 ${!isProFeature && 'group-hover:text-indigo-500 dark:group-hover:text-sky-300 transition-colors duration-300'}`}>
                     {title}
                 </h3>
                 <p className="text-slate-700 dark:text-slate-400 mt-1">{description}</p>
             </div>
+            {children}
         </button>
         {isProFeature && (
              <PremiumBadge requiredPlan="pro" />
@@ -50,7 +52,6 @@ const OptionCard: React.FC<{
 );
 
 
-// New StyledDropdown component
 interface StyledDropdownProps<T extends string | number> {
     label: string;
     options: readonly T[];
@@ -107,7 +108,6 @@ const StyledDropdown = <T extends string | number>({ label, options, value, onCh
                 {isOpen && !disabled && (
                     <ul
                         className="absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-xl bg-white dark:bg-slate-800 py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
-                        // FIX: The 'tab' property does not exist on 'ul' elements. Changed to 'tabIndex' to make the element focusable.
                         tabIndex={-1}
                         role="listbox"
                     >
@@ -145,69 +145,84 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
   const [customPrompt, setCustomPrompt] = useState('');
   const [difficulty, setDifficulty] = useState<'Facile' | 'Normal' | 'Difficile' | 'Expert'>(defaultDifficulty);
   const [level, setLevel] = useState<string>(defaultLevel);
+  const [useTimer, setUseTimer] = useState(false);
+  const [timerDuration, setTimerDuration] = useState<number>(45);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [fileContents, setFileContents] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const ITEM_COUNTS = useMemo(() => {
-    let counts: number[];
-    if (subscriptionPlan === 'max') {
-        counts = [5, 10, 15, 20, 25];
-    } else if (subscriptionPlan === 'pro') {
-        counts = [5, 10, 15, 20];
-    } else {
-        counts = [5];
-    }
-    
-    // For paying users, if their custom default isn't in the standard list,
-    // add it so their preference is respected and available as an option.
-    if (subscriptionPlan !== 'free' && !counts.includes(defaultItemCount)) {
-        counts.push(defaultItemCount);
-        counts.sort((a, b) => a - b);
-    }
-    return counts;
-  }, [subscriptionPlan, defaultItemCount]);
-
-  const [itemCount, setItemCount] = useState<number>(defaultItemCount);
-  
-  useEffect(() => {
-    if (!ITEM_COUNTS.includes(itemCount)) {
-        setItemCount(ITEM_COUNTS[0]);
-    }
-  }, [itemCount, ITEM_COUNTS]);
+  const [itemCount, setItemCount] = useState<number>(() => {
+    const defaultCount = defaultItemCount;
+    if (defaultCount > 20) return 20;
+    if (defaultCount < 1) return 1;
+    return defaultCount;
+  });
 
   const LEVELS = ['CM2', '6ème', '5ème', '4ème', '3ème', 'Brevet'];
   const DIFFICULTIES = ['Facile', 'Normal', 'Difficile', 'Expert'] as const;
+  const TIMER_OPTIONS = [15, 30, 45, 60, 90, 120];
 
   const currentLevel = isFreePlan ? 'Brevet' : level;
   const currentDifficulty = isFreePlan ? 'Normal' : difficulty;
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+        const files = Array.from(event.target.files);
+        setUploadedFiles(prev => [...prev, ...files]);
+        try {
+            const contents = await Promise.all(
+                files.map((file: File) => {
+                    if (file.type.startsWith('text/')) {
+                        return file.text();
+                    }
+                    return Promise.resolve(`[Contenu du fichier non textuel '${file.name}' ignoré]`);
+                })
+            );
+            setFileContents(prev => [...prev, ...contents]);
+        } catch (error) {
+            console.error("Error reading files:", error);
+            alert("Erreur lors de la lecture d'un fichier.");
+        }
+    }
+    if (event.target) {
+        event.target.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setFileContents(prev => prev.filter((_, i) => i !== index));
+  };
+
+
   const handleGenerateQuizClick = () => {
-    onGenerateQuiz(customPrompt, itemCount, currentDifficulty, currentLevel);
+    onGenerateQuiz(customPrompt, itemCount, currentDifficulty, currentLevel, useTimer, timerDuration, fileContents);
   };
 
   const handleGenerateExercisesClick = () => {
-    onGenerateExercises(customPrompt, itemCount, currentDifficulty, currentLevel);
+    onGenerateExercises(customPrompt, itemCount, currentDifficulty, currentLevel, fileContents);
   };
   
   const handleGenerateCoursClick = () => {
-    onGenerateCours(customPrompt, itemCount, currentDifficulty, currentLevel);
+    onGenerateCours(customPrompt, itemCount, currentDifficulty, currentLevel, fileContents);
   };
 
   const handleGenerateFicheRevisionsClick = () => {
-    onGenerateFicheRevisions(customPrompt, itemCount, currentDifficulty, currentLevel);
+    onGenerateFicheRevisions(customPrompt, itemCount, currentDifficulty, currentLevel, fileContents);
   };
   
   return (
     <div className="w-full max-w-2xl mx-auto">
         <div className="relative text-center mb-10">
-            {/* Fix: Use the translation key `subject.nameKey` with the `t` function to display the localized subject name. */}
             <h1 className="text-5xl font-bold text-slate-900 dark:text-white">
                 {t(subject.nameKey)}
             </h1>
         </div>
         
-        <div className="relative z-10 bg-slate-100/60 dark:bg-black/40 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/50 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
+        <div className="relative z-10 bg-white/5 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-slate-700/80 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
             <div className="mb-6">
                 <label htmlFor="custom-prompt" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">
-                    Instructions spécifiques (facultatif)
+                    {t('subject_options_specific_instructions')}
                 </label>
                 <textarea
                     id="custom-prompt"
@@ -215,33 +230,76 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
                     className="w-full p-3 bg-slate-200/40 dark:bg-slate-900/40 border border-slate-300/50 dark:border-slate-700/50 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-base text-slate-900 dark:text-slate-100 placeholder-slate-500 transition"
-                    placeholder={`ex: "Concentre-toi sur la Première Guerre mondiale"`}
+                    placeholder={t('subject_options_specific_instructions_placeholder')}
                 />
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Laissez vide pour un contenu général sur le sujet.</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{t('subject_options_general_content_note')}</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StyledDropdown<number>
-                    label="Nombre"
-                    options={ITEM_COUNTS}
-                    value={itemCount}
-                    onChange={setItemCount}
-                    renderOption={(option) => `${option} éléments`}
-                />
+            <div className="mt-6 pt-6 border-t border-white/10 dark:border-slate-700/50">
+                <label className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">
+                    S'inspirer de fichiers (facultatif)
+                </label>
+                <div className="flex items-start gap-4">
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        multiple 
+                        accept="text/*,.md"
+                    />
+                    <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-white/20 dark:bg-slate-800/60 rounded-full shadow-md hover:bg-white/40 dark:hover:bg-slate-700/60 transition-colors"
+                        title="Importer des fichiers"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                    <div className="flex-1 flex flex-col gap-2 overflow-hidden">
+                        {uploadedFiles.length === 0 ? (
+                            <p className="text-sm text-slate-600 dark:text-slate-400 h-12 flex items-center">Importez des cours, des exercices, etc.</p>
+                        ) : (
+                            uploadedFiles.map((file, index) => (
+                                <div key={index} className="flex items-center gap-2 bg-black/5 dark:bg-slate-900/50 p-2 rounded-lg text-sm">
+                                    <span className="truncate flex-1 text-slate-800 dark:text-slate-200">{file.name}</span>
+                                    <button onClick={() => removeFile(index)} className="p-1 rounded-full hover:bg-red-500/20 text-red-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-white/10 dark:border-slate-700/50">
                 <StyledDropdown<string>
-                    label="Niveau"
+                    label={t('level')}
                     options={LEVELS}
                     value={currentLevel}
                     onChange={setLevel}
                     disabled={isFreePlan}
                 />
-                {/* Fix: Complete the props for the StyledDropdown component */}
                 <StyledDropdown<'Facile' | 'Normal' | 'Difficile' | 'Expert'>
                     label={t('difficulty')}
                     options={DIFFICULTIES}
                     value={currentDifficulty}
                     onChange={setDifficulty}
                     disabled={isFreePlan}
+                />
+            </div>
+             <div className="pt-6">
+                <label htmlFor="item-count-slider" className="block text-md font-semibold text-slate-800 dark:text-slate-300 mb-2">{t('settings_generation_item_count', { count: itemCount })}</label>
+                <input
+                    id="item-count-slider"
+                    type="range"
+                    min="1"
+                    max="20"
+                    value={itemCount}
+                    onChange={(e) => setItemCount(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-300/50 dark:bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                 />
             </div>
         </div>
@@ -253,7 +311,25 @@ export const SubjectOptionsView: React.FC<SubjectOptionsViewProps> = ({ subject,
                 description={t('subject_options_generate_quiz_desc', { count: itemCount })}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                 onClick={handleGenerateQuizClick}
-            />
+            >
+                <div className="flex flex-wrap items-center gap-4 pl-4 mt-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" id="timer-checkbox" checked={useTimer} onChange={(e) => setUseTimer(e.target.checked)} className="h-5 w-5 rounded text-indigo-500 focus:ring-indigo-500 border-slate-400 dark:border-slate-500 bg-white/20 dark:bg-slate-900/40" />
+                        <label htmlFor="timer-checkbox" className="text-sm font-semibold text-slate-800 dark:text-slate-300 select-none">Minuteur</label>
+                    </div>
+                    {useTimer && (
+                        <select
+                            value={timerDuration}
+                            onChange={(e) => setTimerDuration(Number(e.target.value))}
+                            className="bg-white/20 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-1.5"
+                        >
+                            {TIMER_OPTIONS.map(opt => (
+                                <option key={opt} value={opt}>{opt}s / question</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+            </OptionCard>
              <OptionCard
                 title={t('subject_options_generate_exercises')}
                 description={t('subject_options_generate_exercises_desc', { count: itemCount })}

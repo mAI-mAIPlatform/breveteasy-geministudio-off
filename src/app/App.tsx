@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -290,6 +291,7 @@ const App: React.FC = () => {
 
     // Other state
     const [quizUseTimer, setQuizUseTimer] = useState(false);
+    const [quizTimerDuration, setQuizTimerDuration] = useState<number>(45);
 
 
     // Load state from localStorage on initial mount
@@ -306,7 +308,7 @@ const App: React.FC = () => {
 
         // Generation settings
         const loadedCount = parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10);
-        setDefaultItemCount(Math.max(1, Math.min(10, loadedCount)));
+        setDefaultItemCount(Math.max(1, Math.min(20, loadedCount)));
         const savedDifficulty = localStorage.getItem('brevet-easy-default-difficulty');
         setDefaultDifficulty((savedDifficulty === 'Facile' || savedDifficulty === 'Normal' || savedDifficulty === 'Difficile' || savedDifficulty === 'Expert' ? savedDifficulty : 'Normal'));
         setDefaultLevel(localStorage.getItem('brevet-easy-default-level') || 'Brevet');
@@ -558,11 +560,12 @@ const App: React.FC = () => {
     }, [userName]);
 
     // Quiz Flow Handlers
-    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean, fileContents: string[]) => {
+    const handleGenerateQuiz = useCallback(async (customPrompt: string, count: number, difficulty: string, level: string, useTimer: boolean, timerDuration: number, fileContents: string[]) => {
         if (!selectedSubject) return;
         setView('loading');
         setLoadingTask('quiz');
         setQuizUseTimer(useTimer);
+        setQuizTimerDuration(timerDuration);
         setCurrentQuestionIndex(0);
         
         try {
@@ -1026,13 +1029,13 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
                 return (
                     <>
                          {showBanner && <div className="mb-6"><AnnouncementBanner onClose={handleCloseBanner} /></div>}
-                         <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />
+                         <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />
                     </>
                 );
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
-                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} isTimed={quizUseTimer} />;
+                return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} isTimed={quizUseTimer} timerPerQuestion={quizTimerDuration} />;
             case 'results':
                 return <ResultsView score={score} totalQuestions={quiz?.questions.length || 0} onRestart={handleBackToHome} quiz={quiz} userAnswers={quizAnswers} />;
             case 'settings':
@@ -1155,7 +1158,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
             case 'gameDisplay':
                 return <GameDisplayView htmlContent={gameHtml} subject={selectedGameSubject} onGenerateAnother={(subject) => { setView('jeuxDetail'); setSelectedGameSubject(subject); }} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />;
         }
     };
     
