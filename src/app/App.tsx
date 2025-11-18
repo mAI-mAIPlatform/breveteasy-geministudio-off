@@ -79,7 +79,7 @@ const AnnouncementBanner: React.FC<{ onClose: () => void }> = ({ onClose }) => (
             <span className="text-2xl animate-bounce">🚀</span>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="font-extrabold uppercase tracking-wider text-xs sm:text-sm bg-white/20 px-2 py-1 rounded-lg">Nouveau</span>
-                <span className="font-semibold text-sm sm:text-base">Gemini 3.0 est maintenant disponible dans Brevet' Easy !</span>
+                <span className="font-semibold text-sm sm:text-base">Gemini 3.0 Pro est maintenant disponible dans Brevet' Easy !</span>
             </div>
         </div>
         <button 
@@ -301,7 +301,7 @@ const App: React.FC = () => {
         setUserName(localStorage.getItem('brevet-easy-user-name') || '');
         setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
         
-        const bannerClosed = localStorage.getItem('brevet-easy-banner-closed-gemini-3.0-fix');
+        const bannerClosed = localStorage.getItem('brevet-easy-banner-closed-gemini-3.0-pro-v2');
         if (bannerClosed === 'true') {
             setShowBanner(false);
         }
@@ -997,7 +997,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
 
     const handleCloseBanner = () => {
         setShowBanner(false);
-        localStorage.setItem('brevet-easy-banner-closed-gemini-3.0-fix', 'true');
+        localStorage.setItem('brevet-easy-banner-closed-gemini-3.0-pro-v2', 'true');
     };
 
 
