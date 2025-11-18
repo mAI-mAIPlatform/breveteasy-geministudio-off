@@ -1,10 +1,5 @@
-
-
-
 "use client";
 
-// Fix: Provide the implementation for the main App component.
-// Fix: Corrected React import to include necessary hooks.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HomeView } from '../components/HomeView';
 import { SubjectOptionsView } from '../components/SubjectOptionsView';
@@ -77,6 +72,27 @@ const GeneralNotification: React.FC<{ message: string, type: 'success' | 'error'
     );
 };
 
+const AnnouncementBanner: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+    <div className="relative bg-gradient-to-r from-blue-600 via-violet-600 to-fuchsia-600 text-white px-6 py-4 shadow-xl z-[150] animate-fade-in rounded-3xl mx-auto max-w-5xl mt-2 mb-8 flex items-center justify-between border border-white/20">
+        <div className="flex items-center justify-center text-center flex-grow gap-3">
+            <span className="text-2xl animate-bounce">🚀</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <span className="font-extrabold uppercase tracking-wider text-xs sm:text-sm bg-white/20 px-2 py-1 rounded-lg">Nouveau</span>
+                <span className="font-semibold text-sm sm:text-base">Gemini 3.0 est maintenant disponible dans Brevet' Easy !</span>
+            </div>
+        </div>
+        <button 
+            onClick={onClose}
+            className="p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0 ml-4"
+            aria-label="Fermer l'annonce"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+);
+
 
 type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'imageEditing' | 'voiceAI' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay';
 type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
@@ -124,7 +140,7 @@ const FixedHeader: React.FC<{
                 ariaLabel={t('header_upgrade_aria')}
                 isIconOnly={true}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
             </HeaderButton>
            )}
            <HeaderButton
@@ -194,6 +210,7 @@ const App: React.FC = () => {
     const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>('free');
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const [showBanner, setShowBanner] = useState(true);
     const rootRef = useRef<HTMLElement | null>(null);
 
     // Generation default settings
@@ -281,6 +298,11 @@ const App: React.FC = () => {
         setSubscriptionPlan((localStorage.getItem('brevet-easy-plan') as SubscriptionPlan) || 'free');
         setUserName(localStorage.getItem('brevet-easy-user-name') || '');
         setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
+        
+        const bannerClosed = localStorage.getItem('brevet-easy-banner-closed-gemini-3.0-fix');
+        if (bannerClosed === 'true') {
+            setShowBanner(false);
+        }
 
         // Generation settings
         const loadedCount = parseInt(localStorage.getItem('brevet-easy-default-item-count') || '5', 10);
@@ -970,6 +992,11 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
         }
     }, [t, handleBackToHome, buildSystemInstruction, gamesAiSystemInstruction]);
 
+    const handleCloseBanner = () => {
+        setShowBanner(false);
+        localStorage.setItem('brevet-easy-banner-closed-gemini-3.0-fix', 'true');
+    };
+
 
     const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
     
@@ -996,7 +1023,12 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
     const renderContent = () => {
         switch (view) {
             case 'home':
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />;
+                return (
+                    <>
+                         {showBanner && <div className="mb-6"><AnnouncementBanner onClose={handleCloseBanner} /></div>}
+                         <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />
+                    </>
+                );
             case 'subjectOptions':
                 return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
@@ -1123,7 +1155,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
             case 'gameDisplay':
                 return <GameDisplayView htmlContent={gameHtml} subject={selectedGameSubject} onGenerateAnother={(subject) => { setView('jeuxDetail'); setSelectedGameSubject(subject); }} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />;
+                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} />;
         }
     };
     
@@ -1135,8 +1167,8 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
         <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>
              <Confetti particles={confetti} />
              {notification && <GeneralNotification message={notification.message} type={notification.type} />}
-             {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
-             {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
+             {showHeader && <div className={view === 'home' && showBanner ? 'mt-0' : ''}><FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} /></div>}
+             {showExitButton && <div className={view === 'home' && showBanner ? 'mt-0' : ''}><FixedExitButton onClick={handleBackToHome} /></div>}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
              {view === 'quiz' && quiz && (
                 <div className="w-full max-w-4xl mx-auto pt-20">
@@ -1151,5 +1183,5 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
         </div>
     );
 };
-// FIX: Added a default export to the App component to resolve the import error in page.tsx.
+
 export default App;

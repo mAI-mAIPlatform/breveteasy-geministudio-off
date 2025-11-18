@@ -53,7 +53,8 @@ async function internalGenerateQuiz({ subjectName, count, difficulty, level, cus
 
 
 async function internalGenerateHtmlContent({ prompt, systemInstruction, model }: any): Promise<string> {
-    const geminiModel = (model === 'canvasai' || model === 'conseilsai' || !model) ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    // Use Gemini 3.0 for advanced models
+    const geminiModel = (model === 'canvasai-max' || model === 'canvasai-pro') ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
     const response = await ai.models.generateContent({
         model: geminiModel,
         contents: prompt,
@@ -140,7 +141,7 @@ async function internalGenerateFlashQuestion({ level, systemInstruction, model }
 
     const prompt = `Génère une seule question flash de type QCM (avec exactement 4 options) pour le niveau ${level}. Le sujet peut être n'importe quelle matière du Brevet des collèges. Fournis une explication pour la bonne réponse.`;
     
-    const geminiModel = model === 'flashai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    const geminiModel = (model === 'flashai-pro' || model === 'flashai-max') ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
 
     const response = await ai.models.generateContent({
         model: geminiModel,
@@ -177,7 +178,7 @@ async function internalGeneratePlanning({ task, dueDate, todayDate, systemInstru
 
     const prompt = `La date d'aujourd'hui est le ${new Date(todayDate + 'T00:00:00Z').toLocaleDateString('fr-FR', { timeZone: 'UTC' })}. Crée un planning de révision pour la tâche suivante : "${task}". La date limite est le ${dueDate}. Le planning doit commencer à partir d'aujourd'hui ou d'un jour futur, jamais dans le passé. Décompose la tâche en étapes logiques et répartis-les sur les jours disponibles jusqu'à la date limite. Le planning doit être réaliste. Assure-toi que les dates dans le JSON sont au format YYYY-MM-DD.`;
 
-    const geminiModel = model === 'planningai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    const geminiModel = (model === 'planningai-pro' || model === 'planningai-max') ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
     
     const response = await ai.models.generateContent({
         model: geminiModel,
@@ -194,7 +195,7 @@ async function internalGeneratePlanning({ task, dueDate, todayDate, systemInstru
 
 async function internalGenerateConseils({ subject, level, systemInstruction, model }: { subject: string; level: string; systemInstruction: string; model: ConseilsAiModel }): Promise<string> {
     const prompt = `Génère des conseils et des stratégies de révision pour la matière "${subject}" au niveau "${level}". La réponse doit être formatée en HTML simple (<h1>, <h2>, <p>, <ul>, <li>, <strong>) pour être affichée directement. Fournis des conseils pratiques et actionnables.`;
-    const geminiModel = model === 'conseilsai' ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+    const geminiModel = (model === 'conseilsai-pro' || model === 'conseilsai-max') ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
     
     const response = await ai.models.generateContent({
         model: geminiModel,
@@ -215,7 +216,7 @@ async function internalGenerateGame({ subjectName, customPrompt, model, systemIn
     Examples of game types: a quiz with instant feedback, a memory matching game, a hangman game with subject-related terms, a drag-and-drop to associate concepts.
     Ensure the output is ONLY the full HTML code, starting with <!DOCTYPE html>.`;
 
-    const geminiModel = (model === 'gamesai-pro' || model === 'gamesai-max') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    const geminiModel = (model === 'gamesai-pro' || model === 'gamesai-max') ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
     
     const response = await ai.models.generateContent({
         model: geminiModel,
