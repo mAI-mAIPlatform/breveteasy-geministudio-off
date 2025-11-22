@@ -1,9 +1,10 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { SubscriptionPlan, ImageModel } from '@/lib/types';
 import { PremiumBadge } from './PremiumBadge';
 
 interface ImageGenerationViewProps {
-  onGenerate: (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png', aspectRatio: string, negativePrompt: string) => void;
+  onGenerate: (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png', aspectRatio: string, negativePrompt: string, imageSize: '1K' | '2K' | '4K') => void;
   isGenerating: boolean;
   generatedImage: { data: string; mimeType: string } | null;
   remainingGenerations: number;
@@ -91,6 +92,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   const [style, setStyle] = useState('none');
   const [format, setFormat] = useState<'jpeg' | 'png'>('jpeg');
   const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [imageSize, setImageSize] = useState<'1K' | '2K' | '4K'>('1K');
   const [promptCopied, setPromptCopied] = useState(false);
 
   const isModelLocked =
@@ -99,7 +101,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
 
   const handleSubmit = () => {
     if (!prompt.trim() || isGenerating || isModelLocked) return;
-    onGenerate(prompt, model, style, format, aspectRatio, negativePrompt);
+    onGenerate(prompt, model, style, format, aspectRatio, negativePrompt, imageSize);
   };
   
   const handleCopyPrompt = () => {
@@ -114,7 +116,7 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
   const imageModelDisplayNames: Record<ImageModel, string> = {
     'faceai': 'FaceAI',
     'faceai-pro': 'FaceAI Pro',
-    'faceai-max': 'FaceAI Max',
+    'faceai-max': 'Nano Banana Pro',
   };
   
   const modelOptions = useMemo(() => {
@@ -184,6 +186,16 @@ export const ImageGenerationView: React.FC<ImageGenerationViewProps> = ({ onGene
                           <StyledDropdown<'jpeg' | 'png'> label="Format" options={FORMATS} value={format} onChange={setFormat} />
                        </div>
                     </div>
+                     {model === 'faceai-max' && (
+                        <div className="mt-6">
+                            <StyledDropdown<'1K' | '2K' | '4K'> 
+                                label="Taille de l'image (Nano Banana Pro)" 
+                                options={['1K', '2K', '4K']} 
+                                value={imageSize} 
+                                onChange={setImageSize}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <button onClick={handleSubmit} disabled={isGenerating || !prompt.trim() || isModelLocked}

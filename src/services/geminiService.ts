@@ -1,5 +1,6 @@
 
-import type { Quiz, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Question, Planning, ChatMessage, ChatPart, GamesAiModel, RawPlanning } from '@/lib/types';
+
+import type { Quiz, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Question, Planning, ChatMessage, ChatPart, GamesAiModel, RawPlanning, AiModel, SubscriptionPlan } from '@/lib/types';
 import type { GenerateContentResponse } from '@google/genai';
 
 async function callGeminiApi<T>(action: string, payload: any): Promise<T> {
@@ -34,7 +35,7 @@ export const generateQuiz = async (
 export const generateHtmlContent = async (
     prompt: string,
     systemInstruction: string,
-    model?: any, // Pass model for backend to decide which gemini model to use
+    model?: any,
 ): Promise<string> => {
     const result = await callGeminiApi<{ html: string }>('generateHtmlContent', { prompt, systemInstruction, model });
     return result.html;
@@ -47,14 +48,12 @@ export const generateImage = async (
     format: 'jpeg' | 'png',
     aspectRatio: string,
     imageGenerationInstruction: string,
-    // FIX: Add `negativePrompt` to the function signature.
     negativePrompt: string,
+    imageSize: '1K' | '2K' | '4K'
 ): Promise<{ data: string; mimeType: string; }> => {
-    // FIX: Pass `negativePrompt` in the payload to the API.
-    return callGeminiApi<{ data: string; mimeType: string; }>('generateImage', { prompt, model, style, format, aspectRatio, imageGenerationInstruction, negativePrompt });
+    return callGeminiApi<{ data: string; mimeType: string; }>('generateImage', { prompt, model, style, format, aspectRatio, imageGenerationInstruction, negativePrompt, imageSize });
 };
 
-// FIX: Added exported 'editImage' function to fix import error in App.tsx.
 export const editImage = async (
     base64Data: string,
     mimeType: string,
@@ -116,4 +115,47 @@ export const generateGame = async (
 export const generateContentWithSearch = async (history: ChatMessage[], currentParts: ChatPart[]): Promise<GenerateContentResponse> => {
     const result = await callGeminiApi<GenerateContentResponse>('generateWithSearch', { history, currentParts });
     return result;
+};
+
+// FIX: Added 'sendMessageStream' to handle streaming chat responses from the backend API.
+export const sendMessageStream = async (
+    history: ChatMessage[],
+    messageParts: ChatPart[],
+    config: { aiModel: AiModel; systemInstruction: string; userName: string; subscriptionPlan: SubscriptionPlan }
+): Promise<ReadableStream<Uint8Array>> => {
+    const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'sendMessage',
+            payload: {
+                history,
+                message: { parts: messageParts },
+                config,
+            },
+        }),
+    });
+
+    if (!response.ok || !response.body) {
+        const errorBody = await response.text();
+        throw new Error(`API call failed with status ${response.status}: ${errorBody}`);
+    }
+    return response.body;
+};
+
+// FIX: Added 'generateTitleForChat' to generate titles for new chat sessions via the backend API.
+export const generateTitleForChat = async (prompt: string): Promise<string> => {
+    const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'generateTitle',
+            payload: { prompt },
+        }),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to generate title');
+    }
+    const { title } = await response.json();
+    return title;
 };

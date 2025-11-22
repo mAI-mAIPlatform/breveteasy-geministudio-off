@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -79,7 +80,7 @@ const AnnouncementBanner: React.FC<{ onClose: () => void }> = ({ onClose }) => (
             <span className="text-2xl animate-bounce">🚀</span>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="font-extrabold uppercase tracking-wider text-xs sm:text-sm bg-white/20 px-2 py-1 rounded-lg">Nouveau</span>
-                <span className="font-semibold text-sm sm:text-base">Gemini 3.0 Pro est maintenant disponible dans Brevet' Easy !</span>
+                <span className="font-semibold text-sm sm:text-base">Gemini 3 et Nano Banana Pro !</span>
             </div>
         </div>
         <button 
@@ -141,7 +142,7 @@ const FixedHeader: React.FC<{
                 ariaLabel={t('header_upgrade_aria')}
                 isIconOnly={true}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
             </HeaderButton>
            )}
            <HeaderButton
@@ -301,7 +302,7 @@ const App: React.FC = () => {
         setUserName(localStorage.getItem('brevet-easy-user-name') || '');
         setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
         
-        const bannerClosed = localStorage.getItem('brevet-easy-banner-closed-gemini-3.0-pro-v2');
+        const bannerClosed = localStorage.getItem('brevet-easy-banner-closed-gemini-3-pro-nbp');
         if (bannerClosed === 'true') {
             setShowBanner(false);
         }
@@ -859,7 +860,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
     };
 
     // Image Generation Handlers
-    const handleGenerateImage = useCallback(async (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png', aspectRatio: string, negativePrompt: string) => {
+    const handleGenerateImage = useCallback(async (prompt: string, model: ImageModel, style: string, format: 'jpeg' | 'png', aspectRatio: string, negativePrompt: string, imageSize: '1K' | '2K' | '4K') => {
         const generationLimit = subscriptionPlan === 'free' ? 2 : subscriptionPlan === 'pro' ? 5 : Infinity;
         if (imageUsage.count >= generationLimit) {
             showNotification("Vous avez atteint votre limite de générations d'images pour aujourd'hui.", 'error');
@@ -877,7 +878,8 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
                 format,
                 aspectRatio,
                 imageGenerationInstruction,
-                negativePrompt
+                negativePrompt,
+                imageSize
             );
             
             setGeneratedImage(imageData);
@@ -997,9 +999,8 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
 
     const handleCloseBanner = () => {
         setShowBanner(false);
-        localStorage.setItem('brevet-easy-banner-closed-gemini-3.0-pro-v2', 'true');
+        localStorage.setItem('brevet-easy-banner-closed-gemini-3-pro-nbp', 'true');
     };
-
 
     const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
     
@@ -1028,8 +1029,8 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
             case 'home':
                 return (
                     <>
-                         {showBanner && <div className="mb-6"><AnnouncementBanner onClose={handleCloseBanner} /></div>}
-                         <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />
+                        {showBanner && <AnnouncementBanner onClose={handleCloseBanner} />}
+                        <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />
                     </>
                 );
             case 'subjectOptions':
@@ -1136,6 +1137,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
             case 'subscription':
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'imageGeneration':
+// FIX: Corrected a typo from 'remainingGenerations' to 'remainingImageGenerations' to fix a reference error.
                  return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
             case 'imageEditing':
                  return <ImageEditingView onGenerate={handleEditImage} isGenerating={isEditingImage} generatedImage={editedImage} onClear={() => setEditedImage(null)} />;
@@ -1158,7 +1160,12 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
             case 'gameDisplay':
                 return <GameDisplayView htmlContent={gameHtml} subject={selectedGameSubject} onGenerateAnother={(subject) => { setView('jeuxDetail'); setSelectedGameSubject(subject); }} />;
             default:
-                return <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />;
+                return (
+                    <>
+                        {showBanner && <AnnouncementBanner onClose={handleCloseBanner} />}
+                        <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />
+                    </>
+                );
         }
     };
     
@@ -1170,8 +1177,8 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
         <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>
              <Confetti particles={confetti} />
              {notification && <GeneralNotification message={notification.message} type={notification.type} />}
-             {showHeader && <div className={view === 'home' && showBanner ? 'mt-0' : ''}><FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} /></div>}
-             {showExitButton && <div className={view === 'home' && showBanner ? 'mt-0' : ''}><FixedExitButton onClick={handleBackToHome} /></div>}
+             {showHeader && <FixedHeader onNavigateSettings={handleGoToSettings} onNavigateSubscription={handleGoToSubscription} subscriptionPlan={subscriptionPlan} userAvatar={userAvatar} userName={userName} />}
+             {showExitButton && <FixedExitButton onClick={handleBackToHome} />}
              <ScrollToTopButton onClick={handleScrollToTop} isVisible={showScrollTop} />
              {view === 'quiz' && quiz && (
                 <div className="w-full max-w-4xl mx-auto pt-20">
@@ -1186,5 +1193,4 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
         </div>
     );
 };
-
 export default App;

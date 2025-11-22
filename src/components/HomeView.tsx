@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SUBJECTS } from '@/lib/constants';
 import type { Subject, SubscriptionPlan } from '@/lib/types';
@@ -53,27 +54,29 @@ const CompactFeatureCard: React.FC<{
     </button>
 );
 
+
 interface HomeViewProps {
   onSubjectSelect: (subject: Subject) => void;
   onStartDrawing: () => void;
   onStartChat: () => void;
   onStartImageGeneration: () => void;
+  onStartImageEditing: () => void;
   onStartCanvas: () => void;
   onStartFlashAI: () => void;
   onStartPlanning: () => void;
   onStartConseils: () => void;
   onStartJeux: () => void;
+  onStartVoiceAI: () => void;
   subscriptionPlan: SubscriptionPlan;
 }
 
-// Fix: Added the missing export for the HomeView component.
-export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux, subscriptionPlan }) => {
+export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux, onStartVoiceAI, onStartImageEditing, subscriptionPlan }) => {
   const { t } = useLocalization();
   return (
   <div className="w-full">
     <Header />
     <main>
-       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-8 mb-8">
+       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6 md:gap-8 mb-8">
             <CompactFeatureCard 
                 onClick={onStartChat}
                 title={t('home_brevetai')}
@@ -81,12 +84,26 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDraw
                 icon={<svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>}
                 gradient="bg-gradient-to-br from-purple-500 to-sky-400"
             />
+             <CompactFeatureCard 
+                onClick={onStartVoiceAI}
+                title={t('home_vocalai')}
+                description={t('home_vocalai_desc')}
+                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-14 0m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>}
+                gradient="bg-gradient-to-br from-green-400 to-teal-500"
+            />
             <CompactFeatureCard 
                 onClick={onStartImageGeneration}
                 title={t('home_faceai')}
                 description={t('home_faceai_desc')}
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                 gradient="bg-gradient-to-br from-sky-400 to-red-400"
+            />
+            <CompactFeatureCard 
+                onClick={onStartImageEditing}
+                title={t('home_editionai')}
+                description={t('home_editionai_desc')}
+                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21H3v-3.5L15.232 5.232z" /></svg>}
+                gradient="bg-gradient-to-br from-pink-500 to-orange-400"
             />
             <CompactFeatureCard 
                 onClick={onStartCanvas}

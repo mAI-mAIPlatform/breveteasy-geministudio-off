@@ -53,7 +53,6 @@ async function internalGenerateQuiz({ subjectName, count, difficulty, level, cus
 
 
 async function internalGenerateHtmlContent({ prompt, systemInstruction, model }: any): Promise<string> {
-    // Use Gemini 3.0 for advanced models
     const geminiModel = (model === 'canvasai-max' || model === 'canvasai-pro') ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
     const response = await ai.models.generateContent({
         model: geminiModel,
@@ -65,7 +64,7 @@ async function internalGenerateHtmlContent({ prompt, systemInstruction, model }:
     return response.text;
 }
 
-async function internalGenerateImage({ prompt, model, style, format, aspectRatio, imageGenerationInstruction, negativePrompt }: any): Promise<{ data: string; mimeType: string; }> {
+async function internalGenerateImage({ prompt, model, style, format, aspectRatio, imageGenerationInstruction, negativePrompt, imageSize }: any): Promise<{ data: string; mimeType: string; }> {
     const qualityPrompt = model === 'faceai-pro' || model === 'faceai-max'
         ? 'haute qualité, 4k, hyper-détaillé, photoréaliste'
         : '';
@@ -84,21 +83,44 @@ async function internalGenerateImage({ prompt, model, style, format, aspectRatio
         ? `${mainPrompt} --no ${negativePrompt.trim()}`
         : mainPrompt;
     
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: finalPrompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: `image/${format}`,
-          aspectRatio: aspectRatio,
-        },
-    });
-    
-    const imageBytes = response.generatedImages[0].image.imageBytes;
-    return { data: imageBytes, mimeType: `image/${format}`};
+    if (model === 'faceai-max') { // Use Nano Banana Pro (gemini-3-pro-image-preview)
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-pro-image-preview',
+          contents: {
+            parts: [
+              { text: finalPrompt },
+            ],
+          },
+          config: {
+            imageConfig: {
+                  aspectRatio: aspectRatio,
+                  imageSize: imageSize || "1K"
+              },
+          },
+        });
+
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            return { data: part.inlineData.data, mimeType: part.inlineData.mimeType || 'image/png' };
+          }
+        }
+        throw new Error("Aucune image n'a été générée par Nano Banana Pro.");
+    } else { // Use Imagen for faceai and faceai-pro
+        const response = await ai.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt: finalPrompt,
+            config: {
+              numberOfImages: 1,
+              outputMimeType: `image/${format}`,
+              aspectRatio: aspectRatio,
+            },
+        });
+        
+        const imageBytes = response.generatedImages[0].image.imageBytes;
+        return { data: imageBytes, mimeType: `image/${format}`};
+    }
 }
 
-// FIX: Added 'internalEditImage' function to handle image editing requests from the frontend.
 async function internalEditImage({ base64Data, mimeType, prompt }: { base64Data: string, mimeType: string, prompt: string }): Promise<{ data: string; mimeType: string; }> {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
@@ -248,7 +270,6 @@ async function internalGenerateWithSearch({ history, currentParts }: { history: 
        },
     });
     
-    // We need to return the full response object, not just text, to get grounding metadata
     return {
         text: response.text,
         candidates: response.candidates,
@@ -273,7 +294,6 @@ export async function POST(req: Request) {
                 const image = await internalGenerateImage(payload);
                 return NextResponse.json(image);
             
-            // FIX: Added 'editImage' case to handle API requests for image editing.
             case 'editImage':
                 const editedImage = await internalEditImage(payload);
                 return NextResponse.json(editedImage);

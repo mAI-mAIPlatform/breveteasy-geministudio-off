@@ -1,8 +1,13 @@
+
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '@/lib/types';
-import { generateContentWithSearch } from '@/services/geminiService';
+// FIX: Imported 'sendMessageStream' and 'generateTitleForChat' to resolve missing function errors.
+import { generateContentWithSearch, sendMessageStream, generateTitleForChat } from '@/services/geminiService';
 import type { GenerateContentResponse } from '@google/genai';
 import { PremiumBadge } from './PremiumBadge';
+import { useLocalization } from '@/hooks/useLocalization';
+import { marked } from 'marked';
 
 interface ChatViewProps {
     session: ChatSession;
@@ -35,13 +40,14 @@ const ModelSelectorDropdown: React.FC<{
     isConversationStarted: boolean;
     subscriptionPlan: SubscriptionPlan;
 }> = ({ aiModel, onAiModelChange, isConversationStarted, subscriptionPlan }) => {
+    const { t } = useLocalization();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const modelDisplayNames: Record<AiModel, string> = {
-        brevetai: 'BrevetAI',
-        'brevetai-pro': 'BrevetAI Pro',
-        'brevetai-max': 'BrevetAI Max',
+        brevetai: t('home_brevetai'),
+        'brevetai-pro': t('subscription_plan_pro'),
+        'brevetai-max': 'Gemini 3 Pro',
     };
     
     const allModels = useMemo(() => [
@@ -121,6 +127,7 @@ const ChatHeader: React.FC<{
     isConversationStarted: boolean;
     subscriptionPlan: SubscriptionPlan;
 }> = ({ title, onTitleChange, aiModel, onAiModelChange, isConversationStarted, subscriptionPlan }) => {
+    const { t } = useLocalization();
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editingTitle, setEditingTitle] = useState(title);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -167,7 +174,7 @@ const ChatHeader: React.FC<{
                             <button 
                                 onClick={() => { setIsEditingTitle(true); setEditingTitle(title); }} 
                                 className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700"
-                                title="Renommer la discussion"
+                                title={t('chat_header_rename_title')}
                             >
                                 <EditIcon className="h-4 w-4" />
                             </button>
@@ -184,64 +191,71 @@ const Message: React.FC<{
     index: number;
     copiedIndex: number | null;
     onCopy: (parts: ChatPart[], index: number) => void;
-    onRegenerate: (index: number) => void;
+    onRegenerate: (index: number, modification?: 'longer' | 'shorter') => void;
     onEdit: (index: number) => void;
 }> = ({ message, index, copiedIndex, onCopy, onRegenerate, onEdit }) => {
+    const { t } = useLocalization();
     const isModel = message.role === 'model';
     
     const actionBarClass = "flex items-center self-center gap-1 p-1 bg-white/60 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200";
     const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
 
     return (
-        <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'justify-end'}`}>
-            {!isModel && (
-                <div className={actionBarClass}>
-                    <button onClick={() => onEdit(index)} title="Modifier" className={actionButtonClass}>
-                        <EditIcon className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => onCopy(message.parts, index)} title="Copier" className={actionButtonClass}>
-                        {copiedIndex === index ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
-                    </button>
-                </div>
-            )}
-            
+        <div className={`group flex items-start gap-3 ${isModel ? 'self-start' : 'self-end flex-row-reverse'}`}>
             <div className={`max-w-xl lg:max-w-2xl px-5 py-3 shadow-md ${isModel ? 'bg-white/30 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-t-2xl rounded-br-2xl' : 'bg-indigo-500/80 backdrop-blur-md text-white rounded-t-2xl rounded-bl-2xl'}`}>
-                {message.isGenerating ? (
-                    <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
-                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:0.2s]"></div>
-                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                {message.isGenerating && (!message.parts || message.parts.length === 0 || !message.parts.some(p => p.text?.trim())) ? (
+                    <div className="flex items-center">
+                        <span className="reflection-text font-semibold text-slate-600 dark:text-slate-400">Réflexion...</span>
                     </div>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                         {message.parts.map((part, partIndex) => {
                             if (part.image) {
                                 return <img key={partIndex} src={`data:${part.image.mimeType};base64,${part.image.data}`} alt="User upload" className="rounded-lg max-w-xs" />;
                             }
                             if (part.text) {
-                                return <p key={partIndex} className="whitespace-pre-wrap">{part.text}</p>;
+                                const html = marked.parse(part.text);
+                                const streamingHtml = html + (message.isGenerating ? '<span class="blinking-cursor"></span>' : '');
+                                return <div key={partIndex} className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2" dangerouslySetInnerHTML={{ __html: streamingHtml as string }}></div>;
                             }
                             return null;
                         })}
+                        {message.groundingMetadata?.groundingChunks && (
+                            <div className="mt-4 pt-3 border-t border-slate-300/50 dark:border-slate-600/50">
+                                <h4 className="text-xs font-bold mb-2">Sources Web :</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {message.groundingMetadata.groundingChunks.map((chunk, i) => (
+                                        <a href={chunk.web.uri} key={i} target="_blank" rel="noopener noreferrer" className="text-xs bg-black/10 dark:bg-slate-700 px-2 py-1 rounded-md hover:bg-black/20 dark:hover:bg-slate-600 transition-colors truncate">
+                                            {chunk.web.title}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
-
-            {isModel && !message.isGenerating && (
-                 <div className={actionBarClass}>
-                    <button onClick={() => onCopy(message.parts, index)} title="Copier" className={actionButtonClass}>
-                        {copiedIndex === index ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
-                    </button>
+             <div className={actionBarClass}>
+                <button onClick={() => onCopy(message.parts, index)} title={t('copy')} className={actionButtonClass}>
+                    {copiedIndex === index ? <CheckIcon className="h-4 w-4 text-green-500" /> : <CopyIcon className="h-4 w-4" />}
+                </button>
+                {isModel && !message.isGenerating && (
                     <button onClick={() => onRegenerate(index)} title="Regénérer" className={actionButtonClass}>
                         <RegenerateIcon className="h-4 w-4" />
                     </button>
-                </div>
-            )}
+                )}
+                {!isModel && (
+                    <button onClick={() => onEdit(index)} title={t('edit')} className={actionButtonClass}>
+                        <EditIcon className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
         </div>
     );
 };
 
 export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, systemInstruction, subscriptionPlan, userName, onNavigateToImageGeneration, onNavigateToCanvas, onNavigateToFlashAI, onNavigateToPlanning, onNavigateToConseils }) => {
+    const { t } = useLocalization();
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -250,6 +264,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    
+    const modelDisplayNames: Record<AiModel, string> = {
+        brevetai: t('home_brevetai'),
+        'brevetai-pro': t('subscription_plan_pro'),
+        'brevetai-max': 'Gemini 3 Pro',
+    };
     
     useEffect(() => {
         const textarea = textareaRef.current;
@@ -276,126 +296,107 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
             reader.onerror = error => reject(error);
         });
     };
-    
-    const generateTitle = useCallback(async (initialPrompt: string) => {
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'generateTitle', payload: { prompt: initialPrompt } }),
-            });
-            if (!response.ok) throw new Error('Failed to generate title');
-            const { title } = await response.json();
-            onUpdateSession(session.id, { title: title.trim().replace(/"/g, '') });
-        } catch (error) {
-            console.error("Error generating title:", error);
-        }
-    }, [onUpdateSession, session.id]);
 
-     const processStream = useCallback(async (response: Response) => {
-        if (!response.ok || !response.body) {
-            throw new Error(`API call failed: ${response.statusText}`);
-        }
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullResponse = '';
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            fullResponse += decoder.decode(value, { stream: true });
-            onUpdateSession(session.id, {
-                messages: (prev) => {
-                    const newMessages = [...prev];
-                    newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
-                    return newMessages;
-                }
-            });
-        }
+    const handleSendMessage = useCallback(async (messageParts: ChatPart[], history: ChatMessage[]) => {
+        setIsLoading(true);
+        const isFirstUserMessage = history.filter(m => m.role === 'user').length === 0;
+
+        const userInputMessage: ChatMessage = { role: 'user', parts: messageParts };
         onUpdateSession(session.id, {
-            messages: (prev) => {
-                const newMessages = [...prev];
-                newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: false };
-                return newMessages;
-            }
+            messages: (prev) => [...prev, userInputMessage, { role: 'model', parts: [], isGenerating: true }],
         });
-    }, [onUpdateSession, session.id]);
 
-    const handleSendMessage = useCallback(async () => {
+        setInput('');
+        setAttachment(null);
+
+        try {
+            if (useWebSearch) {
+                const response = await generateContentWithSearch(history, messageParts);
+                const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+                onUpdateSession(session.id, {
+                    messages: (prev) => {
+                        const newMessages = [...prev.slice(0, -1)];
+                        newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata, isGenerating: false });
+                        return newMessages;
+                    },
+                });
+            } else {
+// FIX: The 'sendMessageStream' function, which was missing, is now correctly implemented in the geminiService to handle streaming chat responses from the API. The client-side stream consumption logic has been updated to use TextDecoder.
+                const streamResult = await sendMessageStream(history, messageParts, {
+                    aiModel: session.aiModel,
+                    systemInstruction,
+                    userName,
+                    subscriptionPlan,
+                });
+
+                let fullResponse = '';
+                const decoder = new TextDecoder();
+                for await (const chunk of streamResult) {
+                    const chunkText = decoder.decode(chunk, {stream: true});
+                    if (chunkText) {
+                        fullResponse += chunkText;
+                        onUpdateSession(session.id, {
+                            messages: (prev) => {
+                                const newMessages = [...prev];
+                                if (newMessages.length > 0) {
+                                   newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
+                                }
+                                return newMessages;
+                            }
+                        });
+                    }
+                }
+                
+                onUpdateSession(session.id, {
+                    messages: (prev) => {
+                        const newMessages = [...prev];
+                         if (newMessages.length > 0) {
+                            newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: false };
+                        }
+                        return newMessages;
+                    }
+                });
+            }
+
+            if (isFirstUserMessage) {
+                const firstText = messageParts.find(p => p.text)?.text || "Discussion avec image";
+// FIX: The 'generateTitleForChat' function, which was missing, has been correctly implemented in the geminiService to generate chat titles via the API.
+                const title = await generateTitleForChat(firstText);
+                onUpdateSession(session.id, { title });
+            }
+        } catch (error) {
+            console.error("Error sending message:", error);
+            onUpdateSession(session.id, {
+                messages: (prev) => [...prev.slice(0, -1), { role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }], isGenerating: false }],
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [onUpdateSession, session.id, useWebSearch, session.aiModel, systemInstruction, userName, subscriptionPlan]);
+
+
+    const prepareAndSendMessage = useCallback(async () => {
         const textInput = input.trim();
         if ((!textInput && !attachment) || isLoading) return;
 
-        setIsLoading(true);
         const userParts: ChatPart[] = [];
         if (attachment) {
-          try {
-            const base64Data = await fileToBase64(attachment.file);
-            userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
-          } catch (error) {
-            console.error("Error converting file to base64", error);
-            alert("Erreur lors du traitement de l'image.");
-            setIsLoading(false);
-            return;
-          }
+            try {
+                const base64Data = await fileToBase64(attachment.file);
+                userParts.push({ image: { data: base64Data, mimeType: attachment.file.type } });
+            } catch (error) {
+                console.error("Error converting file to base64", error);
+                alert("Erreur lors du traitement de l'image.");
+                return;
+            }
         }
         if (textInput) {
-          userParts.push({ text: textInput });
+            userParts.push({ text: textInput });
         }
-
-        const currentHistory = session.messages;
-        const userInputMessage: ChatMessage = { role: 'user', parts: userParts };
         
-        onUpdateSession(session.id, {
-          messages: (prev) => [...prev, userInputMessage, { role: 'model', parts: [], isGenerating: true }],
-        });
+        handleSendMessage(userParts, session.messages);
 
-        const isFirstUserMessage = currentHistory.filter(m => m.role === 'user').length === 0;
-        
-        setInput('');
-        setAttachment(null);
-        
-        try {
-          if (useWebSearch) {
-            const response = await generateContentWithSearch(currentHistory, userParts) as any;
-            const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-            onUpdateSession(session.id, {
-              messages: (prev) => {
-                const newMessages = [...prev.slice(0, -1)];
-                newMessages.push({ role: 'model', parts: [{ text: response.text }], groundingMetadata });
-                return newMessages;
-              },
-            });
-          } else {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'sendMessage',
-                    payload: {
-                        history: currentHistory,
-                        message: { parts: userParts },
-                        config: { aiModel: session.aiModel, systemInstruction, userName, subscriptionPlan }
-                    }
-                }),
-            });
-            await processStream(response);
-          }
-
-          if (isFirstUserMessage && (textInput || attachment)) {
-            await generateTitle(textInput || "Discussion avec image");
-          }
-        } catch (error) {
-          console.error("Error sending message:", error);
-          onUpdateSession(session.id, {
-            messages: (prev) => {
-              const newMessages = [...prev.slice(0, -1)];
-              newMessages.push({ role: 'model', parts: [{ text: "Désolé, une erreur est survenue. Veuillez réessayer." }] });
-              return newMessages;
-            },
-          });
-        } finally {
-          setIsLoading(false);
-        }
-    }, [input, attachment, isLoading, onUpdateSession, session.id, session.messages, generateTitle, useWebSearch, systemInstruction, userName, subscriptionPlan, session.aiModel, processStream]);
+    }, [input, attachment, isLoading, handleSendMessage, session.messages]);
 
 
     const handleCopy = (parts: ChatPart[], index: number) => {
@@ -413,44 +414,44 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         setInput(textToEdit);
 
         onUpdateSession(session.id, { messages: (prev) => prev.slice(0, index) });
+        textareaRef.current?.focus();
     };
 
-    const handleRegenerateResponse = useCallback(async (index: number) => {
+    const handleRegenerateResponse = useCallback(async (index: number, modification?: 'longer' | 'shorter') => {
         if (isLoading || session.messages[index]?.role !== 'model') return;
 
-        setIsLoading(true);
         const historyForRegen = session.messages.slice(0, index);
-        const lastUserMessage = historyForRegen[historyForRegen.length - 1];
-        if (lastUserMessage?.role !== 'user') {
-            setIsLoading(false);
-            return;
-        }
+        const userMessageIndex = historyForRegen.findLastIndex(m => m.role === 'user');
 
-        onUpdateSession(session.id, { messages: [...historyForRegen, { role: 'model', parts: [], isGenerating: true }] });
+        if (userMessageIndex === -1) return;
 
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'sendMessage', // Use send message with truncated history for regen
-                    payload: {
-                        history: historyForRegen.slice(0, -1),
-                        message: lastUserMessage,
-                        config: { aiModel: session.aiModel, systemInstruction, userName, subscriptionPlan }
-                    }
-                }),
-            });
-            await processStream(response);
-        } catch (error) {
-            console.error("Error regenerating response:", error);
-            onUpdateSession(session.id, {
-                messages: (prev) => [...prev.slice(0, -1), { role: 'model', parts: [{ text: "Désolé, la regénération a échoué." }] }],
-            });
-        } finally {
-            setIsLoading(false);
+        const lastUserMessageParts = JSON.parse(JSON.stringify(historyForRegen[userMessageIndex].parts)); 
+        const historyBeforeUserMessage = historyForRegen.slice(0, userMessageIndex);
+
+        if (modification) {
+            const instruction = modification === 'longer' 
+                ? "\n\n(Instruction: Fais une version plus longue et plus détaillée de ta réponse précédente.)" 
+                : "\n\n(Instruction: Fais une version plus courte et plus concise de ta réponse précédente.)";
+            
+            let textPart = lastUserMessageParts.find((p: ChatPart) => p.text);
+            if (textPart) {
+                textPart.text = textPart.text.replace(/\n\n\(Instruction: .*\)/, '');
+                textPart.text += instruction;
+            } else {
+                lastUserMessageParts.push({ text: instruction });
+            }
         }
-    }, [isLoading, session.messages, onUpdateSession, session.id, systemInstruction, userName, subscriptionPlan, session.aiModel, processStream]);
+        
+        onUpdateSession(session.id, { messages: (prev) => prev.slice(0, index) });
+        handleSendMessage(lastUserMessageParts, historyBeforeUserMessage);
+    }, [isLoading, session.messages, session.id, onUpdateSession, handleSendMessage]);
+    
+    const handleRegenerateLast = (modification: 'longer' | 'shorter') => {
+        const lastModelIndex = session.messages.findLastIndex(m => m.role === 'model' && !m.isGenerating);
+        if (lastModelIndex !== -1) {
+            handleRegenerateResponse(lastModelIndex, modification);
+        }
+    };
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -465,6 +466,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     };
 
     const isConversationStarted = session.messages.length > 0;
+    const canRegenerate = !isLoading && session.messages.some(m => m.role === 'model' && !m.isGenerating);
 
     return (
         <div className="w-full h-full flex flex-col bg-white/10 dark:bg-slate-900/60">
@@ -480,14 +482,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                 />
             </div>
 
-            <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6">
+            <main className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-6 flex flex-col">
                 {session.messages.length === 0 && !attachment && (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 shadow-lg flex items-center justify-center mb-4">
-                           <svg className="w-9 h-9 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                     <div className="flex flex-col items-center justify-center h-full text-center">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-sky-400 shadow-lg flex items-center justify-center mb-4">
+                           <svg className="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-200">
-                           {session.aiModel === 'brevetai' ? 'BrevetAI' : session.aiModel === 'brevetai-pro' ? 'BrevetAI Pro' : 'BrevetAI Max' }
+                           {modelDisplayNames[session.aiModel]}
                         </h2>
                         <p className="text-slate-700 dark:text-slate-400">Comment puis-je vous aider à réviser ?</p>
                     </div>
@@ -526,15 +528,15 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
-                                handleSendMessage();
+                                prepareAndSendMessage();
                             }
                         }}
-                        placeholder={"Poser une question à BrevetAI..."}
+                        placeholder={t('chat_input_placeholder')}
                         className="flex-grow bg-transparent p-2 text-slate-900 dark:text-slate-100 placeholder-slate-600 dark:placeholder-slate-500 focus:outline-none resize-none leading-tight"
                         rows={1}
                         disabled={isLoading}
                     />
-                    <button onClick={handleSendMessage} disabled={isLoading || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
+                    <button onClick={() => prepareAndSendMessage()} disabled={isLoading || (!input.trim() && !attachment)} className="ml-2 w-10 h-10 flex items-center justify-center bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0 mb-1">
                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
                        </svg>
@@ -544,9 +546,27 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                     <div className="relative">
                       <button onClick={() => setUseWebSearch(s => !s)} disabled={subscriptionPlan !== 'max'} className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1.5 ${useWebSearch ? 'bg-indigo-500 text-white border-transparent' : 'bg-transparent border-slate-400/50 text-slate-600 dark:text-slate-400'} disabled:opacity-50 disabled:cursor-not-allowed`}>
                         <svg className="w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                        Avec le Web
+                        {t('chat_message_with_web')}
                       </button>
                        {subscriptionPlan !== 'max' && <PremiumBadge requiredPlan="max" size="small" />}
+                    </div>
+                     <div className="flex items-center gap-1 p-0.5 border border-slate-400/50 rounded-full">
+                        <button 
+                            onClick={() => handleRegenerateLast('shorter')} 
+                            disabled={!canRegenerate}
+                            className="px-3 py-0.5 text-xs font-semibold rounded-full transition-colors text-slate-600 dark:text-slate-400 hover:bg-slate-300/50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={t('chat_regenerate_shorter_tooltip')}
+                        >
+                            {t('chat_regenerate_shorter')}
+                        </button>
+                        <button 
+                            onClick={() => handleRegenerateLast('longer')} 
+                            disabled={!canRegenerate}
+                            className="px-3 py-0.5 text-xs font-semibold rounded-full transition-colors text-slate-600 dark:text-slate-400 hover:bg-slate-300/50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={t('chat_regenerate_longer_tooltip')}
+                        >
+                            {t('chat_regenerate_longer')}
+                        </button>
                     </div>
                 </div>
             </footer>
