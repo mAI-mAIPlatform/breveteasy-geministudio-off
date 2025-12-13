@@ -1,7 +1,4 @@
 
-
-"use client";
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HomeView } from '../components/HomeView';
 import { SubjectOptionsView } from '../components/SubjectOptionsView';
@@ -26,9 +23,10 @@ import { DrawingView } from '../components/DrawingView';
 import { JeuxView } from '../components/JeuxView';
 import { JeuxDetailView } from '../components/JeuxDetailView';
 import { GameDisplayView } from '../components/GameDisplayView';
-import { generateQuiz, generateHtmlContent, generateImage, editImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame } from '../services/geminiService';
+import { Brevet2026View } from '../components/Brevet2026View';
+import { generateQuiz, generateHtmlContent, generateImage, editImage, generateInteractivePage, generateFlashQuestion, generatePlanning, generateConseils, generateGame, generateEvaluation, generateBrevetSubject } from '../services/geminiService';
 import { AVATAR_ICONS, SUBJECTS } from '../constants';
-import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay, PlanningTask, RawPlanning } from '../types';
+import type { Subject, Quiz, ChatSession, ChatMessage, SubscriptionPlan, AiModel, ImageModel, Folder, CustomAiModel, CanvasVersion, CanvasModel, Question, Planning, FlashAiModel, PlanningAiModel, ConseilsAiModel, PremadeGame, GamesAiModel, PlanningDay, PlanningTask, RawPlanning, BrevetSubject } from '../types';
 import { useLocalization } from '../hooks/useLocalization';
 
 
@@ -96,8 +94,8 @@ const AnnouncementBanner: React.FC<{ onClose: () => void }> = ({ onClose }) => (
 );
 
 
-type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'imageEditing' | 'voiceAI' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay';
-type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
+type View = 'home' | 'subjectOptions' | 'loading' | 'quiz' | 'results' | 'chat' | 'settings' | 'login' | 'exercises' | 'subscription' | 'imageGeneration' | 'imageEditing' | 'voiceAI' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'drawing' | 'jeux' | 'jeuxDetail' | 'gameDisplay' | 'brevet2026';
+type LoadingTask = 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'evaluation' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI' | 'brevet2026';
 
 interface ImageUsage {
     count: number;
@@ -142,7 +140,7 @@ const FixedHeader: React.FC<{
                 ariaLabel={t('header_upgrade_aria')}
                 isIconOnly={true}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
             </HeaderButton>
            )}
            <HeaderButton
@@ -290,6 +288,10 @@ const App: React.FC = () => {
     const [selectedGameSubject, setSelectedGameSubject] = useState<Subject | null>(null);
     const [gameHtml, setGameHtml] = useState<string | null>(null);
 
+    // Brevet 2026 State
+    const [brevetSubject, setBrevetSubject] = useState<BrevetSubject | null>(null);
+    const [isGeneratingBrevet, setIsGeneratingBrevet] = useState(false);
+
     // Other state
     const [quizUseTimer, setQuizUseTimer] = useState(false);
     const [quizTimerDuration, setQuizTimerDuration] = useState<number>(45);
@@ -302,7 +304,8 @@ const App: React.FC = () => {
         setUserName(localStorage.getItem('brevet-easy-user-name') || '');
         setUserAvatar(localStorage.getItem('brevet-easy-user-avatar') || 'user');
         
-        const bannerClosed = localStorage.getItem('brevet-easy-banner-closed-gemini-3-pro-nbp');
+        // Changed key to ensure banner shows up again
+        const bannerClosed = localStorage.getItem('brevet-easy-banner-closed-gemini-3-nbp-launch');
         if (bannerClosed === 'true') {
             setShowBanner(false);
         }
@@ -482,6 +485,7 @@ const App: React.FC = () => {
         setConseils(null);
         setGameHtml(null);
         setSelectedGameSubject(null);
+        setBrevetSubject(null);
         setView('home');
     };
     
@@ -529,6 +533,11 @@ const App: React.FC = () => {
     
     const handleStartImageEditing = () => setView('imageEditing');
     const handleStartVoiceAI = () => setView('voiceAI');
+    
+    const handleStartBrevet2026 = () => {
+        setBrevetSubject(null);
+        setView('brevet2026');
+    };
 
 
     // Subscription Handler
@@ -702,6 +711,17 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
 *   Maintiens le design général et le pied de page.
 `;
         handleGenericHtmlGeneration('fiche-revisions', prompt, fileContents);
+    };
+
+    const handleGenerateEvaluation = (customPrompt: string, count: number, difficulty: string, level: string, fileContents: string[]) => {
+        const prompt = `Génère une évaluation (devoir surveillé) sur le sujet "${t(selectedSubject?.nameKey || '')}" pour le niveau ${level}, difficulté ${difficulty}. ${customPrompt}.
+        L'évaluation doit comporter environ ${count} questions/exercices.
+        Inclure un barème de notation précis pour chaque question.
+        La sortie doit être un fichier HTML unique, complet et bien formaté pour l'impression (A4), avec un espace pour le Nom/Prénom de l'élève.
+        Inclus une section "Correction" séparée à la fin (ou cachable).
+        
+        Style CSS : Professionnel, propre, police avec empattement pour le corps du texte (ex: Times New Roman ou Georgia) pour faire "officiel".`;
+        handleGenericHtmlGeneration('evaluation', prompt, fileContents);
     };
 
     const handleDownloadHtml = () => {
@@ -996,10 +1016,24 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
             handleBackToHome();
         }
     }, [t, handleBackToHome, buildSystemInstruction, gamesAiSystemInstruction]);
+    
+    const handleGenerateBrevet2026 = useCallback(async (subject: string, pages: number) => {
+        setView('loading');
+        setLoadingTask('brevet2026');
+        try {
+            const result = await generateBrevetSubject(subject, pages, buildSystemInstruction(aiSystemInstruction));
+            setBrevetSubject(result);
+            setView('brevet2026');
+        } catch (error) {
+            console.error("Error generating brevet subject:", error);
+            showNotification(t('error_generating'), 'error');
+            handleBackToHome();
+        }
+    }, [t, handleBackToHome, buildSystemInstruction, aiSystemInstruction]);
 
     const handleCloseBanner = () => {
         setShowBanner(false);
-        localStorage.setItem('brevet-easy-banner-closed-gemini-3-pro-nbp', 'true');
+        localStorage.setItem('brevet-easy-banner-closed-gemini-3-nbp-launch', 'true');
     };
 
     const activeSession = chatSessions.find(s => s.id === activeChatSessionId);
@@ -1030,11 +1064,11 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
                 return (
                     <>
                         {showBanner && <AnnouncementBanner onClose={handleCloseBanner} />}
-                        <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />
+                        <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} onStartBrevet2026={handleStartBrevet2026} />
                     </>
                 );
             case 'subjectOptions':
-                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
+                return selectedSubject && <SubjectOptionsView subject={selectedSubject} onGenerateQuiz={handleGenerateQuiz} onGenerateExercises={handleGenerateExercises} onGenerateCours={handleGenerateCours} onGenerateFicheRevisions={handleGenerateFicheRevisions} onGenerateEvaluation={handleGenerateEvaluation} subscriptionPlan={subscriptionPlan} defaultItemCount={defaultItemCount} defaultDifficulty={defaultDifficulty} defaultLevel={defaultLevel} />;
             case 'quiz':
                 return quiz && <QuizView quiz={quiz} onSubmit={handleQuizSubmit} currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex} isTimed={quizUseTimer} timerPerQuestion={quizTimerDuration} />;
             case 'results':
@@ -1072,7 +1106,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
                         flashAiSystemInstruction={flashAiSystemInstruction}
                         onFlashAiSystemInstructionChange={setFlashAiSystemInstruction}
                         defaultPlanningAiModel={defaultPlanningAiModel}
-                        onDefaultPlanningAiModelChange={setDefaultPlanningAiModel}
+                        onDefaultPlanningAiModelChange={defaultPlanningAiModel}
                         planningAiSystemInstruction={planningAiSystemInstruction}
                         onPlanningAiSystemInstructionChange={setPlanningAiSystemInstruction}
                         defaultConseilsAiModel={defaultConseilsAiModel}
@@ -1131,13 +1165,13 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
                     exercises: { title: t('exercises_generated'), description: t('exercises_generated_desc'), buttonText: t('exercises_download_button') },
                     cours: { title: t('course_generated'), description: t('course_generated_desc'), buttonText: t('course_download_button') },
                     'fiche-revisions': { title: t('summary_generated'), description: t('summary_generated_desc'), buttonText: t('summary_download_button') },
+                    evaluation: { title: t('evaluation_generated'), description: t('evaluation_generated_desc'), buttonText: t('evaluation_download_button') },
                 }[loadingTask] || { title: "Contenu généré !", description: "Votre contenu est prêt.", buttonText: "Télécharger" };
                 
                 return <ExercisesView onDownload={handleDownloadHtml} onCopy={handleCopyHtml} {...contentConfig} />;
             case 'subscription':
                 return <SubscriptionView currentPlan={subscriptionPlan} onUpgrade={handleUpgradePlan} />;
             case 'imageGeneration':
-// FIX: Corrected a typo from 'remainingGenerations' to 'remainingImageGenerations' to fix a reference error.
                  return <ImageGenerationView onGenerate={handleGenerateImage} isGenerating={isGeneratingImage} generatedImage={generatedImage} remainingGenerations={remainingImageGenerations()} defaultImageModel={defaultImageModel} subscriptionPlan={subscriptionPlan} />;
             case 'imageEditing':
                  return <ImageEditingView onGenerate={handleEditImage} isGenerating={isEditingImage} generatedImage={editedImage} onClear={() => setEditedImage(null)} />;
@@ -1159,11 +1193,13 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
                 return selectedGameSubject && <JeuxDetailView subject={selectedGameSubject} onSelectPremadeGame={handleSelectPremadeGame} onGenerateAIGame={handleGenerateAIGame} subscriptionPlan={subscriptionPlan} defaultGamesAiModel={defaultGamesAiModel} />;
             case 'gameDisplay':
                 return <GameDisplayView htmlContent={gameHtml} subject={selectedGameSubject} onGenerateAnother={(subject) => { setView('jeuxDetail'); setSelectedGameSubject(subject); }} />;
+            case 'brevet2026':
+                return <Brevet2026View onGenerate={handleGenerateBrevet2026} isLoading={isGeneratingBrevet} brevetSubject={brevetSubject} onClear={() => setBrevetSubject(null)} />;
             default:
                 return (
                     <>
                         {showBanner && <AnnouncementBanner onClose={handleCloseBanner} />}
-                        <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} />
+                        <HomeView onSubjectSelect={handleSubjectSelect} onStartChat={handleStartChat} onStartDrawing={handleStartDrawing} onStartImageGeneration={handleGoToImageGeneration} onStartCanvas={handleStartCanvas} onStartFlashAI={handleStartFlashAI} onStartPlanning={handleStartPlanning} onStartConseils={handleStartConseils} onStartJeux={handleStartJeux} subscriptionPlan={subscriptionPlan} onStartImageEditing={handleStartImageEditing} onStartVoiceAI={handleStartVoiceAI} onStartBrevet2026={handleStartBrevet2026} />
                     </>
                 );
         }
@@ -1171,7 +1207,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
     
     const showHeader = !['login', 'chat', 'drawing'].includes(view);
     const showExitButton = !['login', 'home', 'chat'].includes(view);
-    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay', 'imageEditing', 'voiceAI'].includes(view);
+    const isFullWidthView = ['home', 'chat', 'quiz', 'results', 'settings', 'subscription', 'imageGeneration', 'canvas', 'flashAI', 'planning', 'conseils', 'drawing', 'jeux', 'jeuxDetail', 'gameDisplay', 'imageEditing', 'voiceAI', 'brevet2026'].includes(view);
 
     return (
         <div className={`w-full min-h-full ${view !== 'chat' ? 'p-4 sm:p-6 lg:p-8' : ''} ${isFullWidthView ? '' : 'flex items-center justify-center'}`}>
@@ -1193,4 +1229,5 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
         </div>
     );
 };
+
 export default App;
