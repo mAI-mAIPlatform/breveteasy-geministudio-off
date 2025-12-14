@@ -1,3 +1,5 @@
+
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ChatSession, ChatMessage, ChatPart, SubscriptionPlan, AiModel } from '@/lib/types';
 // FIX: Imported 'sendMessageStream' and 'generateTitleForChat' to resolve missing function errors.
@@ -199,7 +201,7 @@ const Message: React.FC<{
     const actionButtonClass = "p-1.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors";
 
     return (
-        <div className={`group flex items-start gap-3 ${isModel ? 'justify-start' : 'flex-row-reverse'}`}>
+        <div className={`group flex items-start gap-3 ${isModel ? 'self-start' : 'self-end flex-row-reverse'}`}>
             <div className={`max-w-xl lg:max-w-2xl px-5 py-3 shadow-md ${isModel ? 'bg-white/30 dark:bg-slate-800 backdrop-blur-lg border border-white/20 dark:border-slate-700 rounded-t-2xl rounded-br-2xl' : 'bg-indigo-500/80 backdrop-blur-md text-white rounded-t-2xl rounded-bl-2xl'}`}>
                 {message.isGenerating && (!message.parts || message.parts.length === 0 || !message.parts.some(p => p.text?.trim())) ? (
                     <div className="flex items-center">
@@ -319,6 +321,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                     },
                 });
             } else {
+// FIX: The 'sendMessageStream' function, which was missing, is now correctly implemented in the geminiService to handle streaming chat responses from the API. The client-side stream consumption logic has been updated to use TextDecoder.
                 const streamResult = await sendMessageStream(history, messageParts, {
                     aiModel: session.aiModel,
                     systemInstruction,
@@ -327,25 +330,21 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
                 });
 
                 let fullResponse = '';
-                const reader = streamResult.getReader();
                 const decoder = new TextDecoder();
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    
-                    const chunkText = decoder.decode(value, { stream: true });
-                    fullResponse += chunkText;
-                    
-                    onUpdateSession(session.id, {
-                        messages: (prev) => {
-                            const newMessages = [...prev];
-                            if (newMessages.length > 0) {
-                               newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
+                for await (const chunk of streamResult) {
+                    const chunkText = decoder.decode(chunk, {stream: true});
+                    if (chunkText) {
+                        fullResponse += chunkText;
+                        onUpdateSession(session.id, {
+                            messages: (prev) => {
+                                const newMessages = [...prev];
+                                if (newMessages.length > 0) {
+                                   newMessages[newMessages.length - 1] = { role: 'model', parts: [{ text: fullResponse }], isGenerating: true };
+                                }
+                                return newMessages;
                             }
-                            return newMessages;
-                        }
-                    });
+                        });
+                    }
                 }
                 
                 onUpdateSession(session.id, {
@@ -361,6 +360,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
 
             if (isFirstUserMessage) {
                 const firstText = messageParts.find(p => p.text)?.text || "Discussion avec image";
+// FIX: The 'generateTitleForChat' function, which was missing, has been correctly implemented in the geminiService to generate chat titles via the API.
                 const title = await generateTitleForChat(firstText);
                 onUpdateSession(session.id, { title });
             }
@@ -421,15 +421,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
         if (isLoading || session.messages[index]?.role !== 'model') return;
 
         const historyForRegen = session.messages.slice(0, index);
-        
-        // Replacement for findLastIndex
-        let userMessageIndex = -1;
-        for (let i = historyForRegen.length - 1; i >= 0; i--) {
-            if (historyForRegen[i].role === 'user') {
-                userMessageIndex = i;
-                break;
-            }
-        }
+        const userMessageIndex = historyForRegen.findLastIndex(m => m.role === 'user');
 
         if (userMessageIndex === -1) return;
 
@@ -455,15 +447,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ session, onUpdateSession, sy
     }, [isLoading, session.messages, session.id, onUpdateSession, handleSendMessage]);
     
     const handleRegenerateLast = (modification: 'longer' | 'shorter') => {
-        // Replacement for findLastIndex
-        let lastModelIndex = -1;
-        for (let i = session.messages.length - 1; i >= 0; i--) {
-            if (session.messages[i].role === 'model' && !session.messages[i].isGenerating) {
-                lastModelIndex = i;
-                break;
-            }
-        }
-        
+        const lastModelIndex = session.messages.findLastIndex(m => m.role === 'model' && !m.isGenerating);
         if (lastModelIndex !== -1) {
             handleRegenerateResponse(lastModelIndex, modification);
         }

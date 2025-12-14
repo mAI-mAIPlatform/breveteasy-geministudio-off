@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { NextResponse } from 'next/server';
-import type { Quiz, ImageModel, Question, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, RawPlanning, BrevetSubject } from '@/lib/types';
+import type { Quiz, ImageModel, Question, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, RawPlanning } from '@/lib/types';
 
 if (!process.env.API_KEY) {
   throw new Error("Missing API_KEY environment variable");
@@ -276,43 +276,6 @@ async function internalGenerateWithSearch({ history, currentParts }: { history: 
     };
 }
 
-async function internalGenerateBrevetSubject({ subject, pages, systemInstruction }: { subject: string; pages: number; systemInstruction: string }): Promise<BrevetSubject> {
-    const promptSubject = `Agis comme un concepteur d'examen pour le Diplôme National du Brevet en France, session 2026. Prends en compte les dernières réformes. Génère un sujet complet de ${subject}. Le sujet doit être réaliste, contenir plusieurs exercices, des documents (décrits textuellement), et respecter le format officiel.
-    
-    ATTENTION : La sortie doit être uniquement le code HTML complet du sujet (structure <html><body>...), avec du CSS pour qu'il ressemble à un examen papier (police serif, mise en page A4). N'inclus PAS la correction ici.`;
-
-    const combinedPrompt = `Agis comme un concepteur d'examen pour le Diplôme National du Brevet en France, session 2026. Prends en compte les dernières réformes.
-    
-    Tâche 1 : Génère un sujet complet de ${subject} d'environ ${pages} pages. Le sujet doit être réaliste, contenir plusieurs exercices et documents (décrits).
-    Tâche 2 : Génère la correction détaillée et le barème.
-
-    Format de sortie attendu : JSON
-    {
-      "subjectHtml": "Code HTML complet du sujet (style papier examen)",
-      "correctionHtml": "Code HTML complet de la correction"
-    }
-    `;
-
-    const responseCombined = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: combinedPrompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    subjectHtml: { type: Type.STRING },
-                    correctionHtml: { type: Type.STRING }
-                },
-                required: ['subjectHtml', 'correctionHtml']
-            },
-            systemInstruction: systemInstruction || "Tu es un expert de l'Éducation Nationale française.",
-        }
-    });
-
-    return JSON.parse(responseCombined.text);
-}
-
 
 export async function POST(req: Request) {
     try {
@@ -354,10 +317,6 @@ export async function POST(req: Request) {
             case 'generateWithSearch':
                 const searchResult = await internalGenerateWithSearch(payload);
                 return NextResponse.json(searchResult);
-            
-            case 'generateBrevetSubject':
-                const brevetSubject = await internalGenerateBrevetSubject(payload);
-                return NextResponse.json(brevetSubject);
 
             default:
                 return NextResponse.json({ message: 'Invalid action' }, { status: 400 });

@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 
 interface LoadingViewProps {
   subject: string;
-  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'evaluation' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI' | 'brevet2026';
+  task: 'quiz' | 'exercises' | 'cours' | 'fiche-revisions' | 'canvas' | 'flashAI' | 'planning' | 'conseils' | 'game' | 'gamesAI';
   onCancel: () => void;
 }
 
@@ -60,13 +59,6 @@ const loadingTips = {
         "Mise en évidence des mots-clés...",
         "Votre fiche de révisions est bientôt prête !"
     ],
-    evaluation: [
-        "Conception du barème de notation...",
-        "Rédaction des exercices et problèmes...",
-        "Création de la correction détaillée...",
-        "Mise en forme du devoir surveillé...",
-        "Votre évaluation arrive !"
-    ],
     canvas: [
         "L'IA prépare votre toile numérique...",
         "Génération du code HTML, CSS, et JavaScript...",
@@ -104,13 +96,6 @@ const loadingTips = {
         "Création des graphismes en pur CSS...",
         "Votre jeu personnalisé arrive !",
     ],
-    brevet2026: [
-        "Analyse des dernières réformes du Brevet...",
-        "Création d'un sujet complet et réaliste...",
-        "Rédaction de la correction détaillée...",
-        "Mise en page format examen...",
-        "Votre sujet de Brevet Blanc arrive !"
-    ]
 };
 
 export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCancel }) => {
@@ -122,14 +107,12 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ subject, task, onCance
     exercises: 'des exercices',
     cours: 'du cours',
     'fiche-revisions': 'de la fiche de révisions',
-    evaluation: "de l'évaluation",
     canvas: 'de la page interactive',
     flashAI: 'de la question flash',
     planning: 'du planning',
     conseils: 'des conseils',
     game: 'du jeu',
     gamesAI: 'du jeu personnalisé',
-    brevet2026: 'du sujet de brevet',
   };
   const titleText = titleTextMap[task] || 'du contenu';
 
