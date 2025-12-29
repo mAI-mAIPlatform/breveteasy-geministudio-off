@@ -1,6 +1,6 @@
 
 
-import type { Quiz, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Question, Planning, ChatMessage, ChatPart, GamesAiModel, RawPlanning, AiModel, SubscriptionPlan } from '@/lib/types';
+import type { Quiz, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Question, Planning, ChatMessage, ChatPart, GamesAiModel, RawPlanning, AiModel, SubscriptionPlan, BrevetSubject } from '@/lib/types';
 import type { GenerateContentResponse } from '@google/genai';
 
 async function callGeminiApi<T>(action: string, payload: any): Promise<T> {
@@ -117,7 +117,6 @@ export const generateContentWithSearch = async (history: ChatMessage[], currentP
     return result;
 };
 
-// FIX: Added 'sendMessageStream' to handle streaming chat responses from the backend API.
 export const sendMessageStream = async (
     history: ChatMessage[],
     messageParts: ChatPart[],
@@ -143,7 +142,6 @@ export const sendMessageStream = async (
     return response.body;
 };
 
-// FIX: Added 'generateTitleForChat' to generate titles for new chat sessions via the backend API.
 export const generateTitleForChat = async (prompt: string): Promise<string> => {
     const response = await fetch('/api/chat', {
         method: 'POST',
@@ -158,4 +156,23 @@ export const generateTitleForChat = async (prompt: string): Promise<string> => {
     }
     const { title } = await response.json();
     return title;
+};
+
+// NEW: Generate Evaluation
+export const generateEvaluation = async (
+    prompt: string,
+    systemInstruction: string,
+    fileContents: string[]
+): Promise<string> => {
+    const fullPrompt = `${prompt}. La sortie doit être un fichier HTML unique, formatté comme un examen officiel (en-tête, exercice 1, exercice 2, barème...). Inclus du CSS pour un style propre et professionnel (police serif pour le texte, sans-serif pour les titres, bordures pour les exercices).`;
+    return generateHtmlContent(fullPrompt, systemInstruction, undefined);
+};
+
+// NEW: Generate Brevet 2026 Subject
+export const generateBrevetSubject = async (
+    subject: string,
+    pages: number,
+    systemInstruction: string
+): Promise<BrevetSubject> => {
+    return callGeminiApi<BrevetSubject>('generateBrevetSubject', { subject, pages, systemInstruction });
 };

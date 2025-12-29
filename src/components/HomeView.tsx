@@ -1,4 +1,6 @@
 
+
+
 import React from 'react';
 import { SUBJECTS } from '@/lib/constants';
 import type { Subject, SubscriptionPlan } from '@/lib/types';
@@ -37,10 +39,11 @@ const CompactFeatureCard: React.FC<{
     description: string;
     icon: React.ReactNode;
     gradient: string;
-}> = ({ onClick, title, description, icon, gradient }) => (
+    fullWidth?: boolean;
+}> = ({ onClick, title, description, icon, gradient, fullWidth }) => (
     <button
         onClick={onClick}
-        className="group relative w-full p-6 bg-white/5 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-slate-700/80 rounded-3xl hover:border-sky-300/70 dark:hover:border-sky-400/70 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ease-in-out flex flex-col items-center justify-center space-y-2 text-center"
+        className={`group relative p-6 bg-white/5 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-slate-700/80 rounded-3xl hover:border-sky-300/70 dark:hover:border-sky-400/70 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ease-in-out flex flex-col items-center justify-center space-y-2 text-center ${fullWidth ? 'col-span-2 md:col-span-4 lg:col-span-8' : 'w-full'}`}
     >
         <div className={`w-24 h-24 rounded-full ${gradient} flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110 mb-3`}>
             {icon}
@@ -67,10 +70,11 @@ interface HomeViewProps {
   onStartConseils: () => void;
   onStartJeux: () => void;
   onStartVoiceAI: () => void;
+  onStartBrevet2026: () => void;
   subscriptionPlan: SubscriptionPlan;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux, onStartVoiceAI, onStartImageEditing, subscriptionPlan }) => {
+export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDrawing, onStartChat, onStartImageGeneration, onStartCanvas, onStartFlashAI, onStartPlanning, onStartConseils, onStartJeux, onStartVoiceAI, onStartImageEditing, onStartBrevet2026, subscriptionPlan }) => {
   const { t } = useLocalization();
   return (
   <div className="w-full">
@@ -95,7 +99,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDraw
                 onClick={onStartImageGeneration}
                 title={t('home_faceai')}
                 description={t('home_faceai_desc')}
-                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                 gradient="bg-gradient-to-br from-sky-400 to-red-400"
             />
             <CompactFeatureCard 
@@ -133,6 +137,17 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSubjectSelect, onStartDraw
                 icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M6.343 18.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0zM3 12h1m16 0h1M5.636 6.364l.707.707m12.728 12.728l.707.707" /></svg>}
                 gradient="bg-gradient-to-br from-sky-400 to-teal-300"
             />
+      </div>
+
+      <div className="mb-12">
+        <CompactFeatureCard
+            onClick={onStartBrevet2026}
+            title={t('home_brevet2026')}
+            description={t('home_brevet2026_desc')}
+            icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+            gradient="bg-gradient-to-r from-blue-700 to-indigo-700"
+            fullWidth={true}
+        />
       </div>
 
       <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

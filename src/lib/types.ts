@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'zh' | 'ru' | 'uk' | 'pl' | 'nl' | 'sv' | 'hr' | 'hu';
@@ -170,4 +171,9 @@ export interface RawPlanningDay {
 export interface RawPlanning {
     title: string;
     schedule: RawPlanningDay[];
+}
+
+export interface BrevetSubject {
+    subjectHtml: string;
+    correctionHtml: string;
 }
