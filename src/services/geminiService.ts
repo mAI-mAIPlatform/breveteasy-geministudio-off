@@ -1,5 +1,6 @@
 
 
+
 import type { Quiz, ImageModel, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, Question, Planning, ChatMessage, ChatPart, GamesAiModel, RawPlanning, AiModel, SubscriptionPlan, BrevetSubject } from '@/lib/types';
 import type { GenerateContentResponse } from '@google/genai';
 

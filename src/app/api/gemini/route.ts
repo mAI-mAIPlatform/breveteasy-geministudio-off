@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { NextResponse } from 'next/server';
 import type { Quiz, ImageModel, Question, CanvasModel, FlashAiModel, PlanningAiModel, ConseilsAiModel, ChatMessage, ChatPart, GamesAiModel, RawPlanning, BrevetSubject } from '@/lib/types';

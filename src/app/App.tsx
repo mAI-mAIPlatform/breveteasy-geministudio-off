@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { HomeView } from '../components/HomeView';
 import { SubjectOptionsView } from '../components/SubjectOptionsView';
@@ -1092,7 +1093,7 @@ La sortie doit être un fichier HTML unique, complet et bien formaté, suivant l
                         imageGenerationInstruction={imageGenerationInstruction}
                         onImageGenerationInstructionChange={setImageGenerationInstruction}
                         defaultItemCount={defaultItemCount}
-                        onDefaultItemCountChange={setDefaultItemCount}
+                        onDefaultItemCountChange={defaultItemCount}
                         defaultDifficulty={defaultDifficulty}
                         onDefaultDifficultyChange={setDefaultDifficulty}
                         defaultLevel={defaultLevel}

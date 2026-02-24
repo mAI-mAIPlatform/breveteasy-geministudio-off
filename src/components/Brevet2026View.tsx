@@ -1,7 +1,8 @@
 
+
 import React, { useState } from 'react';
-import { useLocalization } from '../hooks/useLocalization';
-import type { BrevetSubject } from '../types';
+import { useLocalization } from '@/hooks/useLocalization';
+import type { BrevetSubject } from '@/lib/types';
 
 interface Brevet2026ViewProps {
     onGenerate: (subject: string, pages: number) => void;

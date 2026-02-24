@@ -1,9 +1,9 @@
 
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { Subject, SubscriptionPlan } from '../types';
+import type { Subject, SubscriptionPlan } from '@/lib/types';
 import { PremiumBadge } from './PremiumBadge';
-import { useLocalization } from '../hooks/useLocalization';
+import { useLocalization } from '@/hooks/useLocalization';
 
 interface SubjectOptionsViewProps {
   subject: Subject;
